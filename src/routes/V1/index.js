@@ -22,6 +22,10 @@ Example:
 const cutomerModule = require('../../modules/cutomer')
 routing.use(`${API_TAG}/cutomer`, cutomerModule)
 
+// Sales Module
+const salesModule = require('../../modules/sales')
+routing.use(`${API_TAG}/sales`, salesModule)
+
 // Tambahkan routes module Anda di sini
 // Example:
 // const yourModule = require('../../modules/yourModule')
