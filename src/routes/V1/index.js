@@ -26,6 +26,10 @@ routing.use(`${API_TAG}/cutomer`, cutomerModule)
 const salesModule = require('../../modules/sales')
 routing.use(`${API_TAG}/sales`, salesModule)
 
+// Bank Account Module
+const bankAccountModule = require('../../modules/bank_account')
+routing.use(`${API_TAG}/bank-account`, bankAccountModule)
+
 // Tambahkan routes module Anda di sini
 // Example:
 // const yourModule = require('../../modules/yourModule')
