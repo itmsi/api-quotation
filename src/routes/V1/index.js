@@ -2,25 +2,25 @@ const express = require('express')
 // const { verifyToken } = require('../../middlewares')
 
 const routing = express();
-const API_TAG = '/api';
+const API_TAG = '/api/quotation';
 
 /* RULE
 naming convention endpoint: using plural
 Example:
-- GET /api/examples
-- POST /api/examples
-- GET /api/examples/:id
-- PUT /api/examples/:id
-- DELETE /api/examples/:id
+- GET /api/quotation/examples
+- POST /api/quotation/examples
+- GET /api/quotation/examples/:id
+- PUT /api/quotation/examples/:id
+- DELETE /api/quotation/examples/:id
 */
 
 // Example Module (Template untuk module Anda)
-const exampleModule = require('../../modules/example')
-routing.use(`${API_TAG}/examples`, exampleModule)
+// const exampleModule = require('../../modules/example')
+// routing.use(`${API_TAG}/examples`, exampleModule)
 
 // Cutomer Module
 const cutomerModule = require('../../modules/cutomer')
-routing.use(`${API_TAG}/catalogs/cutomer`, cutomerModule)
+routing.use(`${API_TAG}/cutomer`, cutomerModule)
 
 // Tambahkan routes module Anda di sini
 // Example:

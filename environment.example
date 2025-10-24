@@ -39,6 +39,23 @@ DB_PASS_TEST=your_password
 DB_NAME_TEST=your_database_test
 
 # ===========================================
+# Gate SSO Database Configuration (for dblink)
+# ===========================================
+# Local Development
+DB_GATE_SSO_HOST=localhost
+DB_GATE_SSO_PORT=5432
+DB_GATE_SSO_NAME=gate_sso
+DB_GATE_SSO_USER=msiserver
+DB_GATE_SSO_PASSWORD=Rubysa179596!
+
+# Production Server
+# DB_GATE_SSO_HOST=localhost
+# DB_GATE_SSO_PORT=5432
+# DB_GATE_SSO_NAME=gate_sso
+# DB_GATE_SSO_USER=sharedpg
+# DB_GATE_SSO_PASSWORD=pgpass
+
+# ===========================================
 # JWT Configuration
 # ===========================================
 JWT_SECRET=your-secret-key-change-in-production

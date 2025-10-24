@@ -13,35 +13,35 @@ const info = {
 
 const servers = [
   {
-    url: '/api/',
+    url: '/api/quotation/',
     description: 'Development server'
   },
   {
-    url: 'https://your-production-url.com/api/',
+    url: 'https://your-production-url.com/api/quotation/',
     description: 'Production server'
   }
 ]
 
 // Import schemas
 // Tambahkan schema module Anda di sini
-const exampleSchema = require('./schema/example');
+// const exampleSchema = require('./schema/example');
 const cutomerSchema = require('./schema/cutomer');
 
 // Import paths
 // Tambahkan path module Anda di sini
-const examplePaths = require('./path/example');
+// const examplePaths = require('./path/example');
 const cutomerPaths = require('./path/cutomer');
 
 // Combine all schemas
 const schemas = {
-  ...exampleSchema,
+  // ...exampleSchema,
   ...cutomerSchema,
   // ...yourModuleSchema,
 };
 
 // Combine all paths
 const paths = {
-  ...examplePaths,
+  // ...examplePaths,
   ...cutomerPaths,
   // ...yourModulePaths,
 };

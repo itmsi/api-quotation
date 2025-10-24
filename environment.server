@@ -10,6 +10,15 @@ DB_NAME=report_management
 DB_USER=postgres
 DB_PASSWORD=password
 
+# ===========================================
+# Gate SSO Database Configuration (for dblink)
+# ===========================================
+DB_GATE_SSO_HOST=localhost
+DB_GATE_SSO_PORT=5432
+DB_GATE_SSO_NAME=gate_sso
+DB_GATE_SSO_USER=sharedpg
+DB_GATE_SSO_PASSWORD=pgpass
+
 # SSO Configuration
 SSO_MODE=client
 SSO_SERVER_URL=http://localhost:9588

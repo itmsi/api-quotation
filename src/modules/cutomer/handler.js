@@ -3,6 +3,19 @@ const { baseResponse, mappingError, mappingSuccess } = require('../../utils');
 const { decodeToken } = require('../../utils/auth');
 
 /**
+ * Map sort_by from API format to database column format
+ */
+const mapSortBy = (sortBy) => {
+  const mapping = {
+    'created_at': 'created_at',
+    'name': 'customer_name',
+    'email': 'customer_email',
+    'phone': 'customer_phone'
+  };
+  return mapping[sortBy] || sortBy;
+};
+
+/**
  * Get all customers with pagination, search, and sort
  */
 const getAll = async (req, res) => {
@@ -16,7 +29,7 @@ const getAll = async (req, res) => {
       limit,
       offset,
       search,
-      sortBy: sort_by,
+      sortBy: mapSortBy(sort_by),
       sortOrder: sort_order
     };
     

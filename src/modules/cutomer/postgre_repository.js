@@ -10,13 +10,19 @@ const TABLE_NAME = 'customers';
  */
 const ensureConnection = async () => {
   try {
-    // Try to connect, ignore if already connected
+    // Try to disconnect first if connection exists
+    try {
+      await db.raw(`SELECT dblink_disconnect('${DB_LINK_NAME}')`);
+    } catch (error) {
+      // Ignore if connection doesn't exist
+    }
+    
+    // Create new connection
     await db.raw(`SELECT dblink_connect('${DB_LINK_NAME}', '${DB_LINK_CONNECTION}')`);
   } catch (error) {
-    // Connection might already exist, that's okay
-    if (!error.message.includes('already exists')) {
-      console.error('dblink connection error:', error.message);
-    }
+    console.error('dblink connection error:', error.message);
+    console.error('Connection string:', DB_LINK_CONNECTION);
+    throw new Error(`Failed to establish dblink connection: ${error.message}`);
   }
 };
 
@@ -27,9 +33,9 @@ const buildSearchWhere = (search) => {
   if (!search || search.trim() === '') return '';
   
   return `AND (
-    LOWER(name) LIKE LOWER('%${search}%') OR 
-    LOWER(email) LIKE LOWER('%${search}%') OR 
-    LOWER(phone) LIKE LOWER('%${search}%')
+    LOWER(customer_name) LIKE LOWER('%${search}%') OR 
+    LOWER(customer_email) LIKE LOWER('%${search}%') OR 
+    LOWER(customer_phone) LIKE LOWER('%${search}%')
   )`;
 };
 
@@ -46,18 +52,14 @@ const findAll = async (params) => {
   // Query data
   const dataQuery = `
     SELECT * FROM dblink('${DB_LINK_NAME}', 
-      'SELECT * FROM customers WHERE 1=1 ${searchWhere} ORDER BY ${sortBy} ${sortOrder} LIMIT ${limit} OFFSET ${offset}'
+      'SELECT customer_id, customer_name, customer_email, customer_phone, customer_address, created_at FROM customers WHERE 1=1 ${searchWhere} ORDER BY ${sortBy} ${sortOrder} LIMIT ${limit} OFFSET ${offset}'
     ) AS customers (
-      id uuid,
-      name varchar,
-      email varchar,
-      phone varchar,
-      created_by uuid,
-      updated_by uuid,
-      deleted_by uuid,
-      created_at timestamp,
-      updated_at timestamp,
-      deleted_at timestamp
+      customer_id uuid,
+      customer_name varchar,
+      customer_email varchar,
+      customer_phone varchar,
+      customer_address varchar,
+      created_at timestamp
     )
   `;
   
@@ -94,18 +96,14 @@ const findById = async (id) => {
   
   const query = `
     SELECT * FROM dblink('${DB_LINK_NAME}', 
-      'SELECT * FROM customers WHERE id = ''${id}'''
+      'SELECT customer_id, customer_name, customer_email, customer_phone, customer_address, created_at FROM customers WHERE customer_id = ''${id}'''
     ) AS customers (
-      id uuid,
-      name varchar,
-      email varchar,
-      phone varchar,
-      created_by uuid,
-      updated_by uuid,
-      deleted_by uuid,
-      created_at timestamp,
-      updated_at timestamp,
-      deleted_at timestamp
+      customer_id uuid,
+      customer_name varchar,
+      customer_email varchar,
+      customer_phone varchar,
+      customer_address varchar,
+      created_at timestamp
     )
   `;
   
