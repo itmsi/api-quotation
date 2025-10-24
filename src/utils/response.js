@@ -15,6 +15,18 @@ const successResponse = (res, data = null, message = 'Success', statusCode = 200
 }
 
 /**
+ * Base response (wrapper)
+ */
+const baseResponse = (res, data = null, message = 'Success', statusCode = 200) => {
+  return res.status(statusCode).json({
+    success: true,
+    message,
+    data,
+    timestamp: new Date().toISOString()
+  })
+}
+
+/**
  * Error response
  */
 const errorResponse = (res, message = 'Error', statusCode = 500, errors = null) => {
@@ -73,6 +85,7 @@ const forbiddenResponse = (res, message = 'Forbidden') => {
 
 module.exports = {
   successResponse,
+  baseResponse,
   errorResponse,
   validationErrorResponse,
   notFoundResponse,

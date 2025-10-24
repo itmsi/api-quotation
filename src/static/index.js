@@ -25,20 +25,24 @@ const servers = [
 // Import schemas
 // Tambahkan schema module Anda di sini
 const exampleSchema = require('./schema/example');
+const cutomerSchema = require('./schema/cutomer');
 
 // Import paths
 // Tambahkan path module Anda di sini
 const examplePaths = require('./path/example');
+const cutomerPaths = require('./path/cutomer');
 
 // Combine all schemas
 const schemas = {
   ...exampleSchema,
+  ...cutomerSchema,
   // ...yourModuleSchema,
 };
 
 // Combine all paths
 const paths = {
   ...examplePaths,
+  ...cutomerPaths,
   // ...yourModulePaths,
 };
 

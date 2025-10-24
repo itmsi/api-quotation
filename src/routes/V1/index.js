@@ -18,6 +18,10 @@ Example:
 const exampleModule = require('../../modules/example')
 routing.use(`${API_TAG}/examples`, exampleModule)
 
+// Cutomer Module
+const cutomerModule = require('../../modules/cutomer')
+routing.use(`${API_TAG}/catalogs/cutomer`, cutomerModule)
+
 // Tambahkan routes module Anda di sini
 // Example:
 // const yourModule = require('../../modules/yourModule')
