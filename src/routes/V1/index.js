@@ -20,7 +20,7 @@ Example:
 
 // Cutomer Module
 const cutomerModule = require('../../modules/cutomer')
-routing.use(`${API_TAG}/cutomer`, cutomerModule)
+routing.use(`${API_TAG}/customer`, cutomerModule)
 
 // Sales Module
 const salesModule = require('../../modules/sales')

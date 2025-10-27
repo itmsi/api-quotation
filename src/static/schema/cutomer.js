@@ -1,5 +1,5 @@
 /**
- * Swagger Schema Definitions for Cutomer Module
+ * Swagger Schema Definitions for Customer Module
  */
 
 const cutomerSchemas = {

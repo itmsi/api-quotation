@@ -1,11 +1,11 @@
 /**
- * Swagger API Path Definitions for Cutomer Module
+ * Swagger API Path Definitions for Customer Module
  */
 
 const cutomerPaths = {
-  '/cutomer/get': {
+  '/customer/get': {
     post: {
-      tags: ['Cutomer'],
+      tags: ['Customer'],
       summary: 'Get all customers',
       description: 'Retrieve all customers with pagination, search, and sorting',
       security: [
@@ -64,9 +64,9 @@ const cutomerPaths = {
       }
     }
   },
-  '/cutomer/{id}': {
+  '/customer/{id}': {
     get: {
-      tags: ['Cutomer'],
+      tags: ['Customer'],
       summary: 'Get customer by ID',
       description: 'Retrieve a single customer by ID',
       security: [

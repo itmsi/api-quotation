@@ -11,7 +11,7 @@ Module untuk mengelola data customer dari tabel `gate_sso.customers` (dblink dat
 
 ## Endpoints
 
-### 1. POST /api/catalogs/cutomer/get
+### 1. POST /api/quotation/customer/get
 Mendapatkan daftar customer dengan pagination, search, dan sorting.
 
 **Request Body:**
@@ -42,7 +42,7 @@ Mendapatkan daftar customer dengan pagination, search, dan sorting.
 }
 ```
 
-### 2. GET /api/catalogs/cutomer/:id
+### 2. GET /api/quotation/customer/:id
 Mendapatkan detail customer berdasarkan ID.
 
 **Response:**
@@ -54,7 +54,7 @@ Mendapatkan detail customer berdasarkan ID.
 }
 ```
 
-### 3. POST /api/catalogs/cutomer
+### 3. POST /api/quotation/customer
 Membuat customer baru.
 
 **Request Body:**
@@ -75,7 +75,7 @@ Membuat customer baru.
 }
 ```
 
-### 4. PUT /api/catalogs/cutomer/:id
+### 4. PUT /api/quotation/customer/:id
 Mengupdate data customer.
 
 **Request Body:**
@@ -95,7 +95,7 @@ Mengupdate data customer.
 }
 ```
 
-### 5. DELETE /api/catalogs/cutomer/:id
+### 5. DELETE /api/quotation/customer/:id
 Soft delete customer (mengisi deleted_at).
 
 **Response:**
@@ -107,7 +107,7 @@ Soft delete customer (mengisi deleted_at).
 }
 ```
 
-### 6. POST /api/catalogs/cutomer/:id/restore
+### 6. POST /api/quotation/customer/:id/restore
 Restore customer yang sudah dihapus.
 
 **Response:**
@@ -164,5 +164,5 @@ Dokumentasi lengkap dapat dilihat di:
 - Development: `http://localhost:3000/documentation`
 - Production: `<production-url>/documentation`
 
-Look for "Cutomer" tag di Swagger UI.
+Look for "Customer" tag di Swagger UI.
 

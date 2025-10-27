@@ -11,7 +11,7 @@ const { verifyToken } = require('../../middlewares');
 const { validateMiddleware } = require('../../middlewares/validation');
 
 /**
- * @route   POST /api/catalogs/cutomer/get
+ * @route   POST /api/quotation/customer/get
  * @desc    Get all customers with pagination
  * @access  Protected
  */
@@ -24,7 +24,7 @@ router.post(
 );
 
 /**
- * @route   GET /api/catalogs/cutomer/:id
+ * @route   GET /api/quotation/customer/:id
  * @desc    Get customer by ID
  * @access  Protected
  */
@@ -37,7 +37,7 @@ router.get(
 );
 
 /**
- * @route   POST /api/catalogs/cutomer
+ * @route   POST /api/quotation/customer
  * @desc    Create new customer
  * @access  Protected
  */
@@ -50,7 +50,7 @@ router.post(
 );
 
 /**
- * @route   PUT /api/catalogs/cutomer/:id
+ * @route   PUT /api/quotation/customer/:id
  * @desc    Update customer
  * @access  Protected
  */
@@ -63,7 +63,7 @@ router.put(
 );
 
 /**
- * @route   DELETE /api/catalogs/cutomer/:id
+ * @route   DELETE /api/quotation/customer/:id
  * @desc    Soft delete customer
  * @access  Protected
  */
@@ -76,7 +76,7 @@ router.delete(
 );
 
 /**
- * @route   POST /api/catalogs/cutomer/:id/restore
+ * @route   POST /api/quotation/customer/:id/restore
  * @desc    Restore soft deleted customer
  * @access  Protected
  */
