@@ -17,8 +17,8 @@ const servers = [
     description: 'Development server'
   },
   {
-    url: 'https://your-production-url.com/api/quotation/',
-    description: 'Production server'
+    url: 'https://services.motorsights.com/api/quotation/',
+    description: 'Gateway server'
   }
 ]
 
