@@ -28,6 +28,7 @@ const servers = [
 const cutomerSchema = require('./schema/cutomer');
 const salesSchema = require('./schema/sales');
 const bankAccountSchema = require('./schema/bank_account');
+const manageQuotationSchema = require('./schema/manage_quotation');
 
 // Import paths
 // Tambahkan path module Anda di sini
@@ -35,6 +36,7 @@ const bankAccountSchema = require('./schema/bank_account');
 const cutomerPaths = require('./path/cutomer');
 const salesPaths = require('./path/sales');
 const bankAccountPaths = require('./path/bank_account');
+const manageQuotationPaths = require('./path/manage_quotation');
 
 // Combine all schemas
 const schemas = {
@@ -42,6 +44,7 @@ const schemas = {
   ...cutomerSchema,
   ...salesSchema,
   ...bankAccountSchema,
+  ...manageQuotationSchema,
   // ...yourModuleSchema,
 };
 
@@ -51,6 +54,7 @@ const paths = {
   ...cutomerPaths,
   ...salesPaths,
   ...bankAccountPaths,
+  ...manageQuotationPaths,
   // ...yourModulePaths,
 };
 
