@@ -34,6 +34,10 @@ routing.use(`${API_TAG}/bank-account`, bankAccountModule)
 const manageQuotationModule = require('../../modules/manage_quotation')
 routing.use(`${API_TAG}/manage-quotation`, manageQuotationModule)
 
+// Term Content Module
+const termContentModule = require('../../modules/term_content')
+routing.use(`${API_TAG}/term_content`, termContentModule)
+
 // Tambahkan routes module Anda di sini
 // Example:
 // const yourModule = require('../../modules/yourModule')
