@@ -227,20 +227,22 @@ const update = async (req, res) => {
     }
     
     // Upload new image if provided
-    let imageUrl = existing.item_product_image; // Keep existing image by default
+    // Hanya update item_product_image jika ada file baru yang diupload
+    let imageUrl = undefined;
     if (req.file) {
+      // Only upload if there's a new file
       console.log('Uploading new image to MinIO...');
       imageUrl = await uploadImageToStorage(req.file);
       if (!imageUrl) {
         console.warn('Failed to upload image to MinIO, keeping existing image');
-        imageUrl = existing.item_product_image; // Keep existing if upload fails
+        // Jika upload gagal, jangan update field image (keep existing)
+        imageUrl = undefined;
       } else {
         console.log('New image uploaded successfully:', imageUrl);
       }
-    } else if (req.body.item_product_image !== undefined) {
-      // If image field is explicitly provided in body (can be empty string to remove)
-      imageUrl = req.body.item_product_image === '' ? null : req.body.item_product_image;
     }
+    // Jika req.file tidak ada, maka imageUrl tetap undefined
+    // Sehingga field item_product_image tidak akan dikirim ke repository dan tidak akan diupdate
     
     const itemProductData = {
       item_product_code: req.body.item_product_code,
@@ -257,9 +259,14 @@ const update = async (req, res) => {
       item_product_selling_price_star_4: req.body.item_product_selling_price_star_4,
       item_product_selling_price_star_5: req.body.item_product_selling_price_star_5,
       item_product_description: req.body.item_product_description,
-      item_product_image: imageUrl,
       updated_by: tokenData.updated_by
     };
+    
+    // Hanya masukkan item_product_image jika ada file baru yang berhasil diupload
+    if (imageUrl !== undefined && imageUrl !== null) {
+      itemProductData.item_product_image = imageUrl;
+    }
+    
     
     const data = await repository.update(id, itemProductData);
     
