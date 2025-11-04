@@ -1,33 +1,33 @@
 version: '3.8'
 
 services:
-  api:
-    container_name: core-api-msi-server
+  app:
+    container_name: quotation-app
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: Dockerfile
     ports:
-      - "9509:9501"
+      - "${APP_PORT:-3000}:${APP_PORT:-3000}"
     env_file:
       - .env
     restart: unless-stopped
     volumes:
       - ./logs:/app/logs
+      - ./public:/app/public
+      - ./storages:/app/storages
+      - ./uploads:/app/uploads
     environment:
-      - NODE_ENV=production
-      - PORT=9501
+      - NODE_ENV=${NODE_ENV:-development}
+      - APP_PORT=${APP_PORT:-3000}
+      - DB_NAME_DEV=${DB_NAME_DEV:-quotation_db}
+    # Untuk connect ke database di host machine (Mac/Windows/Linux)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # Alternative: uncomment jika host.docker.internal tidak bekerja (Linux)
+    # network_mode: "host"
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:9501/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '0.5'
-
-networks:
-  default:
-    driver: bridge 

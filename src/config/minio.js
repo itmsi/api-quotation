@@ -83,11 +83,19 @@ const uploadToMinio = async (objectName, buffer, contentType = 'application/octe
     });
 
     // Generate public URL
-    const endpointUrl = new URL(process.env.S3_ENDPOINT);
-    const protocol = endpointUrl.protocol;
-    const hostname = endpointUrl.hostname;
-    const port = endpointUrl.port ? `:${endpointUrl.port}` : '';
-    const publicUrl = `${protocol}//${hostname}${port}/${bucket}/${objectName}`;
+    // Use S3_BASE_URL if available, otherwise construct from S3_ENDPOINT
+    let publicUrl;
+    if (process.env.S3_BASE_URL) {
+      // Remove trailing slash if exists
+      const baseUrl = process.env.S3_BASE_URL.replace(/\/$/, '');
+      publicUrl = `${baseUrl}/${bucket}/${objectName}`;
+    } else {
+      const endpointUrl = new URL(process.env.S3_ENDPOINT);
+      const protocol = endpointUrl.protocol;
+      const hostname = endpointUrl.hostname;
+      const port = endpointUrl.port ? `:${endpointUrl.port}` : '';
+      publicUrl = `${protocol}//${hostname}${port}/${bucket}/${objectName}`;
+    }
 
     return {
       success: true,

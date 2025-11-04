@@ -38,6 +38,10 @@ routing.use(`${API_TAG}/manage-quotation`, manageQuotationModule)
 const termContentModule = require('../../modules/term_content')
 routing.use(`${API_TAG}/term_content`, termContentModule)
 
+// Item Product Module
+const itemProductModule = require('../../modules/itemProduct')
+routing.use(`${API_TAG}/item_product`, itemProductModule)
+
 // Tambahkan routes module Anda di sini
 // Example:
 // const yourModule = require('../../modules/yourModule')
