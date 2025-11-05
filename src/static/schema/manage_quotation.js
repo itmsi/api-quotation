@@ -241,44 +241,56 @@ const manageQuotationSchemas = {
       unit_code: {
         type: 'string',
         nullable: true,
-        description: 'Unit code',
+        description: 'Unit code (from item_products.item_product_code)',
         example: '1234567890'
       },
       unit_model: {
         type: 'string',
         nullable: true,
-        description: 'Unit model',
+        description: 'Unit model (from item_products.item_product_model)',
         example: 'Model 1'
       },
       segment: {
         type: 'string',
         nullable: true,
-        description: 'Segment',
+        description: 'Segment (from item_products.item_product_segment)',
         example: 'Segment 1'
       },
       msi_model: {
         type: 'string',
         nullable: true,
-        description: 'MSI model',
+        description: 'MSI model (from item_products.item_product_msi_model)',
         example: 'MSI Model 1'
       },
       wheel_no: {
         type: 'string',
         nullable: true,
-        description: 'Wheel number',
+        description: 'Wheel number (from item_products.item_product_wheel_no)',
         example: 'Wheel No 1'
       },
       engine: {
         type: 'string',
         nullable: true,
-        description: 'Engine',
+        description: 'Engine (from item_products.item_product_engine)',
         example: 'Engine 1'
       },
       horse_power: {
         type: 'string',
         nullable: true,
-        description: 'Horse power',
+        description: 'Horse power (from item_products.item_product_horse_power)',
         example: '100'
+      },
+      item_product_market_price: {
+        type: 'string',
+        nullable: true,
+        description: 'Market price (from item_products.item_product_market_price)',
+        example: '95000'
+      },
+      item_product_image: {
+        type: 'string',
+        nullable: true,
+        description: 'Product image (from item_products.item_product_image)',
+        example: 'https://example.com/image.jpg'
       },
       quantity: {
         type: 'integer',
@@ -357,54 +369,6 @@ const manageQuotationSchemas = {
         nullable: true,
         description: 'Item product ID reference',
         example: '123e4567-e89b-12d3-a456-426614174004'
-      },
-      unit_code: {
-        type: 'string',
-        maxLength: 100,
-        nullable: true,
-        description: 'Unit code',
-        example: '1234567890'
-      },
-      unit_model: {
-        type: 'string',
-        maxLength: 100,
-        nullable: true,
-        description: 'Unit model',
-        example: 'Model 1'
-      },
-      segment: {
-        type: 'string',
-        maxLength: 100,
-        nullable: true,
-        description: 'Segment',
-        example: 'Segment 1'
-      },
-      msi_model: {
-        type: 'string',
-        nullable: true,
-        description: 'MSI model',
-        example: 'MSI Model 1'
-      },
-      wheel_no: {
-        type: 'string',
-        maxLength: 100,
-        nullable: true,
-        description: 'Wheel number',
-        example: 'Wheel No 1'
-      },
-      engine: {
-        type: 'string',
-        maxLength: 100,
-        nullable: true,
-        description: 'Engine',
-        example: 'Engine 1'
-      },
-      horse_power: {
-        type: 'string',
-        maxLength: 100,
-        nullable: true,
-        description: 'Horse power',
-        example: '100'
       },
       quantity: {
         type: 'integer',

@@ -68,39 +68,6 @@ const createValidation = [
     .optional()
     .isUUID()
     .withMessage('Format item_product_id tidak valid'),
-  body('manage_quotation_items.*.unit_code')
-    .optional()
-    .isLength({ max: 100 })
-    .withMessage('Unit code maksimal 100 karakter')
-    .trim(),
-  body('manage_quotation_items.*.unit_model')
-    .optional()
-    .isLength({ max: 100 })
-    .withMessage('Unit model maksimal 100 karakter')
-    .trim(),
-  body('manage_quotation_items.*.segment')
-    .optional()
-    .isLength({ max: 100 })
-    .withMessage('Segment maksimal 100 karakter')
-    .trim(),
-  body('manage_quotation_items.*.msi_model')
-    .optional()
-    .trim(),
-  body('manage_quotation_items.*.wheel_no')
-    .optional()
-    .isLength({ max: 100 })
-    .withMessage('Wheel no maksimal 100 karakter')
-    .trim(),
-  body('manage_quotation_items.*.engine')
-    .optional()
-    .isLength({ max: 100 })
-    .withMessage('Engine maksimal 100 karakter')
-    .trim(),
-  body('manage_quotation_items.*.horse_power')
-    .optional()
-    .isLength({ max: 100 })
-    .withMessage('Horse power maksimal 100 karakter')
-    .trim(),
   body('manage_quotation_items.*.quantity')
     .optional()
     .isInt({ min: 1 })
@@ -191,39 +158,6 @@ const updateValidation = [
     .optional()
     .isUUID()
     .withMessage('Format item_product_id tidak valid'),
-  body('manage_quotation_items.*.unit_code')
-    .optional()
-    .isLength({ max: 100 })
-    .withMessage('Unit code maksimal 100 karakter')
-    .trim(),
-  body('manage_quotation_items.*.unit_model')
-    .optional()
-    .isLength({ max: 100 })
-    .withMessage('Unit model maksimal 100 karakter')
-    .trim(),
-  body('manage_quotation_items.*.segment')
-    .optional()
-    .isLength({ max: 100 })
-    .withMessage('Segment maksimal 100 karakter')
-    .trim(),
-  body('manage_quotation_items.*.msi_model')
-    .optional()
-    .trim(),
-  body('manage_quotation_items.*.wheel_no')
-    .optional()
-    .isLength({ max: 100 })
-    .withMessage('Wheel no maksimal 100 karakter')
-    .trim(),
-  body('manage_quotation_items.*.engine')
-    .optional()
-    .isLength({ max: 100 })
-    .withMessage('Engine maksimal 100 karakter')
-    .trim(),
-  body('manage_quotation_items.*.horse_power')
-    .optional()
-    .isLength({ max: 100 })
-    .withMessage('Horse power maksimal 100 karakter')
-    .trim(),
   body('manage_quotation_items.*.quantity')
     .optional()
     .isInt({ min: 1 })

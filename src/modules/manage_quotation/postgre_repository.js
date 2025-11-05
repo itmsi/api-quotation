@@ -1,4 +1,5 @@
 const db = require('../../config/database');
+const itemProductRepository = require('../itemProduct/postgre_repository');
 
 const TABLE_NAME = 'manage_quotations';
 
@@ -84,52 +85,30 @@ const findAll = async (params) => {
  * Find single manage quotation by ID
  */
 const findById = async (id) => {
-  const query = `
-    SELECT 
-      manage_quotation_id,
-      manage_quotation_no,
-      customer_id,
-      employee_id,
-      manage_quotation_date,
-      manage_quotation_valid_date,
-      manage_quotation_grand_total,
-      manage_quotation_ppn,
-      manage_quotation_delivery_fee,
-      manage_quotation_other,
-      manage_quotation_payment_presentase,
-      manage_quotation_payment_nominal,
-      manage_quotation_description,
-      created_by,
-      updated_by,
-      deleted_by,
-      created_at,
-      updated_at,
-      deleted_at,
-      is_delete
-    FROM ${TABLE_NAME}
-    WHERE manage_quotation_id = $1 AND is_delete = false
-  `;
+  if (!id) {
+    return null;
+  }
   
-  const result = await db.raw(query, [id]);
-  return result.rows[0] || null;
+  const result = await db(TABLE_NAME)
+    .where({ manage_quotation_id: id, is_delete: false })
+    .first();
+  
+  return result || null;
 };
 
 /**
  * Find by custom condition
  */
 const findOne = async (conditions) => {
-  const whereClause = Object.keys(conditions)
-    .map((key, index) => `${key} = $${index + 1}`)
-    .join(' AND ');
+  if (!conditions || Object.keys(conditions).length === 0) {
+    return null;
+  }
   
-  const query = `
-    SELECT * FROM ${TABLE_NAME}
-    WHERE ${whereClause} AND is_delete = false
-    LIMIT 1
-  `;
+  const result = await db(TABLE_NAME)
+    .where({ ...conditions, is_delete: false })
+    .first();
   
-  const result = await db.raw(query, Object.values(conditions));
-  return result.rows[0] || null;
+  return result || null;
 };
 
 /**
@@ -184,62 +163,70 @@ const update = async (id, data) => {
     return null;
   }
   
-  const setClause = Object.keys(updateFields).map((key, index) => `${key} = $${index + 2}`).join(', ');
+  // Use Knex query builder instead of raw query to avoid binding issues
+  updateFields.updated_at = db.fn.now();
   
-  const values = [id, ...Object.values(updateFields)];
+  const result = await db(TABLE_NAME)
+    .where({ manage_quotation_id: id, is_delete: false })
+    .update(updateFields)
+    .returning('*');
   
-  const query = `
-    UPDATE ${TABLE_NAME}
-    SET ${setClause}, updated_at = NOW()
-    WHERE manage_quotation_id = $1 AND is_delete = false
-    RETURNING *
-  `;
-  
-  const result = await db.raw(query, values);
-  return result.rows[0] || null;
+  return result[0] || null;
 };
 
 /**
  * Soft delete manage quotation
  */
 const remove = async (id) => {
-  const query = `
-    UPDATE ${TABLE_NAME}
-    SET is_delete = true, deleted_at = NOW()
-    WHERE manage_quotation_id = $1 AND is_delete = false
-    RETURNING *
-  `;
+  if (!id) {
+    return null;
+  }
   
-  const result = await db.raw(query, [id]);
-  return result.rows[0] || null;
+  const result = await db(TABLE_NAME)
+    .where({ manage_quotation_id: id, is_delete: false })
+    .update({
+      is_delete: true,
+      deleted_at: db.fn.now()
+    })
+    .returning('*');
+  
+  return result[0] || null;
 };
 
 /**
  * Restore soft deleted manage quotation
  */
 const restore = async (id) => {
-  const query = `
-    UPDATE ${TABLE_NAME}
-    SET is_delete = false, deleted_at = NULL, updated_at = NOW()
-    WHERE manage_quotation_id = $1 AND is_delete = true
-    RETURNING *
-  `;
+  if (!id) {
+    return null;
+  }
   
-  const result = await db.raw(query, [id]);
-  return result.rows[0] || null;
+  const result = await db(TABLE_NAME)
+    .where({ manage_quotation_id: id, is_delete: true })
+    .update({
+      is_delete: false,
+      deleted_at: null,
+      deleted_by: null,
+      updated_at: db.fn.now()
+    })
+    .returning('*');
+  
+  return result[0] || null;
 };
 
 /**
  * Hard delete manage quotation (permanent)
  */
 const hardDelete = async (id) => {
-  const query = `
-    DELETE FROM ${TABLE_NAME}
-    WHERE manage_quotation_id = $1
-  `;
+  if (!id) {
+    return false;
+  }
   
-  const result = await db.raw(query, [id]);
-  return result.rowCount > 0;
+  const result = await db(TABLE_NAME)
+    .where({ manage_quotation_id: id })
+    .del();
+  
+  return result > 0;
 };
 
 /**
@@ -247,6 +234,35 @@ const hardDelete = async (id) => {
  */
 
 const ITEMS_TABLE_NAME = 'manage_quotation_items';
+
+/**
+ * Validate item_product_id exists
+ */
+const validateItemProductIds = async (items) => {
+  if (!items || items.length === 0) {
+    return { isValid: true, invalidIds: [] };
+  }
+  
+  const invalidIds = [];
+  
+  for (const item of items) {
+    // Skip validation if item_product_id is null or empty
+    if (!item.item_product_id) {
+      continue;
+    }
+    
+    // Check if item_product_id exists
+    const product = await itemProductRepository.findById(item.item_product_id);
+    if (!product) {
+      invalidIds.push(item.item_product_id);
+    }
+  }
+  
+  return {
+    isValid: invalidIds.length === 0,
+    invalidIds
+  };
+};
 
 /**
  * Create quotation items
@@ -262,13 +278,6 @@ const createItems = async (manage_quotation_id, items, created_by) => {
     const fields = {
       manage_quotation_id: manage_quotation_id || null,
       item_product_id: item.item_product_id || null,
-      unit_code: item.unit_code || null,
-      unit_model: item.unit_model || null,
-      segment: item.segment || null,
-      msi_model: item.msi_model || null,
-      wheel_no: item.wheel_no || null,
-      engine: item.engine || null,
-      horse_power: item.horse_power || null,
       quantity: item.quantity || 1,
       price: item.price || null,
       total: item.total || null,
@@ -287,31 +296,67 @@ const createItems = async (manage_quotation_id, items, created_by) => {
 };
 
 /**
- * Get items by quotation ID
+ * Get items by quotation ID with JOIN to item_products
  */
 const getItemsByQuotationId = async (manage_quotation_id) => {
-  const query = `
-    SELECT * FROM ${ITEMS_TABLE_NAME}
-    WHERE manage_quotation_id = $1 AND is_delete = false
-    ORDER BY created_at ASC
-  `;
+  if (!manage_quotation_id) {
+    return [];
+  }
   
-  const result = await db.raw(query, [manage_quotation_id]);
-  return result.rows || [];
+  const result = await db(`${ITEMS_TABLE_NAME} as mqi`)
+    .select(
+      'mqi.manage_quotation_item_id',
+      'mqi.manage_quotation_id',
+      'mqi.item_product_id',
+      'mqi.quantity',
+      'mqi.price',
+      'mqi.total',
+      'mqi.description',
+      'mqi.created_by',
+      'mqi.updated_by',
+      'mqi.deleted_by',
+      'mqi.created_at',
+      'mqi.updated_at',
+      'mqi.deleted_at',
+      'mqi.is_delete',
+      // Data from item_products - using db.raw for aliases
+      db.raw('ip.item_product_code as unit_code'),
+      db.raw('ip.item_product_model as unit_model'),
+      db.raw('ip.item_product_segment as segment'),
+      db.raw('ip.item_product_msi_model as msi_model'),
+      db.raw('ip.item_product_wheel_no as wheel_no'),
+      db.raw('ip.item_product_engine as engine'),
+      db.raw('ip.item_product_horse_power as horse_power'),
+      'ip.item_product_market_price',
+      'ip.item_product_image'
+    )
+    .leftJoin('item_products as ip', function() {
+      this.on('mqi.item_product_id', '=', 'ip.item_product_id')
+          .andOn('ip.is_delete', '=', false);
+    })
+    .where('mqi.manage_quotation_id', manage_quotation_id)
+    .where('mqi.is_delete', false)
+    .orderBy('mqi.created_at', 'asc');
+  
+  return result || [];
 };
 
 /**
  * Delete items by quotation ID
  */
 const deleteItemsByQuotationId = async (manage_quotation_id) => {
-  const query = `
-    UPDATE ${ITEMS_TABLE_NAME}
-    SET is_delete = true, deleted_at = NOW()
-    WHERE manage_quotation_id = $1 AND is_delete = false
-  `;
+  if (!manage_quotation_id) {
+    return false;
+  }
   
-  const result = await db.raw(query, [manage_quotation_id]);
-  return result.rowCount > 0;
+  const result = await db(ITEMS_TABLE_NAME)
+    .where({ manage_quotation_id: manage_quotation_id, is_delete: false })
+    .update({
+      is_delete: true,
+      deleted_at: db.fn.now()
+    });
+  
+  return result > 0;
 };
 
 /**
@@ -336,6 +381,7 @@ module.exports = {
   remove,
   restore,
   hardDelete,
+  validateItemProductIds,
   createItems,
   getItemsByQuotationId,
   deleteItemsByQuotationId,

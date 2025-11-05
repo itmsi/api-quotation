@@ -168,13 +168,6 @@ const manageQuotationPaths = {
               manage_quotation_items: [
                 {
                   item_product_id: '123e4567-e89b-12d3-a456-426614174004',
-                  unit_code: '1234567890',
-                  unit_model: 'Model 2',
-                  segment: 'Segment 2',
-                  msi_model: 'MSI Model 2',
-                  wheel_no: 'Wheel No 2',
-                  engine: 'Engine 2',
-                  horse_power: '150',
                   quantity: 2,
                   price: '150000',
                   total: '300000',
@@ -320,13 +313,6 @@ const manageQuotationPaths = {
               manage_quotation_items: [
                 {
                   item_product_id: '123e4567-e89b-12d3-a456-426614174004',
-                  unit_code: '1234567890',
-                  unit_model: 'Model 1',
-                  segment: 'Segment 1',
-                  msi_model: 'MSI Model 1',
-                  wheel_no: 'Wheel No 1',
-                  engine: 'Engine 1',
-                  horse_power: '100',
                   quantity: 1,
                   price: '100000',
                   total: '100000',

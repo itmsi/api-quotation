@@ -78,6 +78,19 @@ const create = async (req, res) => {
     // Extract items from request body
     const { manage_quotation_items, ...quotationData } = req.body;
     
+    // Validate item_product_id if items provided
+    if (manage_quotation_items && manage_quotation_items.length > 0) {
+      const validation = await repository.validateItemProductIds(manage_quotation_items);
+      if (!validation.isValid) {
+        const invalidIdsList = validation.invalidIds.join(', ');
+        const response = mappingError(
+          `Item product dengan ID berikut tidak ditemukan: ${invalidIdsList}`,
+          400
+        );
+        return baseResponse(res, response);
+      }
+    }
+    
     // Add created_by
     quotationData.created_by = tokenData.created_by;
     
@@ -109,6 +122,19 @@ const update = async (req, res) => {
     
     // Extract items from request body
     const { manage_quotation_items, ...quotationData } = req.body;
+    
+    // Validate item_product_id if items provided
+    if (manage_quotation_items && manage_quotation_items.length > 0) {
+      const validation = await repository.validateItemProductIds(manage_quotation_items);
+      if (!validation.isValid) {
+        const invalidIdsList = validation.invalidIds.join(', ');
+        const response = mappingError(
+          `Item product dengan ID berikut tidak ditemukan: ${invalidIdsList}`,
+          400
+        );
+        return baseResponse(res, response);
+      }
+    }
     
     // Add updated_by
     quotationData.updated_by = tokenData.updated_by;
