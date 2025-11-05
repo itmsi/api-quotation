@@ -167,6 +167,7 @@ const manageQuotationPaths = {
               manage_quotation_description: 'Updated notes about the quotation',
               manage_quotation_items: [
                 {
+                  item_product_id: '123e4567-e89b-12d3-a456-426614174004',
                   unit_code: '1234567890',
                   unit_model: 'Model 2',
                   segment: 'Segment 2',
@@ -318,6 +319,7 @@ const manageQuotationPaths = {
               manage_quotation_description: 'Additional notes about the quotation',
               manage_quotation_items: [
                 {
+                  item_product_id: '123e4567-e89b-12d3-a456-426614174004',
                   unit_code: '1234567890',
                   unit_model: 'Model 1',
                   segment: 'Segment 1',

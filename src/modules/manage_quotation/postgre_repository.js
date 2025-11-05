@@ -261,6 +261,7 @@ const createItems = async (manage_quotation_id, items, created_by) => {
   for (const item of items) {
     const fields = {
       manage_quotation_id: manage_quotation_id || null,
+      item_product_id: item.item_product_id || null,
       unit_code: item.unit_code || null,
       unit_model: item.unit_model || null,
       segment: item.segment || null,

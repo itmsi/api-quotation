@@ -64,6 +64,10 @@ const createValidation = [
     .optional()
     .isArray({ min: 0 })
     .withMessage('Manage quotation items harus berupa array'),
+  body('manage_quotation_items.*.item_product_id')
+    .optional()
+    .isUUID()
+    .withMessage('Format item_product_id tidak valid'),
   body('manage_quotation_items.*.unit_code')
     .optional()
     .isLength({ max: 100 })
@@ -183,6 +187,10 @@ const updateValidation = [
     .optional()
     .isArray({ min: 0 })
     .withMessage('Manage quotation items harus berupa array'),
+  body('manage_quotation_items.*.item_product_id')
+    .optional()
+    .isUUID()
+    .withMessage('Format item_product_id tidak valid'),
   body('manage_quotation_items.*.unit_code')
     .optional()
     .isLength({ max: 100 })

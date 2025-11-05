@@ -231,6 +231,13 @@ const manageQuotationSchemas = {
         description: 'Parent quotation ID',
         example: '123e4567-e89b-12d3-a456-426614174000'
       },
+      item_product_id: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Item product ID reference',
+        example: '123e4567-e89b-12d3-a456-426614174004'
+      },
       unit_code: {
         type: 'string',
         nullable: true,
@@ -344,6 +351,13 @@ const manageQuotationSchemas = {
   ManageQuotationItemInput: {
     type: 'object',
     properties: {
+      item_product_id: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Item product ID reference',
+        example: '123e4567-e89b-12d3-a456-426614174004'
+      },
       unit_code: {
         type: 'string',
         maxLength: 100,
