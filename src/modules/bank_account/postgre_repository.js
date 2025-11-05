@@ -27,16 +27,18 @@ const ensureConnection = async () => {
 };
 
 /**
- * Build where clause for search
+ * Validate and sanitize sort column
  */
-const buildSearchWhere = (search) => {
-  if (!search || search.trim() === '') return '';
-  
-  return `AND (
-    LOWER(bank_account_name) LIKE LOWER('%${search}%') OR 
-    LOWER(bank_account_number) LIKE LOWER('%${search}%') OR 
-    LOWER(bank_account_type) LIKE LOWER('%${search}%')
-  )`;
+const validateSortBy = (sortBy) => {
+  const allowedColumns = ['bank_account_id', 'bank_account_name', 'bank_account_number', 'bank_account_type', 'bank_account_balance', 'created_at', 'updated_at'];
+  return allowedColumns.includes(sortBy) ? sortBy : 'created_at';
+};
+
+/**
+ * Validate and sanitize sort order
+ */
+const validateSortOrder = (sortOrder) => {
+  return ['asc', 'desc'].includes(sortOrder?.toLowerCase()) ? sortOrder.toLowerCase() : 'desc';
 };
 
 /**
@@ -47,35 +49,87 @@ const findAll = async (params) => {
   
   await ensureConnection();
   
-  const searchWhere = buildSearchWhere(search);
+  // Validate and sanitize sort parameters
+  const safeSortBy = validateSortBy(sortBy);
+  const safeSortOrder = validateSortOrder(sortOrder);
   
-  // Query data
-  const dataQuery = `
-    SELECT * FROM dblink('${DB_LINK_NAME}', 
-      'SELECT bank_account_id, bank_account_name, bank_account_number, bank_account_type, bank_account_balance, created_at, updated_at FROM bank_accounts WHERE is_delete = false ${searchWhere} ORDER BY ${sortBy} ${sortOrder} LIMIT ${limit} OFFSET ${offset}'
-    ) AS bank_accounts (
-      bank_account_id uuid,
-      bank_account_name varchar,
-      bank_account_number varchar,
-      bank_account_type varchar,
-      bank_account_balance numeric,
-      created_at timestamp,
-      updated_at timestamp
-    )
-  `;
+  // Validate limit and offset as numbers
+  const safeLimit = Math.max(parseInt(limit) || 10, 1);
+  const safeOffset = Math.max(parseInt(offset) || 0, 0);
   
-  const data = await db.raw(dataQuery);
+  // Build inner query string - don't use template literal interpolation for escaped values
+  let innerQueryArray = [
+    'SELECT bank_account_id, bank_account_name, bank_account_number, bank_account_type, bank_account_balance, created_at, updated_at FROM bank_accounts',
+    'WHERE is_delete = false'
+  ];
+  
+  if (search && search.trim()) {
+    // Escape search string properly using PostgreSQL quote_literal
+    const escapedSearchResult = await db.raw(`SELECT quote_literal(?) as escaped`, [`%${search.trim()}%`]);
+    const escapedSearch = escapedSearchResult.rows[0]?.escaped;
+    
+    // Build search condition using string concatenation
+    innerQueryArray.push('AND (');
+    innerQueryArray.push('LOWER(bank_account_name) LIKE LOWER(' + escapedSearch + ')');
+    innerQueryArray.push('OR');
+    innerQueryArray.push('LOWER(bank_account_number) LIKE LOWER(' + escapedSearch + ')');
+    innerQueryArray.push('OR');
+    innerQueryArray.push('LOWER(bank_account_type) LIKE LOWER(' + escapedSearch + ')');
+    innerQueryArray.push(')');
+  }
+  
+  innerQueryArray.push(`ORDER BY ${safeSortBy} ${safeSortOrder}`);
+  innerQueryArray.push(`LIMIT ${safeLimit}`);
+  innerQueryArray.push(`OFFSET ${safeOffset}`);
+  
+  // Join all parts
+  const innerQuery = innerQueryArray.join(' ');
+  
+  // Escape the entire inner query manually for dblink (double single quotes for single quotes)
+  const escapedInnerQuery = "'" + innerQuery.replace(/'/g, "''") + "'";
+  
+  // Build the final query
+  const finalQuery = `SELECT * FROM dblink('${DB_LINK_NAME}', ${escapedInnerQuery}) AS bank_accounts (
+    bank_account_id uuid,
+    bank_account_name varchar,
+    bank_account_number varchar,
+    bank_account_type varchar,
+    bank_account_balance numeric,
+    created_at timestamp,
+    updated_at timestamp
+  )`;
+  
+  const data = await db.raw(finalQuery);
   
   // Query total count
-  const countQuery = `
-    SELECT COUNT(*) as count FROM dblink('${DB_LINK_NAME}', 
-      'SELECT COUNT(*) as count FROM bank_accounts WHERE is_delete = false ${searchWhere}'
-    ) AS bank_accounts_count (
-      count bigint
-    )
-  `;
+  let countQueryArray = [
+    'SELECT COUNT(*) as count FROM bank_accounts',
+    'WHERE is_delete = false'
+  ];
   
-  const totalResult = await db.raw(countQuery);
+  if (search && search.trim()) {
+    // Escape search string properly using PostgreSQL quote_literal
+    const escapedSearchResult = await db.raw(`SELECT quote_literal(?) as escaped`, [`%${search.trim()}%`]);
+    const escapedSearch = escapedSearchResult.rows[0]?.escaped;
+    
+    countQueryArray.push('AND (');
+    countQueryArray.push('LOWER(bank_account_name) LIKE LOWER(' + escapedSearch + ')');
+    countQueryArray.push('OR');
+    countQueryArray.push('LOWER(bank_account_number) LIKE LOWER(' + escapedSearch + ')');
+    countQueryArray.push('OR');
+    countQueryArray.push('LOWER(bank_account_type) LIKE LOWER(' + escapedSearch + ')');
+    countQueryArray.push(')');
+  }
+  
+  const countInnerQuery = countQueryArray.join(' ');
+  // Escape the count query manually for dblink (double single quotes for single quotes)
+  const escapedCountQuery = "'" + countInnerQuery.replace(/'/g, "''") + "'";
+  
+  const countFinalQuery = `SELECT COUNT(*) as count FROM dblink('${DB_LINK_NAME}', ${escapedCountQuery}) AS bank_accounts_count (
+    count bigint
+  )`;
+  
+  const totalResult = await db.raw(countFinalQuery);
   const total = totalResult.rows[0]?.count || 0;
   
   return {
@@ -93,11 +147,26 @@ const findAll = async (params) => {
  * Find single bank account by ID
  */
 const findById = async (id) => {
+  if (!id) {
+    return null;
+  }
+  
   await ensureConnection();
+  
+  // Escape ID using PostgreSQL quote_literal
+  const escapedIdResult = await db.raw(`SELECT quote_literal(?) as escaped`, [id]);
+  const escapedId = escapedIdResult.rows[0]?.escaped;
+  
+  // Build inner query
+  const innerQuery = `SELECT bank_account_id, bank_account_name, bank_account_number, bank_account_type, bank_account_balance, created_at, updated_at FROM bank_accounts WHERE bank_account_id = ${escapedId} AND is_delete = false`;
+  
+  // Escape the entire inner query
+  const escapedQueryResult = await db.raw(`SELECT quote_literal(?) as escaped`, [innerQuery]);
+  const escapedInnerQuery = escapedQueryResult.rows[0]?.escaped;
   
   const query = `
     SELECT * FROM dblink('${DB_LINK_NAME}', 
-      'SELECT bank_account_id, bank_account_name, bank_account_number, bank_account_type, bank_account_balance, created_at, updated_at FROM bank_accounts WHERE bank_account_id = ''${id}'' AND is_delete = false'
+      ${escapedInnerQuery}
     ) AS bank_accounts (
       bank_account_id uuid,
       bank_account_name varchar,
@@ -117,15 +186,32 @@ const findById = async (id) => {
  * Find by custom condition
  */
 const findOne = async (conditions) => {
+  if (!conditions || Object.keys(conditions).length === 0) {
+    return null;
+  }
+  
   await ensureConnection();
   
-  const whereClause = Object.keys(conditions).map(key => 
-    `${key} = '${conditions[key]}'`
-  ).join(' AND ');
+  // Build where clause with escaped values
+  const whereParts = [];
+  for (const [key, value] of Object.entries(conditions)) {
+    const escapedValueResult = await db.raw(`SELECT quote_literal(?) as escaped`, [value]);
+    const escapedValue = escapedValueResult.rows[0]?.escaped;
+    whereParts.push(`${key} = ${escapedValue}`);
+  }
+  
+  const whereClause = whereParts.join(' AND ');
+  
+  // Build inner query
+  const innerQuery = `SELECT * FROM bank_accounts WHERE ${whereClause} AND is_delete = false LIMIT 1`;
+  
+  // Escape the entire inner query
+  const escapedQueryResult = await db.raw(`SELECT quote_literal(?) as escaped`, [innerQuery]);
+  const escapedInnerQuery = escapedQueryResult.rows[0]?.escaped;
   
   const query = `
     SELECT * FROM dblink('${DB_LINK_NAME}', 
-      'SELECT * FROM bank_accounts WHERE ${whereClause} AND is_delete = false LIMIT 1'
+      ${escapedInnerQuery}
     ) AS bank_accounts (
       bank_account_id uuid,
       bank_account_name varchar,
