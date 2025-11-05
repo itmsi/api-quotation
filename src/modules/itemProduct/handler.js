@@ -196,6 +196,19 @@ const create = async (req, res) => {
       item_product_selling_price_star_5: req.body.item_product_selling_price_star_5 || null,
       item_product_description: req.body.item_product_description || null,
       item_product_image: imageUrl,
+      item_product_drive_type: req.body.item_product_drive_type || null,
+      item_product_gvw: req.body.item_product_gvw || null,
+      item_product_wheel_base: req.body.item_product_wheel_base || null,
+      item_product_engine_brand_model: req.body.item_product_engine_brand_model || null,
+      item_product_power_output: req.body.item_product_power_output || null,
+      item_product_max_torque: req.body.item_product_max_torque || null,
+      item_product_displacement: req.body.item_product_displacement || null,
+      item_product_emission_standard: req.body.item_product_emission_standard || null,
+      item_product_engine_guard: req.body.item_product_engine_guard || null,
+      item_product_gearbox_transmission: req.body.item_product_gearbox_transmission || null,
+      item_product_fuel_tank_capacity: req.body.item_product_fuel_tank_capacity || null,
+      item_product_tire_size: req.body.item_product_tire_size || null,
+      item_product_cargobox_vessel: req.body.item_product_cargobox_vessel || null,
       created_by: tokenData.created_by
     };
     
@@ -259,6 +272,19 @@ const update = async (req, res) => {
       item_product_selling_price_star_4: req.body.item_product_selling_price_star_4,
       item_product_selling_price_star_5: req.body.item_product_selling_price_star_5,
       item_product_description: req.body.item_product_description,
+      item_product_drive_type: req.body.item_product_drive_type,
+      item_product_gvw: req.body.item_product_gvw,
+      item_product_wheel_base: req.body.item_product_wheel_base,
+      item_product_engine_brand_model: req.body.item_product_engine_brand_model,
+      item_product_power_output: req.body.item_product_power_output,
+      item_product_max_torque: req.body.item_product_max_torque,
+      item_product_displacement: req.body.item_product_displacement,
+      item_product_emission_standard: req.body.item_product_emission_standard,
+      item_product_engine_guard: req.body.item_product_engine_guard,
+      item_product_gearbox_transmission: req.body.item_product_gearbox_transmission,
+      item_product_fuel_tank_capacity: req.body.item_product_fuel_tank_capacity,
+      item_product_tire_size: req.body.item_product_tire_size,
+      item_product_cargobox_vessel: req.body.item_product_cargobox_vessel,
       updated_by: tokenData.updated_by
     };
     

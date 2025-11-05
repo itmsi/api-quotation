@@ -76,7 +76,72 @@ const createValidation = [
   body('item_product_image')
     .optional()
     .isString()
-    .withMessage('Item product image harus berupa string (URL)')
+    .withMessage('Item product image harus berupa string (URL)'),
+  body('item_product_drive_type')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product drive type maksimal 255 karakter')
+    .trim(),
+  body('item_product_gvw')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product GVW maksimal 255 karakter')
+    .trim(),
+  body('item_product_wheel_base')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product wheel base maksimal 255 karakter')
+    .trim(),
+  body('item_product_engine_brand_model')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product engine brand model maksimal 255 karakter')
+    .trim(),
+  body('item_product_power_output')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product power output maksimal 255 karakter')
+    .trim(),
+  body('item_product_max_torque')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product max torque maksimal 255 karakter')
+    .trim(),
+  body('item_product_displacement')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product displacement maksimal 255 karakter')
+    .trim(),
+  body('item_product_emission_standard')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product emission standard maksimal 255 karakter')
+    .trim(),
+  body('item_product_engine_guard')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product engine guard maksimal 255 karakter')
+    .trim(),
+  body('item_product_gearbox_transmission')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product gearbox transmission maksimal 255 karakter')
+    .trim(),
+  body('item_product_fuel_tank_capacity')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product fuel tank capacity maksimal 255 karakter')
+    .trim(),
+  body('item_product_tire_size')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product tire size maksimal 255 karakter')
+    .trim(),
+  body('item_product_cargobox_vessel')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product cargobox vessel maksimal 255 karakter')
+    .trim()
 ];
 
 /**
@@ -160,7 +225,72 @@ const updateValidation = [
   body('item_product_image')
     .optional()
     .isString()
-    .withMessage('Item product image harus berupa string (URL)')
+    .withMessage('Item product image harus berupa string (URL)'),
+  body('item_product_drive_type')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product drive type maksimal 255 karakter')
+    .trim(),
+  body('item_product_gvw')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product GVW maksimal 255 karakter')
+    .trim(),
+  body('item_product_wheel_base')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product wheel base maksimal 255 karakter')
+    .trim(),
+  body('item_product_engine_brand_model')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product engine brand model maksimal 255 karakter')
+    .trim(),
+  body('item_product_power_output')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product power output maksimal 255 karakter')
+    .trim(),
+  body('item_product_max_torque')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product max torque maksimal 255 karakter')
+    .trim(),
+  body('item_product_displacement')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product displacement maksimal 255 karakter')
+    .trim(),
+  body('item_product_emission_standard')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product emission standard maksimal 255 karakter')
+    .trim(),
+  body('item_product_engine_guard')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product engine guard maksimal 255 karakter')
+    .trim(),
+  body('item_product_gearbox_transmission')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product gearbox transmission maksimal 255 karakter')
+    .trim(),
+  body('item_product_fuel_tank_capacity')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product fuel tank capacity maksimal 255 karakter')
+    .trim(),
+  body('item_product_tire_size')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product tire size maksimal 255 karakter')
+    .trim(),
+  body('item_product_cargobox_vessel')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Item product cargobox vessel maksimal 255 karakter')
+    .trim()
 ];
 
 /**

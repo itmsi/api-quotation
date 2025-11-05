@@ -116,6 +116,19 @@ const create = async (data) => {
     item_product_selling_price_star_5: data.item_product_selling_price_star_5 || null,
     item_product_description: data.item_product_description || null,
     item_product_image: data.item_product_image || null,
+    item_product_drive_type: data.item_product_drive_type || null,
+    item_product_gvw: data.item_product_gvw || null,
+    item_product_wheel_base: data.item_product_wheel_base || null,
+    item_product_engine_brand_model: data.item_product_engine_brand_model || null,
+    item_product_power_output: data.item_product_power_output || null,
+    item_product_max_torque: data.item_product_max_torque || null,
+    item_product_displacement: data.item_product_displacement || null,
+    item_product_emission_standard: data.item_product_emission_standard || null,
+    item_product_engine_guard: data.item_product_engine_guard || null,
+    item_product_gearbox_transmission: data.item_product_gearbox_transmission || null,
+    item_product_fuel_tank_capacity: data.item_product_fuel_tank_capacity || null,
+    item_product_tire_size: data.item_product_tire_size || null,
+    item_product_cargobox_vessel: data.item_product_cargobox_vessel || null,
     created_by: data.created_by || null
   };
   
@@ -147,6 +160,19 @@ const update = async (id, data) => {
   if (data.item_product_selling_price_star_5 !== undefined) updateFields.item_product_selling_price_star_5 = data.item_product_selling_price_star_5;
   if (data.item_product_description !== undefined) updateFields.item_product_description = data.item_product_description;
   if (data.item_product_image !== undefined) updateFields.item_product_image = data.item_product_image;
+  if (data.item_product_drive_type !== undefined) updateFields.item_product_drive_type = data.item_product_drive_type;
+  if (data.item_product_gvw !== undefined) updateFields.item_product_gvw = data.item_product_gvw;
+  if (data.item_product_wheel_base !== undefined) updateFields.item_product_wheel_base = data.item_product_wheel_base;
+  if (data.item_product_engine_brand_model !== undefined) updateFields.item_product_engine_brand_model = data.item_product_engine_brand_model;
+  if (data.item_product_power_output !== undefined) updateFields.item_product_power_output = data.item_product_power_output;
+  if (data.item_product_max_torque !== undefined) updateFields.item_product_max_torque = data.item_product_max_torque;
+  if (data.item_product_displacement !== undefined) updateFields.item_product_displacement = data.item_product_displacement;
+  if (data.item_product_emission_standard !== undefined) updateFields.item_product_emission_standard = data.item_product_emission_standard;
+  if (data.item_product_engine_guard !== undefined) updateFields.item_product_engine_guard = data.item_product_engine_guard;
+  if (data.item_product_gearbox_transmission !== undefined) updateFields.item_product_gearbox_transmission = data.item_product_gearbox_transmission;
+  if (data.item_product_fuel_tank_capacity !== undefined) updateFields.item_product_fuel_tank_capacity = data.item_product_fuel_tank_capacity;
+  if (data.item_product_tire_size !== undefined) updateFields.item_product_tire_size = data.item_product_tire_size;
+  if (data.item_product_cargobox_vessel !== undefined) updateFields.item_product_cargobox_vessel = data.item_product_cargobox_vessel;
   if (data.updated_by !== undefined) updateFields.updated_by = data.updated_by;
   
   if (Object.keys(updateFields).length === 0) {

@@ -102,6 +102,84 @@ const itemProductSchemas = {
         description: 'Product image URL',
         example: 'https://example.com/image.jpg'
       },
+      item_product_drive_type: {
+        type: 'string',
+        nullable: true,
+        description: 'Drive type',
+        example: '4x2'
+      },
+      item_product_gvw: {
+        type: 'string',
+        nullable: true,
+        description: 'Gross Vehicle Weight',
+        example: '7500 kg'
+      },
+      item_product_wheel_base: {
+        type: 'string',
+        nullable: true,
+        description: 'Wheel base',
+        example: '3800 mm'
+      },
+      item_product_engine_brand_model: {
+        type: 'string',
+        nullable: true,
+        description: 'Engine brand and model',
+        example: 'Cummins ISF 3.8L'
+      },
+      item_product_power_output: {
+        type: 'string',
+        nullable: true,
+        description: 'Power output',
+        example: '150 HP'
+      },
+      item_product_max_torque: {
+        type: 'string',
+        nullable: true,
+        description: 'Maximum torque',
+        example: '500 Nm'
+      },
+      item_product_displacement: {
+        type: 'string',
+        nullable: true,
+        description: 'Engine displacement',
+        example: '3800 cc'
+      },
+      item_product_emission_standard: {
+        type: 'string',
+        nullable: true,
+        description: 'Emission standard',
+        example: 'Euro 4'
+      },
+      item_product_engine_guard: {
+        type: 'string',
+        nullable: true,
+        description: 'Engine guard',
+        example: 'Yes'
+      },
+      item_product_gearbox_transmission: {
+        type: 'string',
+        nullable: true,
+        description: 'Gearbox transmission',
+        example: 'Manual 6-speed'
+      },
+      item_product_fuel_tank_capacity: {
+        type: 'string',
+        nullable: true,
+        description: 'Fuel tank capacity',
+        example: '150 L'
+      },
+      item_product_tire_size: {
+        type: 'string',
+        nullable: true,
+        description: 'Tire size',
+        example: '215/75R16'
+      },
+      item_product_cargobox_vessel: {
+        type: 'string',
+        nullable: true,
+        description: 'Cargobox vessel',
+        example: '12 m³'
+      },
       created_at: {
         type: 'string',
         format: 'date-time',
@@ -239,6 +317,84 @@ const itemProductSchemas = {
         type: 'string',
         format: 'binary',
         description: 'Product image file (jpg, jpeg, png, gif, webp)'
+      },
+      item_product_drive_type: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Drive type',
+        example: '4x2'
+      },
+      item_product_gvw: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Gross Vehicle Weight',
+        example: '7500 kg'
+      },
+      item_product_wheel_base: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Wheel base',
+        example: '3800 mm'
+      },
+      item_product_engine_brand_model: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Engine brand and model',
+        example: 'Cummins ISF 3.8L'
+      },
+      item_product_power_output: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Power output',
+        example: '150 HP'
+      },
+      item_product_max_torque: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Maximum torque',
+        example: '500 Nm'
+      },
+      item_product_displacement: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Engine displacement',
+        example: '3800 cc'
+      },
+      item_product_emission_standard: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Emission standard',
+        example: 'Euro 4'
+      },
+      item_product_engine_guard: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Engine guard',
+        example: 'Yes'
+      },
+      item_product_gearbox_transmission: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Gearbox transmission',
+        example: 'Manual 6-speed'
+      },
+      item_product_fuel_tank_capacity: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Fuel tank capacity',
+        example: '150 L'
+      },
+      item_product_tire_size: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Tire size',
+        example: '215/75R16'
+      },
+      item_product_cargobox_vessel: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Cargobox vessel',
+        example: '12 m³'
       }
     }
   },
