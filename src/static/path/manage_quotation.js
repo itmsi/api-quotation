@@ -165,6 +165,7 @@ const manageQuotationPaths = {
               manage_quotation_payment_presentase: '40',
               manage_quotation_payment_nominal: '480000',
               manage_quotation_description: 'Updated notes about the quotation',
+              status: 'draft',
               manage_quotation_items: [
                 {
                   item_product_id: '123e4567-e89b-12d3-a456-426614174004',
@@ -310,6 +311,7 @@ const manageQuotationPaths = {
               manage_quotation_payment_presentase: '50',
               manage_quotation_payment_nominal: '500000',
               manage_quotation_description: 'Additional notes about the quotation',
+              status: 'submit',
               manage_quotation_items: [
                 {
                   item_product_id: '123e4567-e89b-12d3-a456-426614174004',

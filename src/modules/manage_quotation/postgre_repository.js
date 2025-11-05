@@ -25,6 +25,7 @@ const findAll = async (params) => {
       'manage_quotation_payment_presentase',
       'manage_quotation_payment_nominal',
       'manage_quotation_description',
+      'status',
       'created_by',
       'updated_by',
       'deleted_by',
@@ -129,6 +130,7 @@ const create = async (data) => {
     manage_quotation_payment_presentase: data.manage_quotation_payment_presentase || null,
     manage_quotation_payment_nominal: data.manage_quotation_payment_nominal || null,
     manage_quotation_description: data.manage_quotation_description || null,
+    status: data.status || 'submit',
     created_by: data.created_by || null
   };
   
@@ -156,6 +158,7 @@ const update = async (id, data) => {
   if (data.manage_quotation_payment_presentase !== undefined) updateFields.manage_quotation_payment_presentase = data.manage_quotation_payment_presentase;
   if (data.manage_quotation_payment_nominal !== undefined) updateFields.manage_quotation_payment_nominal = data.manage_quotation_payment_nominal;
   if (data.manage_quotation_description !== undefined) updateFields.manage_quotation_description = data.manage_quotation_description;
+  if (data.status !== undefined) updateFields.status = data.status;
   if (data.updated_by !== undefined) updateFields.updated_by = data.updated_by;
   if (data.deleted_by !== undefined) updateFields.deleted_by = data.deleted_by;
   

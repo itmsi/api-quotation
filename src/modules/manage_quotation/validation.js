@@ -60,6 +60,10 @@ const createValidation = [
   body('manage_quotation_description')
     .optional()
     .trim(),
+  body('status')
+    .optional()
+    .isIn(['draft', 'submit'])
+    .withMessage('Status harus salah satu dari: draft, submit'),
   body('manage_quotation_items')
     .optional()
     .isArray({ min: 0 })
@@ -150,6 +154,10 @@ const updateValidation = [
   body('manage_quotation_description')
     .optional()
     .trim(),
+  body('status')
+    .optional()
+    .isIn(['draft', 'submit'])
+    .withMessage('Status harus salah satu dari: draft, submit'),
   body('manage_quotation_items')
     .optional()
     .isArray({ min: 0 })

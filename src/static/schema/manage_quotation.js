@@ -88,6 +88,13 @@ const manageQuotationSchemas = {
         description: 'Description',
         example: 'Additional notes about the quotation'
       },
+      status: {
+        type: 'string',
+        enum: ['draft', 'submit'],
+        description: 'Quotation status',
+        example: 'submit',
+        default: 'submit'
+      },
       created_by: {
         type: 'string',
         format: 'uuid',
@@ -208,6 +215,13 @@ const manageQuotationSchemas = {
         type: 'string',
         description: 'Description',
         example: 'Additional notes about the quotation'
+      },
+      status: {
+        type: 'string',
+        enum: ['draft', 'submit'],
+        description: 'Quotation status',
+        example: 'submit',
+        default: 'submit'
       },
       manage_quotation_items: {
         type: 'array',
