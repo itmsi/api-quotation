@@ -30,7 +30,9 @@ const salesSchema = require('./schema/sales');
 const bankAccountSchema = require('./schema/bank_account');
 const manageQuotationSchema = require('./schema/manage_quotation');
 const termContentSchema = require('./schema/term_content');
-const itemProductSchema = require('./schema/item_product');
+// const itemProductSchema = require('./schema/item_product');
+const componenProductSchema = require('./schema/componen_product');
+const accessorySchema = require('./schema/accessory');
 
 // Import paths
 // Tambahkan path module Anda di sini
@@ -40,7 +42,9 @@ const salesPaths = require('./path/sales');
 const bankAccountPaths = require('./path/bank_account');
 const manageQuotationPaths = require('./path/manage_quotation');
 const termContentPaths = require('./path/term_content');
-const itemProductPaths = require('./path/item_product');
+// const itemProductPaths = require('./path/item_product');
+const componenProductPaths = require('./path/componen_product');
+const accessoryPaths = require('./path/accessory');
 
 // Combine all schemas
 const schemas = {
@@ -50,7 +54,9 @@ const schemas = {
   ...bankAccountSchema,
   ...manageQuotationSchema,
   ...termContentSchema,
-  ...itemProductSchema,
+  // ...itemProductSchema,
+  ...componenProductSchema,
+  ...accessorySchema,
   // ...yourModuleSchema,
 };
 
@@ -62,7 +68,9 @@ const paths = {
   ...bankAccountPaths,
   ...manageQuotationPaths,
   ...termContentPaths,
-  ...itemProductPaths,
+  // ...itemProductPaths,
+  ...componenProductPaths,
+  ...accessoryPaths,
   // ...yourModulePaths,
 };
 

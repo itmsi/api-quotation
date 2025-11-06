@@ -1,0 +1,306 @@
+/**
+ * Swagger Schema Definitions for Componen Product Module
+ */
+
+const componenProductSchemas = {
+  ComponenProduct: {
+    type: 'object',
+    properties: {
+      componen_product_id: {
+        type: 'string',
+        format: 'uuid',
+        description: 'Unique identifier',
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      },
+      product_dimensi_id: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Product dimensi ID',
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      },
+      componen_type: {
+        type: 'integer',
+        nullable: true,
+        enum: [1, 2, 3],
+        description: 'Componen type (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR)',
+        example: 1
+      },
+      code_unique: {
+        type: 'string',
+        nullable: true,
+        description: 'Unique code',
+        example: 'CP-001'
+      },
+      segment: {
+        type: 'string',
+        nullable: true,
+        description: 'Segment',
+        example: 'Segment A'
+      },
+      msi_model: {
+        type: 'string',
+        nullable: true,
+        description: 'MSI model',
+        example: 'MSI-001'
+      },
+      wheel_no: {
+        type: 'string',
+        nullable: true,
+        description: 'Wheel number',
+        example: 'WHEEL-001'
+      },
+      engine: {
+        type: 'string',
+        nullable: true,
+        description: 'Engine type',
+        example: 'Engine V8'
+      },
+      horse_power: {
+        type: 'string',
+        nullable: true,
+        description: 'Horse power',
+        example: '200 HP'
+      },
+      market_price: {
+        type: 'string',
+        nullable: true,
+        description: 'Market price',
+        example: '10000000'
+      },
+      selling_price_star_1: {
+        type: 'string',
+        nullable: true,
+        description: 'Selling price star 1',
+        example: '9500000'
+      },
+      selling_price_star_2: {
+        type: 'string',
+        nullable: true,
+        description: 'Selling price star 2',
+        example: '9000000'
+      },
+      selling_price_star_3: {
+        type: 'string',
+        nullable: true,
+        description: 'Selling price star 3',
+        example: '8500000'
+      },
+      selling_price_star_4: {
+        type: 'string',
+        nullable: true,
+        description: 'Selling price star 4',
+        example: '8000000'
+      },
+      selling_price_star_5: {
+        type: 'string',
+        nullable: true,
+        description: 'Selling price star 5',
+        example: '7500000'
+      },
+      image: {
+        type: 'string',
+        nullable: true,
+        description: 'Product image URL',
+        example: 'https://example.com/image.jpg'
+      },
+      componen_product_description: {
+        type: 'string',
+        nullable: true,
+        description: 'Product description',
+        example: 'This is a componen product description'
+      },
+      created_at: {
+        type: 'string',
+        format: 'date-time',
+        description: 'Creation timestamp',
+        example: '2025-02-23T00:00:00.000Z'
+      },
+      created_by: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Creator UUID',
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      },
+      updated_at: {
+        type: 'string',
+        format: 'date-time',
+        description: 'Last update timestamp',
+        example: '2025-02-23T00:00:00.000Z'
+      },
+      updated_by: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Updater UUID',
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      },
+      deleted_at: {
+        type: 'string',
+        format: 'date-time',
+        nullable: true,
+        description: 'Deletion timestamp (null if not deleted)',
+        example: null
+      },
+      deleted_by: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Deleter UUID',
+        example: null
+      },
+      is_delete: {
+        type: 'boolean',
+        description: 'Soft delete flag',
+        example: false
+      }
+    }
+  },
+  ComponenProductInput: {
+    type: 'object',
+    properties: {
+      product_dimensi_id: {
+        type: 'string',
+        format: 'uuid',
+        description: 'Product dimensi ID',
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      },
+      componen_type: {
+        type: 'integer',
+        enum: [1, 2, 3],
+        description: 'Componen type (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR)',
+        example: 1
+      },
+      code_unique: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Unique code',
+        example: 'CP-001'
+      },
+      segment: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Segment',
+        example: 'Segment A'
+      },
+      msi_model: {
+        type: 'string',
+        maxLength: 255,
+        description: 'MSI model',
+        example: 'MSI-001'
+      },
+      wheel_no: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Wheel number',
+        example: 'WHEEL-001'
+      },
+      engine: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Engine type',
+        example: 'Engine V8'
+      },
+      horse_power: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Horse power',
+        example: '200 HP'
+      },
+      market_price: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Market price',
+        example: '10000000'
+      },
+      selling_price_star_1: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Selling price star 1',
+        example: '9500000'
+      },
+      selling_price_star_2: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Selling price star 2',
+        example: '9000000'
+      },
+      selling_price_star_3: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Selling price star 3',
+        example: '8500000'
+      },
+      selling_price_star_4: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Selling price star 4',
+        example: '8000000'
+      },
+      selling_price_star_5: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Selling price star 5',
+        example: '7500000'
+      },
+      image: {
+        type: 'string',
+        format: 'binary',
+        description: 'Product image file (jpg, jpeg, png, gif, webp)'
+      },
+      componen_product_description: {
+        type: 'string',
+        description: 'Product description',
+        example: 'This is a componen product description'
+      }
+    }
+  },
+  Pagination: {
+    type: 'object',
+    properties: {
+      page: {
+        type: 'integer',
+        description: 'Current page number',
+        example: 1
+      },
+      limit: {
+        type: 'integer',
+        description: 'Items per page',
+        example: 10
+      },
+      total: {
+        type: 'integer',
+        description: 'Total number of items',
+        example: 100
+      },
+      totalPages: {
+        type: 'integer',
+        description: 'Total number of pages',
+        example: 10
+      }
+    }
+  },
+  ErrorResponse: {
+    type: 'object',
+    properties: {
+      success: {
+        type: 'boolean',
+        example: false
+      },
+      error: {
+        type: 'string',
+        description: 'Error message',
+        example: 'Data tidak ditemukan'
+      },
+      details: {
+        type: 'object',
+        description: 'Additional error details',
+        nullable: true
+      }
+    }
+  }
+};
+
+module.exports = componenProductSchemas;
+

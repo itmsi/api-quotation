@@ -42,6 +42,14 @@ routing.use(`${API_TAG}/term_content`, termContentModule)
 const itemProductModule = require('../../modules/itemProduct')
 routing.use(`${API_TAG}/item_product`, itemProductModule)
 
+// Componen Product Module
+const componenProductModule = require('../../modules/componen_product')
+routing.use(`${API_TAG}/componen_product`, componenProductModule)
+
+// Accessory Module
+const accessoryModule = require('../../modules/accessory')
+routing.use(`${API_TAG}/accessory`, accessoryModule)
+
 // Tambahkan routes module Anda di sini
 // Example:
 // const yourModule = require('../../modules/yourModule')
