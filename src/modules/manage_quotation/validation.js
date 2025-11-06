@@ -79,7 +79,7 @@ const createValidation = [
   body('term_content_directory')
     .optional()
     .custom((value) => {
-      // Allow null, empty string, object, or valid JSON string
+      // Allow null, empty string, object, or any string (JSON or plain string)
       if (value === null || value === undefined || value === '') {
         return true;
       }
@@ -87,16 +87,12 @@ const createValidation = [
         return true;
       }
       if (typeof value === 'string') {
-        try {
-          JSON.parse(value);
-          return true;
-        } catch (e) {
-          return false;
-        }
+        // Allow any string - handler will handle JSON parsing or use as plain string
+        return true;
       }
       return false;
     })
-    .withMessage('term_content_directory harus berupa object atau string JSON yang valid'),
+    .withMessage('term_content_directory harus berupa object atau string'),
   body('status')
     .optional()
     .isIn(['draft', 'submit'])
@@ -225,7 +221,7 @@ const updateValidation = [
   body('term_content_directory')
     .optional()
     .custom((value) => {
-      // Allow null, empty string, object, or valid JSON string
+      // Allow null, empty string, object, or any string (JSON or plain string)
       if (value === null || value === undefined || value === '') {
         return true;
       }
@@ -233,16 +229,12 @@ const updateValidation = [
         return true;
       }
       if (typeof value === 'string') {
-        try {
-          JSON.parse(value);
-          return true;
-        } catch (e) {
-          return false;
-        }
+        // Allow any string - handler will handle JSON parsing or use as plain string
+        return true;
       }
       return false;
     })
-    .withMessage('term_content_directory harus berupa object atau string JSON yang valid'),
+    .withMessage('term_content_directory harus berupa object atau string'),
   body('status')
     .optional()
     .isIn(['draft', 'submit'])
