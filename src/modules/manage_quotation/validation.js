@@ -4,11 +4,8 @@ const { body, param } = require('express-validator');
  * Validation rules for creating manage quotation
  */
 const createValidation = [
-  body('manage_quotation_no')
-    .optional()
-    .isLength({ max: 100 })
-    .withMessage('Nomor quotation maksimal 100 karakter')
-    .trim(),
+  // manage_quotation_no tidak perlu di-validate karena akan di-generate otomatis
+  // jika status = submit, dan tidak akan di-generate jika status = draft
   body('customer_id')
     .optional()
     .isUUID()
@@ -128,11 +125,8 @@ const updateValidation = [
     .withMessage('ID wajib diisi')
     .isUUID()
     .withMessage('Format ID tidak valid'),
-  body('manage_quotation_no')
-    .optional()
-    .isLength({ max: 100 })
-    .withMessage('Nomor quotation maksimal 100 karakter')
-    .trim(),
+  // manage_quotation_no tidak perlu di-validate karena akan di-generate otomatis
+  // jika status berubah ke submit dan belum ada nomor
   body('customer_id')
     .optional()
     .isUUID()

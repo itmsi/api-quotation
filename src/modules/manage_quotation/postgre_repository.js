@@ -1,4 +1,5 @@
 const db = require('../../config/database');
+const moment = require('moment');
 const componenProductRepository = require('../componen_product/postgre_repository');
 const accessoryRepository = require('../accessory/postgre_repository');
 
@@ -117,12 +118,57 @@ const findOne = async (conditions) => {
 };
 
 /**
+ * Generate quotation number with format: 001/IEC-MSI/2025
+ * Format: {sequence}/IEC-MSI/{year}
+ * Sequence increments per year, resets to 001 when year changes
+ */
+const generateQuotationNumber = async () => {
+  const currentYear = moment().format('YYYY');
+  const prefix = 'IEC-MSI';
+  
+  // Find the last quotation number for current year
+  // Extract sequence number (first 3 digits before '/') and sort numerically
+  const lastQuotation = await db(TABLE_NAME)
+    .select('manage_quotation_no')
+    .where('is_delete', false)
+    .whereNotNull('manage_quotation_no')
+    .whereRaw(`manage_quotation_no LIKE '%/${prefix}/${currentYear}'`)
+    .orderByRaw(`CAST(SPLIT_PART(manage_quotation_no, '/', 1) AS INTEGER) DESC`)
+    .first();
+  
+  let sequence = 1;
+  
+  if (lastQuotation && lastQuotation.manage_quotation_no) {
+    // Extract sequence number from last quotation number
+    // Format: 001/IEC-MSI/2025
+    const parts = lastQuotation.manage_quotation_no.split('/');
+    if (parts.length === 3 && parts[1] === prefix && parts[2] === currentYear) {
+      const lastSequence = parseInt(parts[0], 10);
+      if (!isNaN(lastSequence) && lastSequence > 0) {
+        sequence = lastSequence + 1;
+      }
+    }
+  }
+  
+  // Format sequence with leading zeros (001, 002, etc.)
+  const sequenceStr = String(sequence).padStart(3, '0');
+  
+  return `${sequenceStr}/${prefix}/${currentYear}`;
+};
+
+/**
  * Create new manage quotation
  */
 const create = async (data) => {
+  // Generate quotation number if status is submit and no number provided
+  let quotationNumber = data.manage_quotation_no || null;
+  if (data.status === 'submit' && !quotationNumber) {
+    quotationNumber = await generateQuotationNumber();
+  }
+  
   // Build fields object - include all expected fields
   const fields = {
-    manage_quotation_no: data.manage_quotation_no || null,
+    manage_quotation_no: quotationNumber,
     customer_id: data.customer_id || null,
     employee_id: data.employee_id || null,
     manage_quotation_date: data.manage_quotation_date || null,
@@ -152,6 +198,15 @@ const create = async (data) => {
  * Update existing manage quotation
  */
 const update = async (id, data) => {
+  // Check if status is changing to submit and quotation number is not set
+  if (data.status === 'submit') {
+    const existingQuotation = await findById(id);
+    if (existingQuotation && !existingQuotation.manage_quotation_no) {
+      // Generate quotation number if status is submit and no number exists
+      data.manage_quotation_no = await generateQuotationNumber();
+    }
+  }
+  
   const updateFields = {};
   if (data.manage_quotation_no !== undefined) updateFields.manage_quotation_no = data.manage_quotation_no;
   if (data.customer_id !== undefined) updateFields.customer_id = data.customer_id;
@@ -530,6 +585,7 @@ module.exports = {
   remove,
   restore,
   hardDelete,
+  generateQuotationNumber,
   validateComponenProductIds,
   createItems,
   getItemsByQuotationId,

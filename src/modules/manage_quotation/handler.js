@@ -80,7 +80,8 @@ const create = async (req, res) => {
     const tokenData = decodeToken('created', req);
     
     // Extract items and accessories from request body
-    const { manage_quotation_items, manage_quotation_item_accessories, ...quotationData } = req.body;
+    // Remove manage_quotation_no from body as it will be auto-generated if status is submit
+    const { manage_quotation_items, manage_quotation_item_accessories, manage_quotation_no, ...quotationData } = req.body;
     
     // Validate componen_product_id if items provided
     if (manage_quotation_items && manage_quotation_items.length > 0) {
@@ -143,7 +144,8 @@ const update = async (req, res) => {
     const tokenData = decodeToken('updated', req);
     
     // Extract items and accessories from request body
-    const { manage_quotation_items, manage_quotation_item_accessories, ...quotationData } = req.body;
+    // Remove manage_quotation_no from body as it will be auto-generated if status changes to submit
+    const { manage_quotation_items, manage_quotation_item_accessories, manage_quotation_no, ...quotationData } = req.body;
     
     // Validate componen_product_id if items provided
     if (manage_quotation_items && manage_quotation_items.length > 0) {
