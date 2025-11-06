@@ -12,16 +12,12 @@ const termContentSchemas = {
         description: 'Unique identifier term content',
         example: '123e4567-e89b-12d3-a456-426614174000'
       },
-      manage_quotation_id: {
+      term_content_title: {
         type: 'string',
-        format: 'uuid',
-        description: 'Relasi ke manage quotation',
-        example: '123e4567-e89b-12d3-a456-426614174001'
-      },
-      manage_quotation_no: {
-        type: 'string',
-        description: 'Nomor manage quotation',
-        example: 'QUO-2025-001'
+        nullable: true,
+        maxLength: 255,
+        description: 'Judul term content',
+        example: 'Term & Condition'
       },
       term_content_directory: {
         type: 'string',
@@ -78,12 +74,14 @@ const termContentSchemas = {
   },
   TermContentCreateInput: {
     type: 'object',
-    required: ['manage_quotation_no', 'term_content_directory'],
+    required: ['term_content_directory'],
     properties: {
-      manage_quotation_no: {
+      term_content_title: {
         type: 'string',
-        description: 'Nomor manage quotation',
-        example: 'QUO-2025-001'
+        nullable: true,
+        maxLength: 255,
+        description: 'Judul term content',
+        example: 'Term & Condition'
       },
       term_content_directory: {
         oneOf: [
@@ -110,10 +108,12 @@ const termContentSchemas = {
   TermContentUpdateInput: {
     type: 'object',
     properties: {
-      manage_quotation_no: {
+      term_content_title: {
         type: 'string',
-        description: 'Nomor manage quotation baru',
-        example: 'QUO-2025-002'
+        nullable: true,
+        maxLength: 255,
+        description: 'Judul term content',
+        example: 'Updated Term & Condition'
       },
       term_content_directory: {
         oneOf: [
@@ -152,12 +152,12 @@ const termContentSchemas = {
       },
       search: {
         type: 'string',
-        description: 'Kata kunci pencarian (nomor quotation atau path)',
-        example: 'QUO-2025'
+        description: 'Kata kunci pencarian (title atau path)',
+        example: 'Term & Condition'
       },
       sort_by: {
         type: 'string',
-        enum: ['created_at', 'manage_quotation_no'],
+        enum: ['created_at', 'term_content_title'],
         description: 'Kolom untuk sorting',
         example: 'created_at',
         default: 'created_at'

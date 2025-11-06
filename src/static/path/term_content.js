@@ -88,7 +88,7 @@ const termContentPaths = {
           'application/json': {
             schema: { $ref: '#/components/schemas/TermContentCreateInput' },
             example: {
-              manage_quotation_no: 'QUO-2025-001',
+              term_content_title: 'Term & Condition',
               term_content_directory: {
                 title: 'Term & Condition',
                 items: [
@@ -226,7 +226,7 @@ const termContentPaths = {
           'application/json': {
             schema: { $ref: '#/components/schemas/TermContentUpdateInput' },
             example: {
-              manage_quotation_no: 'QUO-2025-002',
+              term_content_title: 'Updated Term & Condition',
               term_content_directory: {
                 title: 'Updated Term & Condition',
                 items: [

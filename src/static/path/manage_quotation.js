@@ -153,7 +153,6 @@ const manageQuotationPaths = {
           'application/json': {
             schema: { $ref: '#/components/schemas/ManageQuotationInput' },
             example: {
-              manage_quotation_no: 'QUO-2025-002',
               customer_id: '7dbe5e70-87c4-4761-82de-9d9f54eea45f',
               employee_id: '3659340c-46b0-43f5-bf5c-d1d0222eb7f9',
               manage_quotation_date: '2025-01-15',
@@ -168,6 +167,14 @@ const manageQuotationPaths = {
               manage_quotation_shipping_term: '',
               manage_quotation_franco: '',
               manage_quotation_lead_time: '',
+              term_content_id: '123e4567-e89b-12d3-a456-426614174000',
+              term_content_directory: {
+                title: 'Updated Term & Condition',
+                items: [
+                  'Pembayaran dilakukan 7 hari setelah invoice',
+                  'Pengiriman dilakukan dalam 5 hari kerja'
+                ]
+              },
               status: 'draft',
               manage_quotation_items: [
                 {
@@ -309,7 +316,6 @@ const manageQuotationPaths = {
           'application/json': {
             schema: { $ref: '#/components/schemas/ManageQuotationInput' },
             example: {
-              manage_quotation_no: 'QUO-2025-001',
               customer_id: '7dbe5e70-87c4-4761-82de-9d9f54eea45f',
               employee_id: '3659340c-46b0-43f5-bf5c-d1d0222eb7f9',
               manage_quotation_date: '2025-01-15',
@@ -324,6 +330,14 @@ const manageQuotationPaths = {
               manage_quotation_shipping_term: '',
               manage_quotation_franco: '',
               manage_quotation_lead_time: '',
+              term_content_id: '123e4567-e89b-12d3-a456-426614174000',
+              term_content_directory: {
+                title: 'Term & Condition',
+                items: [
+                  'Pembayaran dilakukan 14 hari setelah invoice',
+                  'Pengiriman dilakukan dalam 7 hari kerja'
+                ]
+              },
               status: 'submit',
               manage_quotation_items: [
                 {

@@ -1,14 +1,12 @@
 const db = require('../../config/database');
 
 const TABLE_NAME = 'term_contents';
-const MANAGE_QUOTATIONS_TABLE = 'manage_quotations';
 
 const baseSelectColumns = () => (
   db
     .select(
       'term_contents.term_content_id',
-      'term_contents.manage_quotation_id',
-      'manage_quotations.manage_quotation_no',
+      'term_contents.term_content_title',
       'term_contents.term_content_directory',
       'term_contents.created_by',
       'term_contents.updated_by',
@@ -19,11 +17,6 @@ const baseSelectColumns = () => (
       'term_contents.is_delete'
     )
     .from({ term_contents: TABLE_NAME })
-    .leftJoin(
-      { manage_quotations: MANAGE_QUOTATIONS_TABLE },
-      'term_contents.manage_quotation_id',
-      'manage_quotations.manage_quotation_id'
-    )
 );
 
 const findAll = async (params) => {
@@ -42,7 +35,7 @@ const findAll = async (params) => {
     const searchPattern = `%${search.toLowerCase()}%`;
     query = query.andWhere((builder) => {
       builder
-        .whereRaw('LOWER(manage_quotations.manage_quotation_no) LIKE ?', [searchPattern])
+        .whereRaw('LOWER(term_contents.term_content_title) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(term_contents.term_content_directory) LIKE ?', [searchPattern]);
     });
   }
@@ -55,11 +48,6 @@ const findAll = async (params) => {
   const data = await query;
 
   let countQuery = db({ term_contents: TABLE_NAME })
-    .leftJoin(
-      { manage_quotations: MANAGE_QUOTATIONS_TABLE },
-      'term_contents.manage_quotation_id',
-      'manage_quotations.manage_quotation_id'
-    )
     .where('term_contents.is_delete', false)
     .count({ count: 'term_contents.term_content_id' });
 
@@ -67,7 +55,7 @@ const findAll = async (params) => {
     const searchPattern = `%${search.toLowerCase()}%`;
     countQuery = countQuery.andWhere((builder) => {
       builder
-        .whereRaw('LOWER(manage_quotations.manage_quotation_no) LIKE ?', [searchPattern])
+        .whereRaw('LOWER(term_contents.term_content_title) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(term_contents.term_content_directory) LIKE ?', [searchPattern]);
     });
   }
@@ -95,23 +83,10 @@ const findById = async (id) => {
   return result || null;
 };
 
-const findManageQuotationByNo = async (manageQuotationNo) => {
-  if (!manageQuotationNo) {
-    return null;
-  }
-
-  const result = await db(MANAGE_QUOTATIONS_TABLE)
-    .select('manage_quotation_id', 'manage_quotation_no')
-    .where({ manage_quotation_no: manageQuotationNo, is_delete: false })
-    .first();
-
-  return result || null;
-};
-
 const create = async (data) => {
   const insertData = {
     term_content_id: data.term_content_id,
-    manage_quotation_id: data.manage_quotation_id,
+    term_content_title: data.term_content_title || null,
     term_content_directory: data.term_content_directory,
     created_by: data.created_by || null
   };
@@ -126,8 +101,8 @@ const create = async (data) => {
 const update = async (id, data) => {
   const updateFields = {};
 
-  if (data.manage_quotation_id !== undefined) {
-    updateFields.manage_quotation_id = data.manage_quotation_id;
+  if (data.term_content_title !== undefined) {
+    updateFields.term_content_title = data.term_content_title;
   }
   if (data.term_content_directory !== undefined) {
     updateFields.term_content_directory = data.term_content_directory;
@@ -172,7 +147,6 @@ const remove = async (id, data = {}) => {
 module.exports = {
   findAll,
   findById,
-  findManageQuotationByNo,
   create,
   update,
   remove

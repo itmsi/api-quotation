@@ -47,11 +47,11 @@ const normalizeJsonPayload = (payload) => {
   return payload;
 };
 
-const writeJsonFile = async (manageQuotationNo, termContentId, payload) => {
+const writeJsonFile = async (termContentTitle, termContentId, payload) => {
   await ensureDirectory(TERM_CONTENT_FOLDER);
 
-  const sanitizedQuotationNo = sanitizeFileName(manageQuotationNo || 'term_content');
-  const fileName = `${sanitizedQuotationNo}_${termContentId}.json`;
+  const sanitizedTitle = sanitizeFileName(termContentTitle || 'term_content');
+  const fileName = `${sanitizedTitle}_${termContentId}.json`;
   const absolutePath = path.join(TERM_CONTENT_FOLDER, fileName);
   const relativePath = path.relative(ROOT_DIR, absolutePath);
 
@@ -103,7 +103,7 @@ const readJsonFile = async (relativePath) => {
 const mapSortBy = (sortBy) => {
   const mapping = {
     created_at: 'term_contents.created_at',
-    manage_quotation_no: 'manage_quotations.manage_quotation_no'
+    term_content_title: 'term_contents.term_content_title'
   };
   return mapping[sortBy] || 'term_contents.created_at';
 };
@@ -164,25 +164,19 @@ const create = async (req, res) => {
 
   try {
     const tokenData = decodeToken('created', req);
-    const { manage_quotation_no, term_content_directory } = req.body;
-
-    const manageQuotation = await repository.findManageQuotationByNo(manage_quotation_no);
-    if (!manageQuotation) {
-      const response = mappingError('Manage quotation not found', 404);
-      return baseResponse(res, response);
-    }
+    const { term_content_title, term_content_directory } = req.body;
 
     const termContentId = uuidv4();
 
     relativePath = await writeJsonFile(
-      manageQuotation.manage_quotation_no,
+      term_content_title || 'term_content',
       termContentId,
       term_content_directory
     );
 
     const payload = {
       term_content_id: termContentId,
-      manage_quotation_id: manageQuotation.manage_quotation_id,
+      term_content_title: term_content_title || null,
       term_content_directory: relativePath,
       created_by: tokenData.created_by
     };
@@ -215,7 +209,7 @@ const update = async (req, res) => {
   try {
     const { id } = req.params;
     const tokenData = decodeToken('updated', req);
-    const { manage_quotation_no, term_content_directory } = req.body;
+    const { term_content_title, term_content_directory } = req.body;
 
     existing = await repository.findById(id);
     if (!existing) {
@@ -223,32 +217,20 @@ const update = async (req, res) => {
       return baseResponse(res, response);
     }
 
-    let manageQuotation = null;
-    if (manage_quotation_no) {
-      manageQuotation = await repository.findManageQuotationByNo(manage_quotation_no);
-      if (!manageQuotation) {
-        const response = mappingError('Manage quotation not found', 404);
-        return baseResponse(res, response);
-      }
-    } else {
-      manageQuotation = {
-        manage_quotation_id: existing.manage_quotation_id,
-        manage_quotation_no: existing.manage_quotation_no
-      };
-    }
-
     const payloadSource = term_content_directory !== undefined
       ? term_content_directory
       : await readJsonFile(existing.term_content_directory);
 
+    const titleToUse = term_content_title !== undefined ? term_content_title : existing.term_content_title;
+
     newRelativePath = await writeJsonFile(
-      manageQuotation.manage_quotation_no,
+      titleToUse || 'term_content',
       existing.term_content_id,
       payloadSource
     );
 
     const payload = {
-      manage_quotation_id: manageQuotation.manage_quotation_id,
+      term_content_title: term_content_title !== undefined ? term_content_title : existing.term_content_title,
       term_content_directory: newRelativePath,
       updated_by: tokenData.updated_by
     };

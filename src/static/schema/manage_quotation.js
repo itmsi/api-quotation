@@ -109,6 +109,32 @@ const manageQuotationSchemas = {
         description: 'Lead time',
         example: ''
       },
+      term_content_id: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Reference ke term_contents (hanya sebagai acuan)',
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      },
+      term_content_directory: {
+        type: 'string',
+        nullable: true,
+        description: 'Path file JSON yang tersimpan',
+        example: 'uploads/manage_quotation_term_contents/quo-2025-001_123e4567-e89b-12d3-a456-426614174000.json'
+      },
+      term_content_payload: {
+        type: 'object',
+        nullable: true,
+        description: 'Konten JSON dari file term_content_directory',
+        additionalProperties: true,
+        example: {
+          title: 'Term & Condition',
+          items: [
+            'Pembayaran dilakukan 14 hari setelah invoice',
+            'Pengiriman dilakukan dalam 7 hari kerja'
+          ]
+        }
+      },
       status: {
         type: 'string',
         enum: ['draft', 'submit'],
@@ -176,12 +202,6 @@ const manageQuotationSchemas = {
   ManageQuotationInput: {
     type: 'object',
     properties: {
-      manage_quotation_no: {
-        type: 'string',
-        maxLength: 100,
-        description: 'Quotation number',
-        example: 'QUO-2025-001'
-      },
       customer_id: {
         type: 'string',
         format: 'uuid',
@@ -267,6 +287,35 @@ const manageQuotationSchemas = {
         nullable: true,
         description: 'Lead time',
         example: ''
+      },
+      term_content_id: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Reference ke term_contents (hanya sebagai acuan, tidak mempengaruhi data di tabel term_contents)',
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      },
+      term_content_directory: {
+        oneOf: [
+          {
+            type: 'object',
+            additionalProperties: true,
+            description: 'Data JSON yang akan disimpan sebagai file'
+          },
+          {
+            type: 'string',
+            description: 'String JSON yang akan disimpan sebagai file'
+          }
+        ],
+        nullable: true,
+        description: 'Konten term & condition yang akan disimpan sebagai file JSON (path berbeda dengan module term_content)',
+        example: {
+          title: 'Term & Condition',
+          items: [
+            'Pembayaran dilakukan 14 hari setelah invoice',
+            'Pengiriman dilakukan dalam 7 hari kerja'
+          ]
+        }
       },
       status: {
         type: 'string',

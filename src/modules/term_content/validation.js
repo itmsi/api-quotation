@@ -1,11 +1,10 @@
 const { body, param } = require('express-validator');
 
 const createValidation = [
-  body('manage_quotation_no')
-    .notEmpty()
-    .withMessage('Manage quotation number wajib diisi')
-    .isLength({ max: 100 })
-    .withMessage('Manage quotation number maksimal 100 karakter')
+  body('term_content_title')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Term content title maksimal 255 karakter')
     .trim(),
   body('term_content_directory')
     .notEmpty()
@@ -18,10 +17,10 @@ const updateValidation = [
     .withMessage('ID wajib diisi')
     .isUUID()
     .withMessage('Format ID tidak valid'),
-  body('manage_quotation_no')
+  body('term_content_title')
     .optional()
-    .isLength({ max: 100 })
-    .withMessage('Manage quotation number maksimal 100 karakter')
+    .isLength({ max: 255 })
+    .withMessage('Term content title maksimal 255 karakter')
     .trim(),
   body('term_content_directory')
     .optional()
@@ -53,8 +52,8 @@ const listValidation = [
     .trim(),
   body('sort_by')
     .optional()
-    .isIn(['created_at', 'manage_quotation_no'])
-    .withMessage('Sort by harus salah satu dari: created_at, manage_quotation_no'),
+    .isIn(['created_at', 'term_content_title'])
+    .withMessage('Sort by harus salah satu dari: created_at, term_content_title'),
   body('sort_order')
     .optional()
     .isIn(['asc', 'desc'])

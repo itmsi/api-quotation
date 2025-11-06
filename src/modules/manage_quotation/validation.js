@@ -72,6 +72,31 @@ const createValidation = [
     .isLength({ max: 255 })
     .withMessage('Lead time maksimal 255 karakter')
     .trim(),
+  body('term_content_id')
+    .optional()
+    .isUUID()
+    .withMessage('Format term_content_id tidak valid'),
+  body('term_content_directory')
+    .optional()
+    .custom((value) => {
+      // Allow null, empty string, object, or valid JSON string
+      if (value === null || value === undefined || value === '') {
+        return true;
+      }
+      if (typeof value === 'object') {
+        return true;
+      }
+      if (typeof value === 'string') {
+        try {
+          JSON.parse(value);
+          return true;
+        } catch (e) {
+          return false;
+        }
+      }
+      return false;
+    })
+    .withMessage('term_content_directory harus berupa object atau string JSON yang valid'),
   body('status')
     .optional()
     .isIn(['draft', 'submit'])
@@ -193,6 +218,31 @@ const updateValidation = [
     .isLength({ max: 255 })
     .withMessage('Lead time maksimal 255 karakter')
     .trim(),
+  body('term_content_id')
+    .optional()
+    .isUUID()
+    .withMessage('Format term_content_id tidak valid'),
+  body('term_content_directory')
+    .optional()
+    .custom((value) => {
+      // Allow null, empty string, object, or valid JSON string
+      if (value === null || value === undefined || value === '') {
+        return true;
+      }
+      if (typeof value === 'object') {
+        return true;
+      }
+      if (typeof value === 'string') {
+        try {
+          JSON.parse(value);
+          return true;
+        } catch (e) {
+          return false;
+        }
+      }
+      return false;
+    })
+    .withMessage('term_content_directory harus berupa object atau string JSON yang valid'),
   body('status')
     .optional()
     .isIn(['draft', 'submit'])

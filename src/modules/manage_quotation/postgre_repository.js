@@ -30,6 +30,8 @@ const findAll = async (params) => {
       'manage_quotation_shipping_term',
       'manage_quotation_franco',
       'manage_quotation_lead_time',
+      'term_content_id',
+      'term_content_directory',
       'status',
       'created_by',
       'updated_by',
@@ -183,6 +185,8 @@ const create = async (data) => {
     manage_quotation_shipping_term: data.manage_quotation_shipping_term || null,
     manage_quotation_franco: data.manage_quotation_franco || null,
     manage_quotation_lead_time: data.manage_quotation_lead_time || null,
+    term_content_id: data.term_content_id || null,
+    term_content_directory: data.term_content_directory || null,
     status: data.status || 'submit',
     created_by: data.created_by || null
   };
@@ -223,6 +227,8 @@ const update = async (id, data) => {
   if (data.manage_quotation_shipping_term !== undefined) updateFields.manage_quotation_shipping_term = data.manage_quotation_shipping_term;
   if (data.manage_quotation_franco !== undefined) updateFields.manage_quotation_franco = data.manage_quotation_franco;
   if (data.manage_quotation_lead_time !== undefined) updateFields.manage_quotation_lead_time = data.manage_quotation_lead_time;
+  if (data.term_content_id !== undefined) updateFields.term_content_id = data.term_content_id;
+  if (data.term_content_directory !== undefined) updateFields.term_content_directory = data.term_content_directory;
   if (data.status !== undefined) updateFields.status = data.status;
   if (data.updated_by !== undefined) updateFields.updated_by = data.updated_by;
   if (data.deleted_by !== undefined) updateFields.deleted_by = data.deleted_by;
