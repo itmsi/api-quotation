@@ -11,8 +11,10 @@ exports.seed = async function(knex) {
   await knex.raw('TRUNCATE TABLE mst_specification_values CASCADE');
   
   // Read SQL file and execute raw SQL
-  // Try multiple possible paths
+  // Try multiple possible paths - prioritize sql_product folder in project root
+  const projectRoot = path.join(__dirname, '../../../..');
   const possiblePaths = [
+    path.join(projectRoot, 'sql_product/mst_specification_values_202511061229.sql'),
     path.join(__dirname, '../../../../Downloads/mst_specification_values_202511061229.sql'),
     path.join(process.env.HOME || process.env.USERPROFILE || '', 'Downloads/mst_specification_values_202511061229.sql'),
     '/Users/falaqmsi/Downloads/mst_specification_values_202511061229.sql'
