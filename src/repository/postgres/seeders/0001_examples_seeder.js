@@ -5,7 +5,7 @@
 
 exports.seed = async function(knex) {
   // Delete all existing entries (optional)
-  await knex('examples').del();
+  await knex.raw('TRUNCATE TABLE examples CASCADE');
   
   // Insert seed data
   await knex('examples').insert([
