@@ -59,6 +59,10 @@ const getById = async (req, res) => {
     const items = await repository.getItemsByQuotationId(id);
     data.manage_quotation_items = items;
     
+    // Get accessories for this quotation
+    const accessories = await repository.getAccessoriesByQuotationId(id);
+    data.manage_quotation_item_accessories = accessories;
+    
     const response = mappingSuccess('Data berhasil diambil', data);
     return baseResponse(res, response);
   } catch (error) {
@@ -75,16 +79,29 @@ const create = async (req, res) => {
     // Get user info from token
     const tokenData = decodeToken('created', req);
     
-    // Extract items from request body
-    const { manage_quotation_items, ...quotationData } = req.body;
+    // Extract items and accessories from request body
+    const { manage_quotation_items, manage_quotation_item_accessories, ...quotationData } = req.body;
     
-    // Validate item_product_id if items provided
+    // Validate componen_product_id if items provided
     if (manage_quotation_items && manage_quotation_items.length > 0) {
-      const validation = await repository.validateItemProductIds(manage_quotation_items);
+      const validation = await repository.validateComponenProductIds(manage_quotation_items);
       if (!validation.isValid) {
         const invalidIdsList = validation.invalidIds.join(', ');
         const response = mappingError(
-          `Item product dengan ID berikut tidak ditemukan: ${invalidIdsList}`,
+          `Componen product dengan ID berikut tidak ditemukan: ${invalidIdsList}`,
+          400
+        );
+        return baseResponse(res, response);
+      }
+    }
+    
+    // Validate accessory_id if accessories provided
+    if (manage_quotation_item_accessories && manage_quotation_item_accessories.length > 0) {
+      const validation = await repository.validateAccessoryIds(manage_quotation_item_accessories);
+      if (!validation.isValid) {
+        const invalidIdsList = validation.invalidIds.join(', ');
+        const response = mappingError(
+          `Accessory dengan ID berikut tidak ditemukan: ${invalidIdsList}`,
           400
         );
         return baseResponse(res, response);
@@ -100,6 +117,11 @@ const create = async (req, res) => {
     // Create items if provided
     if (manage_quotation_items && manage_quotation_items.length > 0) {
       await repository.createItems(data.manage_quotation_id, manage_quotation_items, tokenData.created_by);
+    }
+    
+    // Create accessories if provided
+    if (manage_quotation_item_accessories && manage_quotation_item_accessories.length > 0) {
+      await repository.createAccessories(data.manage_quotation_id, manage_quotation_item_accessories, tokenData.created_by);
     }
     
     const response = mappingSuccess('Data berhasil dibuat', data, 201);
@@ -120,16 +142,29 @@ const update = async (req, res) => {
     // Get user info from token
     const tokenData = decodeToken('updated', req);
     
-    // Extract items from request body
-    const { manage_quotation_items, ...quotationData } = req.body;
+    // Extract items and accessories from request body
+    const { manage_quotation_items, manage_quotation_item_accessories, ...quotationData } = req.body;
     
-    // Validate item_product_id if items provided
+    // Validate componen_product_id if items provided
     if (manage_quotation_items && manage_quotation_items.length > 0) {
-      const validation = await repository.validateItemProductIds(manage_quotation_items);
+      const validation = await repository.validateComponenProductIds(manage_quotation_items);
       if (!validation.isValid) {
         const invalidIdsList = validation.invalidIds.join(', ');
         const response = mappingError(
-          `Item product dengan ID berikut tidak ditemukan: ${invalidIdsList}`,
+          `Componen product dengan ID berikut tidak ditemukan: ${invalidIdsList}`,
+          400
+        );
+        return baseResponse(res, response);
+      }
+    }
+    
+    // Validate accessory_id if accessories provided
+    if (manage_quotation_item_accessories && manage_quotation_item_accessories.length > 0) {
+      const validation = await repository.validateAccessoryIds(manage_quotation_item_accessories);
+      if (!validation.isValid) {
+        const invalidIdsList = validation.invalidIds.join(', ');
+        const response = mappingError(
+          `Accessory dengan ID berikut tidak ditemukan: ${invalidIdsList}`,
           400
         );
         return baseResponse(res, response);
@@ -150,6 +185,11 @@ const update = async (req, res) => {
     // Update items if provided
     if (manage_quotation_items && manage_quotation_items.length > 0) {
       await repository.replaceItems(id, manage_quotation_items, tokenData.updated_by);
+    }
+    
+    // Update accessories if provided
+    if (manage_quotation_item_accessories && manage_quotation_item_accessories.length > 0) {
+      await repository.replaceAccessories(id, manage_quotation_item_accessories, tokenData.updated_by);
     }
     
     const response = mappingSuccess('Data berhasil diupdate', data);

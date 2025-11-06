@@ -165,14 +165,24 @@ const manageQuotationPaths = {
               manage_quotation_payment_presentase: '40',
               manage_quotation_payment_nominal: '480000',
               manage_quotation_description: 'Updated notes about the quotation',
+              manage_quotation_shipping_term: '',
+              manage_quotation_franco: '',
+              manage_quotation_lead_time: '',
               status: 'draft',
               manage_quotation_items: [
                 {
-                  item_product_id: '123e4567-e89b-12d3-a456-426614174004',
+                  componen_product_id: '123e4567-e89b-12d3-a456-426614174004',
                   quantity: 2,
                   price: '150000',
                   total: '300000',
                   description: 'Updated notes about the item'
+                }
+              ],
+              manage_quotation_item_accessories: [
+                {
+                  accessory_id: '123e4567-e89b-12d3-a456-426614174004',
+                  quantity: 1,
+                  description: 'Updated notes about the accessory'
                 }
               ]
             }
@@ -311,13 +321,23 @@ const manageQuotationPaths = {
               manage_quotation_payment_presentase: '50',
               manage_quotation_payment_nominal: '500000',
               manage_quotation_description: 'Additional notes about the quotation',
+              manage_quotation_shipping_term: '',
+              manage_quotation_franco: '',
+              manage_quotation_lead_time: '',
               status: 'submit',
               manage_quotation_items: [
                 {
-                  item_product_id: '123e4567-e89b-12d3-a456-426614174004',
+                  componen_product_id: '123e4567-e89b-12d3-a456-426614174004',
                   quantity: 1,
                   price: '100000',
                   total: '100000',
+                  description: 'Additional notes about the item'
+                }
+              ],
+              manage_quotation_item_accessories: [
+                {
+                  accessory_id: '123e4567-e89b-12d3-a456-426614174004',
+                  quantity: 1,
                   description: 'Additional notes about the item'
                 }
               ]

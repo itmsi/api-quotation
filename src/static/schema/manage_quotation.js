@@ -88,6 +88,27 @@ const manageQuotationSchemas = {
         description: 'Description',
         example: 'Additional notes about the quotation'
       },
+      manage_quotation_shipping_term: {
+        type: 'string',
+        nullable: true,
+        maxLength: 255,
+        description: 'Shipping term',
+        example: ''
+      },
+      manage_quotation_franco: {
+        type: 'string',
+        nullable: true,
+        maxLength: 255,
+        description: 'Franco',
+        example: ''
+      },
+      manage_quotation_lead_time: {
+        type: 'string',
+        nullable: true,
+        maxLength: 255,
+        description: 'Lead time',
+        example: ''
+      },
       status: {
         type: 'string',
         enum: ['draft', 'submit'],
@@ -139,6 +160,16 @@ const manageQuotationSchemas = {
         type: 'boolean',
         description: 'Soft delete flag',
         example: false
+      },
+      manage_quotation_items: {
+        type: 'array',
+        description: 'Array of quotation items',
+        items: { $ref: '#/components/schemas/ManageQuotationItem' }
+      },
+      manage_quotation_item_accessories: {
+        type: 'array',
+        description: 'Array of quotation item accessories',
+        items: { $ref: '#/components/schemas/ManageQuotationItemAccessory' }
       }
     }
   },
@@ -216,6 +247,27 @@ const manageQuotationSchemas = {
         description: 'Description',
         example: 'Additional notes about the quotation'
       },
+      manage_quotation_shipping_term: {
+        type: 'string',
+        maxLength: 255,
+        nullable: true,
+        description: 'Shipping term',
+        example: ''
+      },
+      manage_quotation_franco: {
+        type: 'string',
+        maxLength: 255,
+        nullable: true,
+        description: 'Franco',
+        example: ''
+      },
+      manage_quotation_lead_time: {
+        type: 'string',
+        maxLength: 255,
+        nullable: true,
+        description: 'Lead time',
+        example: ''
+      },
       status: {
         type: 'string',
         enum: ['draft', 'submit'],
@@ -227,6 +279,11 @@ const manageQuotationSchemas = {
         type: 'array',
         description: 'Array of quotation items',
         items: { $ref: '#/components/schemas/ManageQuotationItemInput' }
+      },
+      manage_quotation_item_accessories: {
+        type: 'array',
+        description: 'Array of quotation item accessories',
+        items: { $ref: '#/components/schemas/ManageQuotationItemAccessoryInput' }
       }
     }
   },
@@ -245,11 +302,11 @@ const manageQuotationSchemas = {
         description: 'Parent quotation ID',
         example: '123e4567-e89b-12d3-a456-426614174000'
       },
-      item_product_id: {
+      componen_product_id: {
         type: 'string',
         format: 'uuid',
         nullable: true,
-        description: 'Item product ID reference',
+        description: 'Componen product ID reference',
         example: '123e4567-e89b-12d3-a456-426614174004'
       },
       unit_code: {
@@ -377,11 +434,11 @@ const manageQuotationSchemas = {
   ManageQuotationItemInput: {
     type: 'object',
     properties: {
-      item_product_id: {
+      componen_product_id: {
         type: 'string',
         format: 'uuid',
         nullable: true,
-        description: 'Item product ID reference',
+        description: 'Componen product ID reference',
         example: '123e4567-e89b-12d3-a456-426614174004'
       },
       quantity: {
@@ -404,6 +461,151 @@ const manageQuotationSchemas = {
         nullable: true,
         description: 'Item description',
         example: 'Additional notes about the item'
+      }
+    }
+  },
+  ManageQuotationItemAccessory: {
+    type: 'object',
+    properties: {
+      manage_quotation_item_accessory_id: {
+        type: 'string',
+        format: 'uuid',
+        description: 'Unique identifier for quotation item accessory',
+        example: '123e4567-e89b-12d3-a456-426614174005'
+      },
+      manage_quotation_id: {
+        type: 'string',
+        format: 'uuid',
+        description: 'Parent quotation ID',
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      },
+      accessory_id: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Accessory ID reference',
+        example: '123e4567-e89b-12d3-a456-426614174006'
+      },
+      accessory_part_number: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory part number (from accessories.accessory_part_number)',
+        example: 'ACC-001'
+      },
+      accessory_part_name: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory part name (from accessories.accessory_part_name)',
+        example: 'Brake Pad'
+      },
+      accessory_specification: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory specification (from accessories.accessory_specification)',
+        example: 'Ceramic Brake Pad'
+      },
+      accessory_brand: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory brand (from accessories.accessory_brand)',
+        example: 'Brand X'
+      },
+      accessory_remark: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory remark (from accessories.accessory_remark)',
+        example: 'High quality'
+      },
+      accessory_region: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory region (from accessories.accessory_region)',
+        example: 'Asia'
+      },
+      accessory_full_description: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory full description (from accessories.accessory_description)',
+        example: 'This is an accessory description'
+      },
+      quantity: {
+        type: 'integer',
+        description: 'Quantity',
+        example: 1
+      },
+      description: {
+        type: 'string',
+        nullable: true,
+        description: 'Item accessory description',
+        example: 'Additional notes about the accessory'
+      },
+      created_by: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'User ID who created the record',
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      },
+      updated_by: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'User ID who updated the record',
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      },
+      deleted_by: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'User ID who deleted the record',
+        example: null
+      },
+      created_at: {
+        type: 'string',
+        format: 'date-time',
+        description: 'Creation timestamp',
+        example: '2025-01-15T10:00:00.000Z'
+      },
+      updated_at: {
+        type: 'string',
+        format: 'date-time',
+        description: 'Last update timestamp',
+        example: '2025-01-15T10:00:00.000Z'
+      },
+      deleted_at: {
+        type: 'string',
+        format: 'date-time',
+        nullable: true,
+        description: 'Deletion timestamp (null if not deleted)',
+        example: null
+      },
+      is_delete: {
+        type: 'boolean',
+        description: 'Soft delete flag',
+        example: false
+      }
+    }
+  },
+  ManageQuotationItemAccessoryInput: {
+    type: 'object',
+    properties: {
+      accessory_id: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Accessory ID reference',
+        example: '123e4567-e89b-12d3-a456-426614174006'
+      },
+      quantity: {
+        type: 'integer',
+        description: 'Quantity',
+        example: 1
+      },
+      description: {
+        type: 'string',
+        nullable: true,
+        description: 'Item accessory description',
+        example: 'Additional notes about the accessory'
       }
     }
   },

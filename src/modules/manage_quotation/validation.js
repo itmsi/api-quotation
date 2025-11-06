@@ -60,6 +60,21 @@ const createValidation = [
   body('manage_quotation_description')
     .optional()
     .trim(),
+  body('manage_quotation_shipping_term')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Shipping term maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_franco')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Franco maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_lead_time')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Lead time maksimal 255 karakter')
+    .trim(),
   body('status')
     .optional()
     .isIn(['draft', 'submit'])
@@ -68,10 +83,10 @@ const createValidation = [
     .optional()
     .isArray({ min: 0 })
     .withMessage('Manage quotation items harus berupa array'),
-  body('manage_quotation_items.*.item_product_id')
+  body('manage_quotation_items.*.componen_product_id')
     .optional()
     .isUUID()
-    .withMessage('Format item_product_id tidak valid'),
+    .withMessage('Format componen_product_id tidak valid'),
   body('manage_quotation_items.*.quantity')
     .optional()
     .isInt({ min: 1 })
@@ -85,6 +100,21 @@ const createValidation = [
     .notEmpty()
     .withMessage('Total tidak boleh kosong'),
   body('manage_quotation_items.*.description')
+    .optional()
+    .trim(),
+  body('manage_quotation_item_accessories')
+    .optional()
+    .isArray({ min: 0 })
+    .withMessage('Manage quotation item accessories harus berupa array'),
+  body('manage_quotation_item_accessories.*.accessory_id')
+    .optional()
+    .isUUID()
+    .withMessage('Format accessory_id tidak valid'),
+  body('manage_quotation_item_accessories.*.quantity')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Quantity harus berupa angka positif'),
+  body('manage_quotation_item_accessories.*.description')
     .optional()
     .trim(),
 ];
@@ -154,6 +184,21 @@ const updateValidation = [
   body('manage_quotation_description')
     .optional()
     .trim(),
+  body('manage_quotation_shipping_term')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Shipping term maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_franco')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Franco maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_lead_time')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Lead time maksimal 255 karakter')
+    .trim(),
   body('status')
     .optional()
     .isIn(['draft', 'submit'])
@@ -162,10 +207,10 @@ const updateValidation = [
     .optional()
     .isArray({ min: 0 })
     .withMessage('Manage quotation items harus berupa array'),
-  body('manage_quotation_items.*.item_product_id')
+  body('manage_quotation_items.*.componen_product_id')
     .optional()
     .isUUID()
-    .withMessage('Format item_product_id tidak valid'),
+    .withMessage('Format componen_product_id tidak valid'),
   body('manage_quotation_items.*.quantity')
     .optional()
     .isInt({ min: 1 })
@@ -179,6 +224,21 @@ const updateValidation = [
     .notEmpty()
     .withMessage('Total tidak boleh kosong'),
   body('manage_quotation_items.*.description')
+    .optional()
+    .trim(),
+  body('manage_quotation_item_accessories')
+    .optional()
+    .isArray({ min: 0 })
+    .withMessage('Manage quotation item accessories harus berupa array'),
+  body('manage_quotation_item_accessories.*.accessory_id')
+    .optional()
+    .isUUID()
+    .withMessage('Format accessory_id tidak valid'),
+  body('manage_quotation_item_accessories.*.quantity')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Quantity harus berupa angka positif'),
+  body('manage_quotation_item_accessories.*.description')
     .optional()
     .trim(),
 ];

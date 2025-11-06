@@ -1,5 +1,6 @@
 const db = require('../../config/database');
-const itemProductRepository = require('../itemProduct/postgre_repository');
+const componenProductRepository = require('../componen_product/postgre_repository');
+const accessoryRepository = require('../accessory/postgre_repository');
 
 const TABLE_NAME = 'manage_quotations';
 
@@ -25,6 +26,9 @@ const findAll = async (params) => {
       'manage_quotation_payment_presentase',
       'manage_quotation_payment_nominal',
       'manage_quotation_description',
+      'manage_quotation_shipping_term',
+      'manage_quotation_franco',
+      'manage_quotation_lead_time',
       'status',
       'created_by',
       'updated_by',
@@ -130,6 +134,9 @@ const create = async (data) => {
     manage_quotation_payment_presentase: data.manage_quotation_payment_presentase || null,
     manage_quotation_payment_nominal: data.manage_quotation_payment_nominal || null,
     manage_quotation_description: data.manage_quotation_description || null,
+    manage_quotation_shipping_term: data.manage_quotation_shipping_term || null,
+    manage_quotation_franco: data.manage_quotation_franco || null,
+    manage_quotation_lead_time: data.manage_quotation_lead_time || null,
     status: data.status || 'submit',
     created_by: data.created_by || null
   };
@@ -158,6 +165,9 @@ const update = async (id, data) => {
   if (data.manage_quotation_payment_presentase !== undefined) updateFields.manage_quotation_payment_presentase = data.manage_quotation_payment_presentase;
   if (data.manage_quotation_payment_nominal !== undefined) updateFields.manage_quotation_payment_nominal = data.manage_quotation_payment_nominal;
   if (data.manage_quotation_description !== undefined) updateFields.manage_quotation_description = data.manage_quotation_description;
+  if (data.manage_quotation_shipping_term !== undefined) updateFields.manage_quotation_shipping_term = data.manage_quotation_shipping_term;
+  if (data.manage_quotation_franco !== undefined) updateFields.manage_quotation_franco = data.manage_quotation_franco;
+  if (data.manage_quotation_lead_time !== undefined) updateFields.manage_quotation_lead_time = data.manage_quotation_lead_time;
   if (data.status !== undefined) updateFields.status = data.status;
   if (data.updated_by !== undefined) updateFields.updated_by = data.updated_by;
   if (data.deleted_by !== undefined) updateFields.deleted_by = data.deleted_by;
@@ -239,9 +249,9 @@ const hardDelete = async (id) => {
 const ITEMS_TABLE_NAME = 'manage_quotation_items';
 
 /**
- * Validate item_product_id exists
+ * Validate componen_product_id exists
  */
-const validateItemProductIds = async (items) => {
+const validateComponenProductIds = async (items) => {
   if (!items || items.length === 0) {
     return { isValid: true, invalidIds: [] };
   }
@@ -249,15 +259,15 @@ const validateItemProductIds = async (items) => {
   const invalidIds = [];
   
   for (const item of items) {
-    // Skip validation if item_product_id is null or empty
-    if (!item.item_product_id) {
+    // Skip validation if componen_product_id is null or empty
+    if (!item.componen_product_id) {
       continue;
     }
     
-    // Check if item_product_id exists
-    const product = await itemProductRepository.findById(item.item_product_id);
+    // Check if componen_product_id exists
+    const product = await componenProductRepository.findById(item.componen_product_id);
     if (!product) {
-      invalidIds.push(item.item_product_id);
+      invalidIds.push(item.componen_product_id);
     }
   }
   
@@ -280,7 +290,7 @@ const createItems = async (manage_quotation_id, items, created_by) => {
   for (const item of items) {
     const fields = {
       manage_quotation_id: manage_quotation_id || null,
-      item_product_id: item.item_product_id || null,
+      componen_product_id: item.componen_product_id || null,
       quantity: item.quantity || 1,
       price: item.price || null,
       total: item.total || null,
@@ -299,7 +309,7 @@ const createItems = async (manage_quotation_id, items, created_by) => {
 };
 
 /**
- * Get items by quotation ID with JOIN to item_products
+ * Get items by quotation ID with JOIN to componen_products
  */
 const getItemsByQuotationId = async (manage_quotation_id) => {
   if (!manage_quotation_id) {
@@ -310,7 +320,7 @@ const getItemsByQuotationId = async (manage_quotation_id) => {
     .select(
       'mqi.manage_quotation_item_id',
       'mqi.manage_quotation_id',
-      'mqi.item_product_id',
+      'mqi.componen_product_id',
       'mqi.quantity',
       'mqi.price',
       'mqi.total',
@@ -322,20 +332,19 @@ const getItemsByQuotationId = async (manage_quotation_id) => {
       'mqi.updated_at',
       'mqi.deleted_at',
       'mqi.is_delete',
-      // Data from item_products - using db.raw for aliases
-      db.raw('ip.item_product_code as unit_code'),
-      db.raw('ip.item_product_model as unit_model'),
-      db.raw('ip.item_product_segment as segment'),
-      db.raw('ip.item_product_msi_model as msi_model'),
-      db.raw('ip.item_product_wheel_no as wheel_no'),
-      db.raw('ip.item_product_engine as engine'),
-      db.raw('ip.item_product_horse_power as horse_power'),
-      'ip.item_product_market_price',
-      'ip.item_product_image'
+      // Data from componen_products - using db.raw for aliases
+      db.raw('cp.code_unique as unit_code'),
+      db.raw('cp.segment as segment'),
+      db.raw('cp.msi_model as msi_model'),
+      db.raw('cp.wheel_no as wheel_no'),
+      db.raw('cp.engine as engine'),
+      db.raw('cp.horse_power as horse_power'),
+      'cp.market_price',
+      'cp.image'
     )
-    .leftJoin('item_products as ip', function() {
-      this.on('mqi.item_product_id', '=', 'ip.item_product_id')
-          .andOn('ip.is_delete', '=', false);
+    .leftJoin('componen_products as cp', function() {
+      this.on('mqi.componen_product_id', '=', 'cp.componen_product_id')
+          .andOn('cp.is_delete', '=', false);
     })
     .where('mqi.manage_quotation_id', manage_quotation_id)
     .where('mqi.is_delete', false)
@@ -375,6 +384,143 @@ const replaceItems = async (manage_quotation_id, items, updated_by) => {
   return newItems;
 };
 
+/**
+ * ACCESSORY FUNCTIONS
+ */
+
+const ACCESSORIES_TABLE_NAME = 'manage_quotation_item_accessories';
+
+/**
+ * Validate accessory_id exists
+ */
+const validateAccessoryIds = async (accessories) => {
+  if (!accessories || accessories.length === 0) {
+    return { isValid: true, invalidIds: [] };
+  }
+  
+  const invalidIds = [];
+  
+  for (const accessory of accessories) {
+    // Skip validation if accessory_id is null or empty
+    if (!accessory.accessory_id) {
+      continue;
+    }
+    
+    // Check if accessory_id exists
+    const acc = await accessoryRepository.findById(accessory.accessory_id);
+    if (!acc) {
+      invalidIds.push(accessory.accessory_id);
+    }
+  }
+  
+  return {
+    isValid: invalidIds.length === 0,
+    invalidIds
+  };
+};
+
+/**
+ * Create quotation accessories
+ */
+const createAccessories = async (manage_quotation_id, accessories, created_by) => {
+  if (!accessories || accessories.length === 0) {
+    return [];
+  }
+  
+  const results = [];
+  
+  for (const accessory of accessories) {
+    const fields = {
+      manage_quotation_id: manage_quotation_id || null,
+      accessory_id: accessory.accessory_id || null,
+      quantity: accessory.quantity || 1,
+      description: accessory.description || null,
+      created_by: created_by || null
+    };
+    
+    const result = await db(ACCESSORIES_TABLE_NAME)
+      .insert(fields)
+      .returning('*');
+    
+    results.push(result[0]);
+  }
+  
+  return results;
+};
+
+/**
+ * Get accessories by quotation ID with JOIN to accessories
+ */
+const getAccessoriesByQuotationId = async (manage_quotation_id) => {
+  if (!manage_quotation_id) {
+    return [];
+  }
+  
+  const result = await db(`${ACCESSORIES_TABLE_NAME} as mqia`)
+    .select(
+      'mqia.manage_quotation_item_accessory_id',
+      'mqia.manage_quotation_id',
+      'mqia.accessory_id',
+      'mqia.quantity',
+      'mqia.description',
+      'mqia.created_by',
+      'mqia.updated_by',
+      'mqia.deleted_by',
+      'mqia.created_at',
+      'mqia.updated_at',
+      'mqia.deleted_at',
+      'mqia.is_delete',
+      // Data from accessories
+      'a.accessory_part_number',
+      'a.accessory_part_name',
+      'a.accessory_specification',
+      'a.accessory_brand',
+      'a.accessory_remark',
+      'a.accessory_region',
+      'a.accessory_description as accessory_full_description'
+    )
+    .leftJoin('accessories as a', function() {
+      this.on('mqia.accessory_id', '=', 'a.accessory_id')
+          .andOn('a.is_delete', '=', false);
+    })
+    .where('mqia.manage_quotation_id', manage_quotation_id)
+    .where('mqia.is_delete', false)
+    .orderBy('mqia.created_at', 'asc');
+  
+  return result || [];
+};
+
+/**
+ * Delete accessories by quotation ID
+ */
+const deleteAccessoriesByQuotationId = async (manage_quotation_id) => {
+  if (!manage_quotation_id) {
+    return false;
+  }
+  
+  const result = await db(ACCESSORIES_TABLE_NAME)
+    .where({ manage_quotation_id: manage_quotation_id, is_delete: false })
+    .update({
+      is_delete: true,
+      deleted_at: db.fn.now()
+    });
+  
+  return result > 0;
+};
+
+/**
+ * Delete all accessories and recreate for quotation
+ */
+const replaceAccessories = async (manage_quotation_id, accessories, updated_by) => {
+  // Soft delete all existing accessories
+  await deleteAccessoriesByQuotationId(manage_quotation_id);
+  
+  // Create new accessories
+  const newAccessories = await createAccessories(manage_quotation_id, accessories, updated_by);
+  
+  return newAccessories;
+};
+
 module.exports = {
   findAll,
   findById,
@@ -384,10 +530,15 @@ module.exports = {
   remove,
   restore,
   hardDelete,
-  validateItemProductIds,
+  validateComponenProductIds,
   createItems,
   getItemsByQuotationId,
   deleteItemsByQuotationId,
-  replaceItems
+  replaceItems,
+  validateAccessoryIds,
+  createAccessories,
+  getAccessoriesByQuotationId,
+  deleteAccessoriesByQuotationId,
+  replaceAccessories
 };
 
