@@ -405,7 +405,7 @@ const getItemsByQuotationId = async (manage_quotation_id) => {
     )
     .leftJoin('componen_products as cp', function() {
       this.on('mqi.componen_product_id', '=', 'cp.componen_product_id')
-          .andOn('cp.is_delete', '=', false);
+          .andOn(db.raw('cp.is_delete = false'));
     })
     .where('mqi.manage_quotation_id', manage_quotation_id)
     .where('mqi.is_delete', false)
@@ -542,7 +542,7 @@ const getAccessoriesByQuotationId = async (manage_quotation_id) => {
     )
     .leftJoin('accessories as a', function() {
       this.on('mqia.accessory_id', '=', 'a.accessory_id')
-          .andOn('a.is_delete', '=', false);
+          .andOn(db.raw('a.is_delete = false'));
     })
     .where('mqia.manage_quotation_id', manage_quotation_id)
     .where('mqia.is_delete', false)
