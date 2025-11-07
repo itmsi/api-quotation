@@ -103,6 +103,7 @@ const mapSortBy = (sortBy) => {
   const mapping = {
     'created_at': 'created_at',
     'code_unique': 'code_unique',
+    'componen_product_name': 'componen_product_name',
     'segment': 'segment',
     'msi_model': 'msi_model'
   };
@@ -182,6 +183,7 @@ const create = async (req, res) => {
     
     const componenProductData = {
       product_dimensi_id: req.body.product_dimensi_id || null,
+      componen_product_name: req.body.componen_product_name || null,
       componen_type: req.body.componen_type ? parseInt(req.body.componen_type) : null,
       code_unique: req.body.code_unique || null,
       segment: req.body.segment || null,
@@ -242,6 +244,7 @@ const update = async (req, res) => {
     
     const componenProductData = {
       product_dimensi_id: req.body.product_dimensi_id,
+      componen_product_name: req.body.componen_product_name,
       componen_type: req.body.componen_type !== undefined ? (req.body.componen_type ? parseInt(req.body.componen_type) : null) : undefined,
       code_unique: req.body.code_unique,
       segment: req.body.segment,

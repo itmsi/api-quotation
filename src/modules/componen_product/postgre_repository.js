@@ -13,6 +13,7 @@ const buildSearchWhere = (search) => {
   return function() {
     this.where(function() {
       this.whereRaw('LOWER(code_unique) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(componen_product_name) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(segment) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(msi_model) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(wheel_no) LIKE ?', [searchPattern])
@@ -104,6 +105,7 @@ const findOne = async (conditions) => {
 const create = async (data) => {
   const insertData = {
     product_dimensi_id: data.product_dimensi_id || null,
+    componen_product_name: data.componen_product_name || null,
     componen_type: data.componen_type || null,
     code_unique: data.code_unique || null,
     segment: data.segment || null,
@@ -136,6 +138,7 @@ const update = async (id, data) => {
   const updateFields = {};
   
   if (data.product_dimensi_id !== undefined) updateFields.product_dimensi_id = data.product_dimensi_id;
+  if (data.componen_product_name !== undefined) updateFields.componen_product_name = data.componen_product_name;
   if (data.componen_type !== undefined) updateFields.componen_type = data.componen_type;
   if (data.code_unique !== undefined) updateFields.code_unique = data.code_unique;
   if (data.segment !== undefined) updateFields.segment = data.segment;

@@ -19,6 +19,12 @@ const componenProductSchemas = {
         description: 'Product dimensi ID',
         example: '123e4567-e89b-12d3-a456-426614174000'
       },
+      componen_product_name: {
+        type: 'string',
+        nullable: true,
+        description: 'Componen product name',
+        example: 'Brake Component'
+      },
       componen_type: {
         type: 'integer',
         nullable: true,
@@ -171,6 +177,12 @@ const componenProductSchemas = {
         enum: [1, 2, 3],
         description: 'Componen type (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR)',
         example: 1
+      },
+      componen_product_name: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Componen product name',
+        example: 'Brake Component'
       },
       code_unique: {
         type: 'string',
