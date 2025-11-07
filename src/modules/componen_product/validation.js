@@ -47,6 +47,11 @@ const createValidation = [
     .isLength({ max: 255 })
     .withMessage('Horse power maksimal 255 karakter')
     .trim(),
+  body('volume')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Volume maksimal 255 karakter')
+    .trim(),
   body('market_price')
     .optional()
     .isLength({ max: 255 })
@@ -139,6 +144,11 @@ const updateValidation = [
     .isLength({ max: 255 })
     .withMessage('Horse power maksimal 255 karakter')
     .trim(),
+  body('volume')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Volume maksimal 255 karakter')
+    .trim(),
   body('market_price')
     .optional()
     .isLength({ max: 255 })
@@ -209,8 +219,8 @@ const listValidation = [
     .trim(),
   body('sort_by')
     .optional()
-    .isIn(['created_at', 'code_unique', 'componen_product_name', 'segment', 'msi_model'])
-    .withMessage('Sort by harus salah satu dari: created_at, code_unique, componen_product_name, segment, msi_model'),
+    .isIn(['created_at', 'code_unique', 'componen_product_name', 'segment', 'msi_model', 'volume'])
+    .withMessage('Sort by harus salah satu dari: created_at, code_unique, componen_product_name, segment, msi_model, volume'),
   body('sort_order')
     .optional()
     .isIn(['asc', 'desc'])

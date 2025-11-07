@@ -68,6 +68,12 @@ const componenProductSchemas = {
         description: 'Horse power',
         example: '200 HP'
       },
+      volume: {
+        type: 'string',
+        nullable: true,
+        description: 'Volume',
+        example: '20 L'
+      },
       market_price: {
         type: 'string',
         nullable: true,
@@ -219,6 +225,12 @@ const componenProductSchemas = {
         maxLength: 255,
         description: 'Horse power',
         example: '200 HP'
+      },
+      volume: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Volume',
+        example: '20 L'
       },
       market_price: {
         type: 'string',

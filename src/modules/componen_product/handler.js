@@ -105,7 +105,8 @@ const mapSortBy = (sortBy) => {
     'code_unique': 'code_unique',
     'componen_product_name': 'componen_product_name',
     'segment': 'segment',
-    'msi_model': 'msi_model'
+    'msi_model': 'msi_model',
+    'volume': 'volume'
   };
   return mapping[sortBy] || 'created_at';
 };
@@ -191,6 +192,7 @@ const create = async (req, res) => {
       wheel_no: req.body.wheel_no || null,
       engine: req.body.engine || null,
       horse_power: req.body.horse_power || null,
+      volume: req.body.volume || null,
       market_price: req.body.market_price || null,
       selling_price_star_1: req.body.selling_price_star_1 || null,
       selling_price_star_2: req.body.selling_price_star_2 || null,
@@ -252,6 +254,7 @@ const update = async (req, res) => {
       wheel_no: req.body.wheel_no,
       engine: req.body.engine,
       horse_power: req.body.horse_power,
+      volume: req.body.volume,
       market_price: req.body.market_price,
       selling_price_star_1: req.body.selling_price_star_1,
       selling_price_star_2: req.body.selling_price_star_2,

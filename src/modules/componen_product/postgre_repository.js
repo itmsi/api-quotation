@@ -19,6 +19,7 @@ const buildSearchWhere = (search) => {
         .orWhereRaw('LOWER(wheel_no) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(engine) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(horse_power) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(volume) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(componen_product_description) LIKE ?', [searchPattern]);
     });
   };
@@ -113,6 +114,7 @@ const create = async (data) => {
     wheel_no: data.wheel_no || null,
     engine: data.engine || null,
     horse_power: data.horse_power || null,
+    volume: data.volume || null,
     market_price: data.market_price || null,
     selling_price_star_1: data.selling_price_star_1 || null,
     selling_price_star_2: data.selling_price_star_2 || null,
@@ -146,6 +148,7 @@ const update = async (id, data) => {
   if (data.wheel_no !== undefined) updateFields.wheel_no = data.wheel_no;
   if (data.engine !== undefined) updateFields.engine = data.engine;
   if (data.horse_power !== undefined) updateFields.horse_power = data.horse_power;
+  if (data.volume !== undefined) updateFields.volume = data.volume;
   if (data.market_price !== undefined) updateFields.market_price = data.market_price;
   if (data.selling_price_star_1 !== undefined) updateFields.selling_price_star_1 = data.selling_price_star_1;
   if (data.selling_price_star_2 !== undefined) updateFields.selling_price_star_2 = data.selling_price_star_2;
