@@ -88,14 +88,8 @@ const termContentPaths = {
           'application/json': {
             schema: { $ref: '#/components/schemas/TermContentCreateInput' },
             example: {
-              term_content_title: 'Term & Condition',
-              term_content_directory: {
-                title: 'Term & Condition',
-                items: [
-                  'Pembayaran dilakukan 14 hari setelah invoice',
-                  'Pengiriman dilakukan dalam 7 hari kerja'
-                ]
-              }
+              term_content_title: 'Template 1',
+              term_content_directory: '<p>halo ini test</p>',
             }
           }
         }

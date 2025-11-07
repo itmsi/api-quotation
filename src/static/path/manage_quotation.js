@@ -331,13 +331,7 @@ const manageQuotationPaths = {
               manage_quotation_franco: '',
               manage_quotation_lead_time: '',
               term_content_id: '123e4567-e89b-12d3-a456-426614174000',
-              term_content_directory: {
-                title: 'Term & Condition',
-                items: [
-                  'Pembayaran dilakukan 14 hari setelah invoice',
-                  'Pengiriman dilakukan dalam 7 hari kerja'
-                ]
-              },
+              term_content_directory: '<p>halo ini test</p>',
               status: 'submit',
               manage_quotation_items: [
                 {
