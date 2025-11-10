@@ -152,17 +152,34 @@ const getById = async (req, res) => {
       return baseResponse(res, response);
     }
     
-    // Get items for this quotation
+    // Get detail data
     const items = await repository.getItemsByQuotationId(id);
-    data.manage_quotation_items = items;
-    
-    // Get accessories for this quotation
     const accessories = await repository.getAccessoriesByQuotationId(id);
-    data.manage_quotation_item_accessories = accessories;
-
-    // Get specifications for this quotation
     const specifications = await repository.getSpecificationsByQuotationId(id);
-    data.manage_quotation_item_specifications = specifications;
+
+    const itemsWithRelations = items.map((item) => {
+      const itemAccessories = accessories.filter((accessory) => {
+        if (item.componen_product_id && accessory.componen_product_id) {
+          return accessory.componen_product_id === item.componen_product_id;
+        }
+        return false;
+      });
+
+      const itemSpecifications = specifications.filter((specification) => {
+        if (item.componen_product_id && specification.componen_product_id) {
+          return specification.componen_product_id === item.componen_product_id;
+        }
+        return false;
+      });
+
+      return {
+        ...item,
+        manage_quotation_item_accessories: itemAccessories,
+        manage_quotation_item_specifications: itemSpecifications
+      };
+    });
+
+    data.manage_quotation_items = itemsWithRelations;
     
     // Read term_content_directory JSON file if exists
     if (data.term_content_directory) {
@@ -192,8 +209,6 @@ const create = async (req, res) => {
     // Remove manage_quotation_no from body as it will be auto-generated if status is submit
     const {
       manage_quotation_items,
-      manage_quotation_item_accessories,
-      manage_quotation_item_specifications,
       manage_quotation_no,
       term_content_id,
       term_content_directory,
@@ -201,12 +216,69 @@ const create = async (req, res) => {
     } = req.body;
     
     const hasItemsArray = Array.isArray(manage_quotation_items);
-    const hasAccessoriesArray = Array.isArray(manage_quotation_item_accessories);
-    const hasSpecificationsArray = Array.isArray(manage_quotation_item_specifications);
+    const itemsForProcessing = hasItemsArray ? manage_quotation_items : [];
+    const itemsForInsert = [];
+    const accessoriesForInsert = [];
+    const specificationsForInsert = [];
+    
+    if (hasItemsArray) {
+      for (const rawItem of itemsForProcessing) {
+        if (!rawItem || typeof rawItem !== 'object') {
+          continue;
+        }
+        
+        const {
+          manage_quotation_item_accessories: itemAccessories,
+          manage_quotation_item_specifications: itemSpecifications,
+          ...itemFields
+        } = rawItem;
+        
+        itemsForInsert.push(itemFields);
+        
+        if (Array.isArray(itemAccessories)) {
+          for (const accessory of itemAccessories) {
+            accessoriesForInsert.push({
+              ...accessory,
+              componen_product_id: accessory?.componen_product_id || itemFields.componen_product_id || null
+            });
+          }
+        }
+        
+        if (Array.isArray(itemSpecifications)) {
+          for (const specification of itemSpecifications) {
+            specificationsForInsert.push({
+              ...specification,
+              componen_product_id: specification?.componen_product_id || itemFields.componen_product_id || null
+            });
+          }
+        }
+      }
+    }
+    
+    if (Array.isArray(req.body.manage_quotation_item_accessories)) {
+      for (const accessory of req.body.manage_quotation_item_accessories) {
+        accessoriesForInsert.push({
+          ...accessory,
+          componen_product_id: accessory?.componen_product_id || null
+        });
+      }
+    }
+    
+    if (Array.isArray(req.body.manage_quotation_item_specifications)) {
+      for (const specification of req.body.manage_quotation_item_specifications) {
+        specificationsForInsert.push({
+          ...specification,
+          componen_product_id: specification?.componen_product_id || null
+        });
+      }
+    }
+    
+    const hasAccessoriesArray = accessoriesForInsert.length > 0;
+    const hasSpecificationsArray = specificationsForInsert.length > 0;
     
     // Validate componen_product_id if items provided
-    if (hasItemsArray && manage_quotation_items.length > 0) {
-      const validation = await repository.validateComponenProductIds(manage_quotation_items);
+    if (itemsForInsert.length > 0) {
+      const validation = await repository.validateComponenProductIds(itemsForInsert);
       if (!validation.isValid) {
         const invalidIdsList = validation.invalidIds.join(', ');
         const response = mappingError(
@@ -218,8 +290,8 @@ const create = async (req, res) => {
     }
     
     // Validate accessory_id if accessories provided
-    if (hasAccessoriesArray && manage_quotation_item_accessories.length > 0) {
-      const validation = await repository.validateAccessoryIds(manage_quotation_item_accessories);
+    if (hasAccessoriesArray) {
+      const validation = await repository.validateAccessoryIds(accessoriesForInsert);
       if (!validation.isValid) {
         const invalidIdsList = validation.invalidIds.join(', ');
         const response = mappingError(
@@ -231,8 +303,8 @@ const create = async (req, res) => {
     }
 
     // Validate componen_product_id untuk specifications jika ada
-    if (hasSpecificationsArray && manage_quotation_item_specifications.length > 0) {
-      const validation = await repository.validateSpecificationComponenProductIds(manage_quotation_item_specifications);
+    if (hasSpecificationsArray) {
+      const validation = await repository.validateSpecificationComponenProductIds(specificationsForInsert);
       if (!validation.isValid) {
         const invalidIdsList = validation.invalidIds.join(', ');
         const response = mappingError(
@@ -268,18 +340,18 @@ const create = async (req, res) => {
     }
     
     // Create items if provided
-    if (hasItemsArray && manage_quotation_items.length > 0) {
-      await repository.createItems(data.manage_quotation_id, manage_quotation_items, tokenData.created_by);
+    if (itemsForInsert.length > 0) {
+      await repository.createItems(data.manage_quotation_id, itemsForInsert, tokenData.created_by);
     }
     
     // Create accessories if provided
-    if (hasAccessoriesArray && manage_quotation_item_accessories.length > 0) {
-      await repository.createAccessories(data.manage_quotation_id, manage_quotation_item_accessories, tokenData.created_by);
+    if (accessoriesForInsert.length > 0) {
+      await repository.createAccessories(data.manage_quotation_id, accessoriesForInsert, tokenData.created_by);
     }
 
     // Create specifications jika disediakan
-    if (hasSpecificationsArray && manage_quotation_item_specifications.length > 0) {
-      await repository.createSpecifications(data.manage_quotation_id, manage_quotation_item_specifications, tokenData.created_by);
+    if (specificationsForInsert.length > 0) {
+      await repository.createSpecifications(data.manage_quotation_id, specificationsForInsert, tokenData.created_by);
     }
     
     // Read term_content_directory JSON file if exists
@@ -322,17 +394,73 @@ const update = async (req, res) => {
     // Remove manage_quotation_no from body as it will be auto-generated if status changes to submit
     const {
       manage_quotation_items,
-      manage_quotation_item_accessories,
-      manage_quotation_item_specifications,
       manage_quotation_no,
       term_content_id,
       term_content_directory,
       ...quotationData
     } = req.body;
     
+    const itemsProvided = Object.prototype.hasOwnProperty.call(req.body, 'manage_quotation_items');
     const hasItemsArray = Array.isArray(manage_quotation_items);
-    const hasAccessoriesArray = Array.isArray(manage_quotation_item_accessories);
-    const hasSpecificationsArray = Array.isArray(manage_quotation_item_specifications);
+    const itemsForProcessing = hasItemsArray ? manage_quotation_items : [];
+    const itemsForInsert = [];
+    const accessoriesForInsert = [];
+    const specificationsForInsert = [];
+    
+    if (hasItemsArray) {
+      for (const rawItem of itemsForProcessing) {
+        if (!rawItem || typeof rawItem !== 'object') {
+          continue;
+        }
+        
+        const {
+          manage_quotation_item_accessories: itemAccessories,
+          manage_quotation_item_specifications: itemSpecifications,
+          ...itemFields
+        } = rawItem;
+        
+        itemsForInsert.push(itemFields);
+        
+        if (Array.isArray(itemAccessories)) {
+          for (const accessory of itemAccessories) {
+            accessoriesForInsert.push({
+              ...accessory,
+              componen_product_id: accessory?.componen_product_id || itemFields.componen_product_id || null
+            });
+          }
+        }
+        
+        if (Array.isArray(itemSpecifications)) {
+          for (const specification of itemSpecifications) {
+            specificationsForInsert.push({
+              ...specification,
+              componen_product_id: specification?.componen_product_id || itemFields.componen_product_id || null
+            });
+          }
+        }
+      }
+    }
+    
+    if (Array.isArray(req.body.manage_quotation_item_accessories)) {
+      for (const accessory of req.body.manage_quotation_item_accessories) {
+        accessoriesForInsert.push({
+          ...accessory,
+          componen_product_id: accessory?.componen_product_id || null
+        });
+      }
+    }
+    
+    if (Array.isArray(req.body.manage_quotation_item_specifications)) {
+      for (const specification of req.body.manage_quotation_item_specifications) {
+        specificationsForInsert.push({
+          ...specification,
+          componen_product_id: specification?.componen_product_id || null
+        });
+      }
+    }
+    
+    const accessoriesProvided = itemsProvided || Object.prototype.hasOwnProperty.call(req.body, 'manage_quotation_item_accessories');
+    const specificationsProvided = itemsProvided || Object.prototype.hasOwnProperty.call(req.body, 'manage_quotation_item_specifications');
     
     // Get existing quotation data
     existing = await repository.findById(id);
@@ -342,8 +470,8 @@ const update = async (req, res) => {
     }
     
     // Validate componen_product_id if items provided
-    if (hasItemsArray && manage_quotation_items.length > 0) {
-      const validation = await repository.validateComponenProductIds(manage_quotation_items);
+    if (itemsForInsert.length > 0) {
+      const validation = await repository.validateComponenProductIds(itemsForInsert);
       if (!validation.isValid) {
         const invalidIdsList = validation.invalidIds.join(', ');
         const response = mappingError(
@@ -355,8 +483,8 @@ const update = async (req, res) => {
     }
     
     // Validate accessory_id if accessories provided
-    if (hasAccessoriesArray && manage_quotation_item_accessories.length > 0) {
-      const validation = await repository.validateAccessoryIds(manage_quotation_item_accessories);
+    if (accessoriesForInsert.length > 0) {
+      const validation = await repository.validateAccessoryIds(accessoriesForInsert);
       if (!validation.isValid) {
         const invalidIdsList = validation.invalidIds.join(', ');
         const response = mappingError(
@@ -368,8 +496,8 @@ const update = async (req, res) => {
     }
 
     // Validate componen_product_id untuk specifications jika ada
-    if (hasSpecificationsArray && manage_quotation_item_specifications.length > 0) {
-      const validation = await repository.validateSpecificationComponenProductIds(manage_quotation_item_specifications);
+    if (specificationsForInsert.length > 0) {
+      const validation = await repository.validateSpecificationComponenProductIds(specificationsForInsert);
       if (!validation.isValid) {
         const invalidIdsList = validation.invalidIds.join(', ');
         const response = mappingError(
@@ -425,18 +553,18 @@ const update = async (req, res) => {
     }
     
     // Update items jika array disediakan (termasuk kosong untuk reset)
-    if (hasItemsArray) {
-      await repository.replaceItems(id, manage_quotation_items, tokenData.updated_by);
+    if (itemsProvided) {
+      await repository.replaceItems(id, itemsForInsert, tokenData.updated_by);
     }
     
     // Update accessories jika array disediakan (termasuk kosong untuk reset)
-    if (hasAccessoriesArray) {
-      await repository.replaceAccessories(id, manage_quotation_item_accessories, tokenData.updated_by);
+    if (accessoriesProvided) {
+      await repository.replaceAccessories(id, accessoriesForInsert, tokenData.updated_by);
     }
 
     // Update specifications jika array disediakan (termasuk kosong untuk reset)
-    if (hasSpecificationsArray) {
-      await repository.replaceSpecifications(id, manage_quotation_item_specifications, tokenData.updated_by);
+    if (specificationsProvided) {
+      await repository.replaceSpecifications(id, specificationsForInsert, tokenData.updated_by);
     }
     
     // Read term_content_directory JSON file if exists

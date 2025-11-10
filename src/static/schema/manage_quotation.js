@@ -191,16 +191,6 @@ const manageQuotationSchemas = {
         type: 'array',
         description: 'Array of quotation items',
         items: { $ref: '#/components/schemas/ManageQuotationItem' }
-      },
-      manage_quotation_item_accessories: {
-        type: 'array',
-        description: 'Array of quotation item accessories',
-        items: { $ref: '#/components/schemas/ManageQuotationItemAccessory' }
-      },
-      manage_quotation_item_specifications: {
-        type: 'array',
-        description: 'Array of quotation item specifications',
-        items: { $ref: '#/components/schemas/ManageQuotationItemSpecification' }
       }
     }
   },
@@ -333,16 +323,6 @@ const manageQuotationSchemas = {
         type: 'array',
         description: 'Array of quotation items',
         items: { $ref: '#/components/schemas/ManageQuotationItemInput' }
-      },
-      manage_quotation_item_accessories: {
-        type: 'array',
-        description: 'Array of quotation item accessories',
-        items: { $ref: '#/components/schemas/ManageQuotationItemAccessoryInput' }
-      },
-      manage_quotation_item_specifications: {
-        type: 'array',
-        description: 'Array of quotation item specifications',
-        items: { $ref: '#/components/schemas/ManageQuotationItemSpecificationInput' }
       }
     }
   },
@@ -547,6 +527,18 @@ const manageQuotationSchemas = {
         type: 'boolean',
         description: 'Soft delete flag',
         example: false
+      },
+      manage_quotation_item_accessories: {
+        type: 'array',
+        nullable: true,
+        description: 'Daftar accessories yang terkait dengan item quotation',
+        items: { $ref: '#/components/schemas/ManageQuotationItemAccessory' }
+      },
+      manage_quotation_item_specifications: {
+        type: 'array',
+        nullable: true,
+        description: 'Daftar specification yang terkait dengan item quotation',
+        items: { $ref: '#/components/schemas/ManageQuotationItemSpecification' }
       }
     }
   },
@@ -634,6 +626,18 @@ const manageQuotationSchemas = {
         nullable: true,
         description: 'Item description',
         example: 'Additional notes about the item'
+      },
+      manage_quotation_item_accessories: {
+        type: 'array',
+        nullable: true,
+        description: 'Accessories yang disertakan dalam item quotation',
+        items: { $ref: '#/components/schemas/ManageQuotationItemAccessoryInput' }
+      },
+      manage_quotation_item_specifications: {
+        type: 'array',
+        nullable: true,
+        description: 'Specifications tambahan untuk item quotation',
+        items: { $ref: '#/components/schemas/ManageQuotationItemSpecificationInput' }
       }
     }
   },
@@ -658,6 +662,20 @@ const manageQuotationSchemas = {
         nullable: true,
         description: 'Accessory ID reference',
         example: '123e4567-e89b-12d3-a456-426614174006'
+      },
+      componen_product_id: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Componen product ID yang ingin dikaitkan dengan accessory',
+        example: '123e4567-e89b-12d3-a456-426614174004'
+      },
+      componen_product_id: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Componen product ID yang menjadi referensi accessory dalam quotation',
+        example: '123e4567-e89b-12d3-a456-426614174004'
       },
       accessory_part_number: {
         type: 'string',

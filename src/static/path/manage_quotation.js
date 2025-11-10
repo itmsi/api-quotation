@@ -185,28 +185,27 @@ const manageQuotationPaths = {
                   quantity: 2,
                   price: '150000',
                   total: '300000',
-                  description: 'Updated notes about the item'
-                }
-              ],
-              manage_quotation_item_accessories: [
-                {
-                  accessory_id: '123e4567-e89b-12d3-a456-426614174004',
-                  quantity: 1,
-                  description: 'Updated notes about the accessory',
-                  accessory_part_number: 'ACC-001',
-                  accessory_part_name: 'Brake Pad Deluxe',
-                  accessory_specification: 'Ceramic Brake Pad',
-                  accessory_brand: 'Brand X',
-                  accessory_remark: 'High quality',
-                  accessory_region: 'Asia',
-                  accessory_description: 'Accessory description for quotation'
-                }
-              ],
-              manage_quotation_item_specifications: [
-                {
-                  componen_product_id: '123e4567-e89b-12d3-a456-426614174004',
-                  manage_quotation_item_specification_label: 'model',
-                  manage_quotation_item_specification_value: 'SX32434534534'
+                  description: 'Updated notes about the item',
+                  manage_quotation_item_accessories: [
+                    {
+                      accessory_id: '123e4567-e89b-12d3-a456-426614174004',
+                      quantity: 1,
+                      description: 'Updated notes about the accessory',
+                      accessory_part_number: 'ACC-001',
+                      accessory_part_name: 'Brake Pad Deluxe',
+                      accessory_specification: 'Ceramic Brake Pad',
+                      accessory_brand: 'Brand X',
+                      accessory_remark: 'High quality',
+                      accessory_region: 'Asia',
+                      accessory_description: 'Accessory description for quotation'
+                    }
+                  ],
+                  manage_quotation_item_specifications: [
+                    {
+                      manage_quotation_item_specification_label: 'model',
+                      manage_quotation_item_specification_value: 'SX32434534534'
+                    }
+                  ]
                 }
               ]
             }
@@ -365,28 +364,27 @@ const manageQuotationPaths = {
                   quantity: 1,
                   price: '100000',
                   total: '100000',
-                  description: 'Additional notes about the item'
-                }
-              ],
-              manage_quotation_item_accessories: [
-                {
-                  accessory_id: '123e4567-e89b-12d3-a456-426614174004',
-                  quantity: 1,
                   description: 'Additional notes about the item',
-                  accessory_part_number: '',
-                  accessory_part_name: '',
-                  accessory_specification: '',
-                  accessory_brand: '',
-                  accessory_remark: '',
-                  accessory_region: '',
-                  accessory_description: ''
-                }
-              ],
-              manage_quotation_item_specifications: [
-                {
-                  componen_product_id: '123e4567-e89b-12d3-a456-426614174004',
-                  manage_quotation_item_specification_label: 'model',
-                  manage_quotation_item_specification_value: 'SX32434534534'
+                  manage_quotation_item_accessories: [
+                    {
+                      accessory_id: '123e4567-e89b-12d3-a456-426614174004',
+                      quantity: 1,
+                      description: 'Additional notes about the item',
+                      accessory_part_number: '',
+                      accessory_part_name: '',
+                      accessory_specification: '',
+                      accessory_brand: '',
+                      accessory_remark: '',
+                      accessory_region: '',
+                      accessory_description: ''
+                    }
+                  ],
+                  manage_quotation_item_specifications: [
+                    {
+                      manage_quotation_item_specification_label: 'model',
+                      manage_quotation_item_specification_value: 'SX32434534534'
+                    }
+                  ]
                 }
               ]
             }

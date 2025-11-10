@@ -542,6 +542,7 @@ const createAccessories = async (manage_quotation_id, accessories, created_by) =
     const fields = {
       manage_quotation_id: manage_quotation_id || null,
       accessory_id: accessory.accessory_id || null,
+      componen_product_id: accessory.componen_product_id || null,
       accessory_part_number: accessory.accessory_part_number ?? null,
       accessory_part_name: accessory.accessory_part_name ?? null,
       accessory_specification: accessory.accessory_specification ?? null,
@@ -577,6 +578,7 @@ const getAccessoriesByQuotationId = async (manage_quotation_id) => {
       'mqia.manage_quotation_item_accessory_id',
       'mqia.manage_quotation_id',
       'mqia.accessory_id',
+      'mqia.componen_product_id',
       'mqia.accessory_part_number',
       'mqia.accessory_part_name',
       'mqia.accessory_specification',
