@@ -142,6 +142,18 @@ const manageQuotationSchemas = {
         example: 'submit',
         default: 'submit'
       },
+      include_aftersales_page: {
+        type: 'boolean',
+        description: 'Menandakan apakah halaman aftersales harus disertakan',
+        example: true,
+        default: false
+      },
+      include_msf_page: {
+        type: 'boolean',
+        description: 'Menandakan apakah halaman MSF harus disertakan',
+        example: false,
+        default: false
+      },
       created_by: {
         type: 'string',
         format: 'uuid',
@@ -318,6 +330,18 @@ const manageQuotationSchemas = {
         description: 'Quotation status',
         example: 'submit',
         default: 'submit'
+      },
+      include_aftersales_page: {
+        type: 'boolean',
+        description: 'Menandakan apakah halaman aftersales perlu disertakan dalam dokumen',
+        example: true,
+        default: false
+      },
+      include_msf_page: {
+        type: 'boolean',
+        description: 'Menandakan apakah halaman MSF perlu disertakan dalam dokumen',
+        example: false,
+        default: false
       },
       manage_quotation_items: {
         type: 'array',

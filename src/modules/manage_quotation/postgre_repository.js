@@ -32,6 +32,8 @@ const findAll = async (params) => {
       'manage_quotation_lead_time',
       'term_content_id',
       'term_content_directory',
+      'include_aftersales_page',
+      'include_msf_page',
       'status',
       'created_by',
       'updated_by',
@@ -188,6 +190,8 @@ const create = async (data) => {
     term_content_id: data.term_content_id || null,
     term_content_directory: data.term_content_directory || null,
     status: data.status || 'submit',
+    include_aftersales_page: data.include_aftersales_page ?? false,
+    include_msf_page: data.include_msf_page ?? false,
     created_by: data.created_by || null
   };
   
@@ -229,6 +233,8 @@ const update = async (id, data) => {
   if (data.manage_quotation_lead_time !== undefined) updateFields.manage_quotation_lead_time = data.manage_quotation_lead_time;
   if (data.term_content_id !== undefined) updateFields.term_content_id = data.term_content_id;
   if (data.term_content_directory !== undefined) updateFields.term_content_directory = data.term_content_directory;
+  if (data.include_aftersales_page !== undefined) updateFields.include_aftersales_page = data.include_aftersales_page;
+  if (data.include_msf_page !== undefined) updateFields.include_msf_page = data.include_msf_page;
   if (data.status !== undefined) updateFields.status = data.status;
   if (data.updated_by !== undefined) updateFields.updated_by = data.updated_by;
   if (data.deleted_by !== undefined) updateFields.deleted_by = data.deleted_by;

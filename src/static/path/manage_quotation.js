@@ -170,6 +170,8 @@ const manageQuotationPaths = {
               term_content_id: '123e4567-e89b-12d3-a456-426614174000',
               term_content_directory: '<p>halo ini test</p>',
               status: 'draft',
+              include_aftersales_page: false,
+              include_msf_page: true,
               manage_quotation_items: [
                 {
                   componen_product_id: '123e4567-e89b-12d3-a456-426614174004',
@@ -349,6 +351,8 @@ const manageQuotationPaths = {
               term_content_id: '123e4567-e89b-12d3-a456-426614174000',
               term_content_directory: '<p>halo ini test</p>',
               status: 'submit',
+              include_aftersales_page: true,
+              include_msf_page: false,
               manage_quotation_items: [
                 {
                   componen_product_id: '123e4567-e89b-12d3-a456-426614174004',

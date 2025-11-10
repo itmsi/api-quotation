@@ -97,6 +97,16 @@ const createValidation = [
     .optional()
     .isIn(['draft', 'submit'])
     .withMessage('Status harus salah satu dari: draft, submit'),
+  body('include_aftersales_page')
+    .optional()
+    .isBoolean()
+    .withMessage('include_aftersales_page harus berupa boolean')
+    .toBoolean(),
+  body('include_msf_page')
+    .optional()
+    .isBoolean()
+    .withMessage('include_msf_page harus berupa boolean')
+    .toBoolean(),
   body('manage_quotation_items')
     .optional()
     .isArray({ min: 0 })
@@ -341,6 +351,16 @@ const updateValidation = [
     .optional()
     .isIn(['draft', 'submit'])
     .withMessage('Status harus salah satu dari: draft, submit'),
+  body('include_aftersales_page')
+    .optional()
+    .isBoolean()
+    .withMessage('include_aftersales_page harus berupa boolean')
+    .toBoolean(),
+  body('include_msf_page')
+    .optional()
+    .isBoolean()
+    .withMessage('include_msf_page harus berupa boolean')
+    .toBoolean(),
   body('manage_quotation_items')
     .optional()
     .isArray({ min: 0 })
