@@ -159,6 +159,10 @@ const getById = async (req, res) => {
     // Get accessories for this quotation
     const accessories = await repository.getAccessoriesByQuotationId(id);
     data.manage_quotation_item_accessories = accessories;
+
+    // Get specifications for this quotation
+    const specifications = await repository.getSpecificationsByQuotationId(id);
+    data.manage_quotation_item_specifications = specifications;
     
     // Read term_content_directory JSON file if exists
     if (data.term_content_directory) {
@@ -186,10 +190,22 @@ const create = async (req, res) => {
     
     // Extract items and accessories from request body
     // Remove manage_quotation_no from body as it will be auto-generated if status is submit
-    const { manage_quotation_items, manage_quotation_item_accessories, manage_quotation_no, term_content_id, term_content_directory, ...quotationData } = req.body;
+    const {
+      manage_quotation_items,
+      manage_quotation_item_accessories,
+      manage_quotation_item_specifications,
+      manage_quotation_no,
+      term_content_id,
+      term_content_directory,
+      ...quotationData
+    } = req.body;
+    
+    const hasItemsArray = Array.isArray(manage_quotation_items);
+    const hasAccessoriesArray = Array.isArray(manage_quotation_item_accessories);
+    const hasSpecificationsArray = Array.isArray(manage_quotation_item_specifications);
     
     // Validate componen_product_id if items provided
-    if (manage_quotation_items && manage_quotation_items.length > 0) {
+    if (hasItemsArray && manage_quotation_items.length > 0) {
       const validation = await repository.validateComponenProductIds(manage_quotation_items);
       if (!validation.isValid) {
         const invalidIdsList = validation.invalidIds.join(', ');
@@ -202,12 +218,25 @@ const create = async (req, res) => {
     }
     
     // Validate accessory_id if accessories provided
-    if (manage_quotation_item_accessories && manage_quotation_item_accessories.length > 0) {
+    if (hasAccessoriesArray && manage_quotation_item_accessories.length > 0) {
       const validation = await repository.validateAccessoryIds(manage_quotation_item_accessories);
       if (!validation.isValid) {
         const invalidIdsList = validation.invalidIds.join(', ');
         const response = mappingError(
           `Accessory dengan ID berikut tidak ditemukan: ${invalidIdsList}`,
+          400
+        );
+        return baseResponse(res, response);
+      }
+    }
+
+    // Validate componen_product_id untuk specifications jika ada
+    if (hasSpecificationsArray && manage_quotation_item_specifications.length > 0) {
+      const validation = await repository.validateSpecificationComponenProductIds(manage_quotation_item_specifications);
+      if (!validation.isValid) {
+        const invalidIdsList = validation.invalidIds.join(', ');
+        const response = mappingError(
+          `Componen product pada specification dengan ID berikut tidak ditemukan: ${invalidIdsList}`,
           400
         );
         return baseResponse(res, response);
@@ -239,13 +268,18 @@ const create = async (req, res) => {
     }
     
     // Create items if provided
-    if (manage_quotation_items && manage_quotation_items.length > 0) {
+    if (hasItemsArray && manage_quotation_items.length > 0) {
       await repository.createItems(data.manage_quotation_id, manage_quotation_items, tokenData.created_by);
     }
     
     // Create accessories if provided
-    if (manage_quotation_item_accessories && manage_quotation_item_accessories.length > 0) {
+    if (hasAccessoriesArray && manage_quotation_item_accessories.length > 0) {
       await repository.createAccessories(data.manage_quotation_id, manage_quotation_item_accessories, tokenData.created_by);
+    }
+
+    // Create specifications jika disediakan
+    if (hasSpecificationsArray && manage_quotation_item_specifications.length > 0) {
+      await repository.createSpecifications(data.manage_quotation_id, manage_quotation_item_specifications, tokenData.created_by);
     }
     
     // Read term_content_directory JSON file if exists
@@ -286,7 +320,19 @@ const update = async (req, res) => {
     
     // Extract items and accessories from request body
     // Remove manage_quotation_no from body as it will be auto-generated if status changes to submit
-    const { manage_quotation_items, manage_quotation_item_accessories, manage_quotation_no, term_content_id, term_content_directory, ...quotationData } = req.body;
+    const {
+      manage_quotation_items,
+      manage_quotation_item_accessories,
+      manage_quotation_item_specifications,
+      manage_quotation_no,
+      term_content_id,
+      term_content_directory,
+      ...quotationData
+    } = req.body;
+    
+    const hasItemsArray = Array.isArray(manage_quotation_items);
+    const hasAccessoriesArray = Array.isArray(manage_quotation_item_accessories);
+    const hasSpecificationsArray = Array.isArray(manage_quotation_item_specifications);
     
     // Get existing quotation data
     existing = await repository.findById(id);
@@ -296,7 +342,7 @@ const update = async (req, res) => {
     }
     
     // Validate componen_product_id if items provided
-    if (manage_quotation_items && manage_quotation_items.length > 0) {
+    if (hasItemsArray && manage_quotation_items.length > 0) {
       const validation = await repository.validateComponenProductIds(manage_quotation_items);
       if (!validation.isValid) {
         const invalidIdsList = validation.invalidIds.join(', ');
@@ -309,12 +355,25 @@ const update = async (req, res) => {
     }
     
     // Validate accessory_id if accessories provided
-    if (manage_quotation_item_accessories && manage_quotation_item_accessories.length > 0) {
+    if (hasAccessoriesArray && manage_quotation_item_accessories.length > 0) {
       const validation = await repository.validateAccessoryIds(manage_quotation_item_accessories);
       if (!validation.isValid) {
         const invalidIdsList = validation.invalidIds.join(', ');
         const response = mappingError(
           `Accessory dengan ID berikut tidak ditemukan: ${invalidIdsList}`,
+          400
+        );
+        return baseResponse(res, response);
+      }
+    }
+
+    // Validate componen_product_id untuk specifications jika ada
+    if (hasSpecificationsArray && manage_quotation_item_specifications.length > 0) {
+      const validation = await repository.validateSpecificationComponenProductIds(manage_quotation_item_specifications);
+      if (!validation.isValid) {
+        const invalidIdsList = validation.invalidIds.join(', ');
+        const response = mappingError(
+          `Componen product pada specification dengan ID berikut tidak ditemukan: ${invalidIdsList}`,
           400
         );
         return baseResponse(res, response);
@@ -365,14 +424,19 @@ const update = async (req, res) => {
       await deleteJsonFile(existing.term_content_directory);
     }
     
-    // Update items if provided
-    if (manage_quotation_items && manage_quotation_items.length > 0) {
+    // Update items jika array disediakan (termasuk kosong untuk reset)
+    if (hasItemsArray) {
       await repository.replaceItems(id, manage_quotation_items, tokenData.updated_by);
     }
     
-    // Update accessories if provided
-    if (manage_quotation_item_accessories && manage_quotation_item_accessories.length > 0) {
+    // Update accessories jika array disediakan (termasuk kosong untuk reset)
+    if (hasAccessoriesArray) {
       await repository.replaceAccessories(id, manage_quotation_item_accessories, tokenData.updated_by);
+    }
+
+    // Update specifications jika array disediakan (termasuk kosong untuk reset)
+    if (hasSpecificationsArray) {
+      await repository.replaceSpecifications(id, manage_quotation_item_specifications, tokenData.updated_by);
     }
     
     // Read term_content_directory JSON file if exists

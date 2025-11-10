@@ -352,10 +352,19 @@ const createItems = async (manage_quotation_id, items, created_by) => {
     const fields = {
       manage_quotation_id: manage_quotation_id || null,
       componen_product_id: item.componen_product_id || null,
-      quantity: item.quantity || 1,
-      price: item.price || null,
-      total: item.total || null,
-      description: item.description || null,
+      code_unique: item.code_unique ?? null,
+      segment: item.segment ?? null,
+      msi_model: item.msi_model ?? null,
+      wheel_no: item.wheel_no ?? null,
+      engine: item.engine ?? null,
+      volume: item.volume ?? null,
+      horse_power: item.horse_power ?? null,
+      market_price: item.market_price ?? null,
+      componen_product_name: item.componen_product_name ?? null,
+      quantity: item.quantity ?? 1,
+      price: item.price ?? null,
+      total: item.total ?? null,
+      description: item.description ?? null,
       created_by: created_by || null
     };
     
@@ -382,6 +391,15 @@ const getItemsByQuotationId = async (manage_quotation_id) => {
       'mqi.manage_quotation_item_id',
       'mqi.manage_quotation_id',
       'mqi.componen_product_id',
+      'mqi.code_unique',
+      'mqi.segment',
+      'mqi.msi_model',
+      'mqi.wheel_no',
+      'mqi.engine',
+      'mqi.volume',
+      'mqi.horse_power',
+      'mqi.market_price',
+      'mqi.componen_product_name',
       'mqi.quantity',
       'mqi.price',
       'mqi.total',
@@ -394,14 +412,16 @@ const getItemsByQuotationId = async (manage_quotation_id) => {
       'mqi.deleted_at',
       'mqi.is_delete',
       // Data from componen_products - using db.raw for aliases
-      db.raw('cp.code_unique as unit_code'),
-      db.raw('cp.segment as segment'),
-      db.raw('cp.msi_model as msi_model'),
-      db.raw('cp.wheel_no as wheel_no'),
-      db.raw('cp.engine as engine'),
-      db.raw('cp.horse_power as horse_power'),
-      'cp.market_price',
-      'cp.image'
+      db.raw('cp.code_unique as cp_code_unique'),
+      db.raw('cp.segment as cp_segment'),
+      db.raw('cp.msi_model as cp_msi_model'),
+      db.raw('cp.wheel_no as cp_wheel_no'),
+      db.raw('cp.engine as cp_engine'),
+      db.raw('cp.volume as cp_volume'),
+      db.raw('cp.horse_power as cp_horse_power'),
+      db.raw('cp.market_price as cp_market_price'),
+      db.raw('cp.componen_product_name as cp_componen_product_name'),
+      db.raw('cp.image as cp_image')
     )
     .leftJoin('componen_products as cp', function() {
       this.on('mqi.componen_product_id', '=', 'cp.componen_product_id')
@@ -450,6 +470,7 @@ const replaceItems = async (manage_quotation_id, items, updated_by) => {
  */
 
 const ACCESSORIES_TABLE_NAME = 'manage_quotation_item_accessories';
+const SPECIFICATIONS_TABLE_NAME = 'manage_quotation_item_specifications';
 
 /**
  * Validate accessory_id exists
@@ -481,6 +502,33 @@ const validateAccessoryIds = async (accessories) => {
 };
 
 /**
+ * Validate componen_product_id for specification payload
+ */
+const validateSpecificationComponenProductIds = async (specifications) => {
+  if (!specifications || specifications.length === 0) {
+    return { isValid: true, invalidIds: [] };
+  }
+
+  const invalidIds = [];
+
+  for (const spec of specifications) {
+    if (!spec.componen_product_id) {
+      continue;
+    }
+
+    const product = await componenProductRepository.findById(spec.componen_product_id);
+    if (!product) {
+      invalidIds.push(spec.componen_product_id);
+    }
+  }
+
+  return {
+    isValid: invalidIds.length === 0,
+    invalidIds
+  };
+};
+
+/**
  * Create quotation accessories
  */
 const createAccessories = async (manage_quotation_id, accessories, created_by) => {
@@ -494,8 +542,15 @@ const createAccessories = async (manage_quotation_id, accessories, created_by) =
     const fields = {
       manage_quotation_id: manage_quotation_id || null,
       accessory_id: accessory.accessory_id || null,
-      quantity: accessory.quantity || 1,
-      description: accessory.description || null,
+      accessory_part_number: accessory.accessory_part_number ?? null,
+      accessory_part_name: accessory.accessory_part_name ?? null,
+      accessory_specification: accessory.accessory_specification ?? null,
+      accessory_brand: accessory.accessory_brand ?? null,
+      accessory_remark: accessory.accessory_remark ?? null,
+      accessory_region: accessory.accessory_region ?? null,
+      accessory_description: accessory.accessory_description ?? null,
+      quantity: accessory.quantity ?? 1,
+      description: accessory.description ?? null,
       created_by: created_by || null
     };
     
@@ -522,6 +577,13 @@ const getAccessoriesByQuotationId = async (manage_quotation_id) => {
       'mqia.manage_quotation_item_accessory_id',
       'mqia.manage_quotation_id',
       'mqia.accessory_id',
+      'mqia.accessory_part_number',
+      'mqia.accessory_part_name',
+      'mqia.accessory_specification',
+      'mqia.accessory_brand',
+      'mqia.accessory_remark',
+      'mqia.accessory_region',
+      'mqia.accessory_description',
       'mqia.quantity',
       'mqia.description',
       'mqia.created_by',
@@ -532,13 +594,13 @@ const getAccessoriesByQuotationId = async (manage_quotation_id) => {
       'mqia.deleted_at',
       'mqia.is_delete',
       // Data from accessories
-      'a.accessory_part_number',
-      'a.accessory_part_name',
-      'a.accessory_specification',
-      'a.accessory_brand',
-      'a.accessory_remark',
-      'a.accessory_region',
-      'a.accessory_description as accessory_full_description'
+      db.raw('a.accessory_part_number as accessory_part_number_source'),
+      db.raw('a.accessory_part_name as accessory_part_name_source'),
+      db.raw('a.accessory_specification as accessory_specification_source'),
+      db.raw('a.accessory_brand as accessory_brand_source'),
+      db.raw('a.accessory_remark as accessory_remark_source'),
+      db.raw('a.accessory_region as accessory_region_source'),
+      db.raw('a.accessory_description as accessory_description_source')
     )
     .leftJoin('accessories as a', function() {
       this.on('mqia.accessory_id', '=', 'a.accessory_id')
@@ -582,6 +644,97 @@ const replaceAccessories = async (manage_quotation_id, accessories, updated_by) 
   return newAccessories;
 };
 
+/**
+ * SPECIFICATION FUNCTIONS
+ */
+
+const createSpecifications = async (manage_quotation_id, specifications, created_by) => {
+  if (!specifications || specifications.length === 0) {
+    return [];
+  }
+
+  const results = [];
+
+  for (const spec of specifications) {
+    const fields = {
+      manage_quotation_id: manage_quotation_id || null,
+      componen_product_id: spec.componen_product_id || null,
+      manage_quotation_item_specification_label: spec.manage_quotation_item_specification_label ?? null,
+      manage_quotation_item_specification_value: spec.manage_quotation_item_specification_value ?? null,
+      created_by: created_by || null
+    };
+
+    const result = await db(SPECIFICATIONS_TABLE_NAME)
+      .insert(fields)
+      .returning('*');
+
+    results.push(result[0]);
+  }
+
+  return results;
+};
+
+const getSpecificationsByQuotationId = async (manage_quotation_id) => {
+  if (!manage_quotation_id) {
+    return [];
+  }
+
+  const result = await db(`${SPECIFICATIONS_TABLE_NAME} as mqis`)
+    .select(
+      'mqis.manage_quotation_item_specification_id',
+      'mqis.manage_quotation_id',
+      'mqis.componen_product_id',
+      'mqis.manage_quotation_item_specification_label',
+      'mqis.manage_quotation_item_specification_value',
+      'mqis.created_by',
+      'mqis.updated_by',
+      'mqis.deleted_by',
+      'mqis.created_at',
+      'mqis.updated_at',
+      'mqis.deleted_at',
+      'mqis.is_delete',
+      db.raw('cp.code_unique as cp_code_unique'),
+      db.raw('cp.componen_product_name as cp_componen_product_name'),
+      db.raw('cp.segment as cp_segment'),
+      db.raw('cp.msi_model as cp_msi_model'),
+      db.raw('cp.wheel_no as cp_wheel_no'),
+      db.raw('cp.engine as cp_engine'),
+      db.raw('cp.volume as cp_volume'),
+      db.raw('cp.horse_power as cp_horse_power'),
+      db.raw('cp.market_price as cp_market_price')
+    )
+    .leftJoin('componen_products as cp', function() {
+      this.on('mqis.componen_product_id', '=', 'cp.componen_product_id')
+          .andOn(db.raw('cp.is_delete = false'));
+    })
+    .where('mqis.manage_quotation_id', manage_quotation_id)
+    .where('mqis.is_delete', false)
+    .orderBy('mqis.created_at', 'asc');
+
+  return result || [];
+};
+
+const deleteSpecificationsByQuotationId = async (manage_quotation_id) => {
+  if (!manage_quotation_id) {
+    return false;
+  }
+
+  const result = await db(SPECIFICATIONS_TABLE_NAME)
+    .where({ manage_quotation_id: manage_quotation_id, is_delete: false })
+    .update({
+      is_delete: true,
+      deleted_at: db.fn.now()
+    });
+
+  return result > 0;
+};
+
+const replaceSpecifications = async (manage_quotation_id, specifications, updated_by) => {
+  await deleteSpecificationsByQuotationId(manage_quotation_id);
+  const newSpecifications = await createSpecifications(manage_quotation_id, specifications, updated_by);
+  return newSpecifications;
+};
+
 module.exports = {
   findAll,
   findById,
@@ -601,6 +754,11 @@ module.exports = {
   createAccessories,
   getAccessoriesByQuotationId,
   deleteAccessoriesByQuotationId,
-  replaceAccessories
+  replaceAccessories,
+  validateSpecificationComponenProductIds,
+  createSpecifications,
+  getSpecificationsByQuotationId,
+  deleteSpecificationsByQuotationId,
+  replaceSpecifications
 };
 

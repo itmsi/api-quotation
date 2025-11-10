@@ -196,6 +196,11 @@ const manageQuotationSchemas = {
         type: 'array',
         description: 'Array of quotation item accessories',
         items: { $ref: '#/components/schemas/ManageQuotationItemAccessory' }
+      },
+      manage_quotation_item_specifications: {
+        type: 'array',
+        description: 'Array of quotation item specifications',
+        items: { $ref: '#/components/schemas/ManageQuotationItemSpecification' }
       }
     }
   },
@@ -333,6 +338,11 @@ const manageQuotationSchemas = {
         type: 'array',
         description: 'Array of quotation item accessories',
         items: { $ref: '#/components/schemas/ManageQuotationItemAccessoryInput' }
+      },
+      manage_quotation_item_specifications: {
+        type: 'array',
+        description: 'Array of quotation item specifications',
+        items: { $ref: '#/components/schemas/ManageQuotationItemSpecificationInput' }
       }
     }
   },
@@ -358,58 +368,118 @@ const manageQuotationSchemas = {
         description: 'Componen product ID reference',
         example: '123e4567-e89b-12d3-a456-426614174004'
       },
-      unit_code: {
+      code_unique: {
         type: 'string',
         nullable: true,
-        description: 'Unit code (from item_products.item_product_code)',
-        example: '1234567890'
-      },
-      unit_model: {
-        type: 'string',
-        nullable: true,
-        description: 'Unit model (from item_products.item_product_model)',
-        example: 'Model 1'
+        description: 'Kode unik komponen yang tersimpan pada item',
+        example: 'CU-001'
       },
       segment: {
         type: 'string',
         nullable: true,
-        description: 'Segment (from item_products.item_product_segment)',
+        description: 'Segment yang tersimpan pada item',
         example: 'Segment 1'
       },
       msi_model: {
         type: 'string',
         nullable: true,
-        description: 'MSI model (from item_products.item_product_msi_model)',
+        description: 'MSI model yang tersimpan pada item',
         example: 'MSI Model 1'
       },
       wheel_no: {
         type: 'string',
         nullable: true,
-        description: 'Wheel number (from item_products.item_product_wheel_no)',
-        example: 'Wheel No 1'
+        description: 'Nomor roda yang tersimpan pada item',
+        example: 'Wheel-01'
       },
       engine: {
         type: 'string',
         nullable: true,
-        description: 'Engine (from item_products.item_product_engine)',
+        description: 'Mesin yang tersimpan pada item',
         example: 'Engine 1'
+      },
+      volume: {
+        type: 'string',
+        nullable: true,
+        description: 'Volume yang tersimpan pada item',
+        example: '2000'
       },
       horse_power: {
         type: 'string',
         nullable: true,
-        description: 'Horse power (from item_products.item_product_horse_power)',
+        description: 'Horse power yang tersimpan pada item',
         example: '100'
       },
-      item_product_market_price: {
+      market_price: {
         type: 'string',
         nullable: true,
-        description: 'Market price (from item_products.item_product_market_price)',
+        description: 'Harga pasar yang tersimpan pada item',
         example: '95000'
       },
-      item_product_image: {
+      componen_product_name: {
         type: 'string',
         nullable: true,
-        description: 'Product image (from item_products.item_product_image)',
+        description: 'Nama produk komponen yang tersimpan pada item',
+        example: 'Excavator Arm'
+      },
+      cp_code_unique: {
+        type: 'string',
+        nullable: true,
+        description: 'Kode unik komponen yang berasal dari master componen_products',
+        example: 'CU-001'
+      },
+      cp_segment: {
+        type: 'string',
+        nullable: true,
+        description: 'Segment dari master componen_products',
+        example: 'Segment A'
+      },
+      cp_msi_model: {
+        type: 'string',
+        nullable: true,
+        description: 'MSI model dari master componen_products',
+        example: 'MSI-Model-A'
+      },
+      cp_wheel_no: {
+        type: 'string',
+        nullable: true,
+        description: 'Wheel number dari master componen_products',
+        example: 'Wheel-01'
+      },
+      cp_engine: {
+        type: 'string',
+        nullable: true,
+        description: 'Engine dari master componen_products',
+        example: 'Engine Master'
+      },
+      cp_volume: {
+        type: 'string',
+        nullable: true,
+        description: 'Volume dari master componen_products',
+        example: '2500'
+      },
+      cp_horse_power: {
+        type: 'string',
+        nullable: true,
+        description: 'Horse power dari master componen_products',
+        example: '120'
+      },
+      cp_market_price: {
+        type: 'string',
+        nullable: true,
+        description: 'Market price dari master componen_products',
+        example: '98000'
+      },
+      cp_componen_product_name: {
+        type: 'string',
+        nullable: true,
+        description: 'Nama komponen dari master componen_products',
+        example: 'Excavator Arm'
+      },
+      cp_image: {
+        type: 'string',
+        nullable: true,
+        description: 'Gambar komponen dari master componen_products',
         example: 'https://example.com/image.jpg'
       },
       quantity: {
@@ -490,6 +560,60 @@ const manageQuotationSchemas = {
         description: 'Componen product ID reference',
         example: '123e4567-e89b-12d3-a456-426614174004'
       },
+      code_unique: {
+        type: 'string',
+        nullable: true,
+        description: 'Kode unik komponen yang ingin disimpan pada item',
+        example: 'CU-001'
+      },
+      segment: {
+        type: 'string',
+        nullable: true,
+        description: 'Segment yang ingin disimpan pada item',
+        example: 'Segment 1'
+      },
+      msi_model: {
+        type: 'string',
+        nullable: true,
+        description: 'MSI model yang ingin disimpan pada item',
+        example: 'MSI Model 1'
+      },
+      wheel_no: {
+        type: 'string',
+        nullable: true,
+        description: 'Nomor roda yang ingin disimpan pada item',
+        example: 'Wheel-01'
+      },
+      engine: {
+        type: 'string',
+        nullable: true,
+        description: 'Mesin yang ingin disimpan pada item',
+        example: 'Engine 1'
+      },
+      volume: {
+        type: 'string',
+        nullable: true,
+        description: 'Volume yang ingin disimpan pada item',
+        example: '2000'
+      },
+      horse_power: {
+        type: 'string',
+        nullable: true,
+        description: 'Horse power yang ingin disimpan pada item',
+        example: '100'
+      },
+      market_price: {
+        type: 'string',
+        nullable: true,
+        description: 'Harga pasar yang ingin disimpan pada item',
+        example: '95000'
+      },
+      componen_product_name: {
+        type: 'string',
+        nullable: true,
+        description: 'Nama produk komponen yang ingin disimpan pada item',
+        example: 'Excavator Arm'
+      },
       quantity: {
         type: 'integer',
         description: 'Quantity',
@@ -538,43 +662,85 @@ const manageQuotationSchemas = {
       accessory_part_number: {
         type: 'string',
         nullable: true,
-        description: 'Accessory part number (from accessories.accessory_part_number)',
+        description: 'Accessory part number yang tersimpan pada item accessory',
         example: 'ACC-001'
       },
       accessory_part_name: {
         type: 'string',
         nullable: true,
-        description: 'Accessory part name (from accessories.accessory_part_name)',
+        description: 'Accessory part name yang tersimpan pada item accessory',
         example: 'Brake Pad'
       },
       accessory_specification: {
         type: 'string',
         nullable: true,
-        description: 'Accessory specification (from accessories.accessory_specification)',
+        description: 'Accessory specification yang tersimpan pada item accessory',
         example: 'Ceramic Brake Pad'
       },
       accessory_brand: {
         type: 'string',
         nullable: true,
-        description: 'Accessory brand (from accessories.accessory_brand)',
+        description: 'Accessory brand yang tersimpan pada item accessory',
         example: 'Brand X'
       },
       accessory_remark: {
         type: 'string',
         nullable: true,
-        description: 'Accessory remark (from accessories.accessory_remark)',
+        description: 'Accessory remark yang tersimpan pada item accessory',
         example: 'High quality'
       },
       accessory_region: {
         type: 'string',
         nullable: true,
-        description: 'Accessory region (from accessories.accessory_region)',
+        description: 'Accessory region yang tersimpan pada item accessory',
         example: 'Asia'
       },
-      accessory_full_description: {
+      accessory_description: {
         type: 'string',
         nullable: true,
-        description: 'Accessory full description (from accessories.accessory_description)',
+        description: 'Accessory description yang tersimpan pada item accessory',
+        example: 'Catatan tambahan untuk accessory'
+      },
+      accessory_part_number_source: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory part number yang berasal dari master accessories',
+        example: 'ACC-001'
+      },
+      accessory_part_name_source: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory part name yang berasal dari master accessories',
+        example: 'Brake Pad'
+      },
+      accessory_specification_source: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory specification yang berasal dari master accessories',
+        example: 'Ceramic Brake Pad'
+      },
+      accessory_brand_source: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory brand yang berasal dari master accessories',
+        example: 'Brand X'
+      },
+      accessory_remark_source: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory remark yang berasal dari master accessories',
+        example: 'High quality'
+      },
+      accessory_region_source: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory region yang berasal dari master accessories',
+        example: 'Asia'
+      },
+      accessory_description_source: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory description yang berasal dari master accessories',
         example: 'This is an accessory description'
       },
       quantity: {
@@ -655,6 +821,207 @@ const manageQuotationSchemas = {
         nullable: true,
         description: 'Item accessory description',
         example: 'Additional notes about the accessory'
+      },
+      accessory_part_number: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory part number yang ingin disimpan pada quotation accessory',
+        example: 'ACC-001'
+      },
+      accessory_part_name: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory part name yang ingin disimpan pada quotation accessory',
+        example: 'Brake Pad'
+      },
+      accessory_specification: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory specification yang ingin disimpan pada quotation accessory',
+        example: 'Ceramic Brake Pad'
+      },
+      accessory_brand: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory brand yang ingin disimpan pada quotation accessory',
+        example: 'Brand X'
+      },
+      accessory_remark: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory remark yang ingin disimpan pada quotation accessory',
+        example: 'High quality'
+      },
+      accessory_region: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory region yang ingin disimpan pada quotation accessory',
+        example: 'Asia'
+      },
+      accessory_description: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory description yang ingin disimpan pada quotation accessory',
+        example: 'Catatan tambahan'
+      }
+    }
+  },
+  ManageQuotationItemSpecification: {
+    type: 'object',
+    properties: {
+      manage_quotation_item_specification_id: {
+        type: 'string',
+        format: 'uuid',
+        description: 'Unique identifier untuk specification item quotation',
+        example: '123e4567-e89b-12d3-a456-426614174010'
+      },
+      manage_quotation_id: {
+        type: 'string',
+        format: 'uuid',
+        description: 'ID quotation induk',
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      },
+      componen_product_id: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Referensi componen product untuk specification',
+        example: '123e4567-e89b-12d3-a456-426614174004'
+      },
+      manage_quotation_item_specification_label: {
+        type: 'string',
+        nullable: true,
+        description: 'Label specification yang tersimpan',
+        example: 'Model'
+      },
+      manage_quotation_item_specification_value: {
+        type: 'string',
+        nullable: true,
+        description: 'Nilai specification yang tersimpan',
+        example: 'SX32434534534'
+      },
+      cp_code_unique: {
+        type: 'string',
+        nullable: true,
+        description: 'Kode unik komponen dari master componen_products',
+        example: 'CU-001'
+      },
+      cp_componen_product_name: {
+        type: 'string',
+        nullable: true,
+        description: 'Nama produk komponen dari master componen_products',
+        example: 'Excavator Arm'
+      },
+      cp_segment: {
+        type: 'string',
+        nullable: true,
+        description: 'Segment dari master componen_products',
+        example: 'Segment A'
+      },
+      cp_msi_model: {
+        type: 'string',
+        nullable: true,
+        description: 'MSI model dari master componen_products',
+        example: 'MSI Model 1'
+      },
+      cp_wheel_no: {
+        type: 'string',
+        nullable: true,
+        description: 'Wheel no dari master componen_products',
+        example: 'Wheel-01'
+      },
+      cp_engine: {
+        type: 'string',
+        nullable: true,
+        description: 'Engine dari master componen_products',
+        example: 'Engine Master'
+      },
+      cp_volume: {
+        type: 'string',
+        nullable: true,
+        description: 'Volume dari master componen_products',
+        example: '2500'
+      },
+      cp_horse_power: {
+        type: 'string',
+        nullable: true,
+        description: 'Horse power dari master componen_products',
+        example: '120'
+      },
+      cp_market_price: {
+        type: 'string',
+        nullable: true,
+        description: 'Market price dari master componen_products',
+        example: '98000'
+      },
+      created_by: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'User ID pembuat data',
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      },
+      updated_by: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'User ID pengubah data',
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      },
+      deleted_by: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'User ID penghapus data',
+        example: null
+      },
+      created_at: {
+        type: 'string',
+        format: 'date-time',
+        description: 'Waktu pembuatan data',
+        example: '2025-01-15T10:00:00.000Z'
+      },
+      updated_at: {
+        type: 'string',
+        format: 'date-time',
+        description: 'Waktu terakhir perubahan data',
+        example: '2025-01-16T10:00:00.000Z'
+      },
+      deleted_at: {
+        type: 'string',
+        format: 'date-time',
+        nullable: true,
+        description: 'Waktu penghapusan (null jika belum dihapus)',
+        example: null
+      },
+      is_delete: {
+        type: 'boolean',
+        description: 'Penanda soft delete',
+        example: false
+      }
+    }
+  },
+  ManageQuotationItemSpecificationInput: {
+    type: 'object',
+    properties: {
+      componen_product_id: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Componen product ID untuk specification',
+        example: '123e4567-e89b-12d3-a456-426614174004'
+      },
+      manage_quotation_item_specification_label: {
+        type: 'string',
+        nullable: true,
+        description: 'Label specification yang akan disimpan',
+        example: 'Model'
+      },
+      manage_quotation_item_specification_value: {
+        type: 'string',
+        nullable: true,
+        description: 'Nilai specification yang akan disimpan',
+        example: 'SX32434534534'
       }
     }
   },

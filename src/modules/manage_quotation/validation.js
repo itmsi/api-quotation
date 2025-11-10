@@ -117,6 +117,51 @@ const createValidation = [
     .optional()
     .notEmpty()
     .withMessage('Total tidak boleh kosong'),
+  body('manage_quotation_items.*.code_unique')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Code unique maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_items.*.segment')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Segment maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_items.*.msi_model')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('MSI model maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_items.*.wheel_no')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Wheel no maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_items.*.engine')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Engine maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_items.*.volume')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Volume maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_items.*.horse_power')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Horse power maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_items.*.market_price')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Market price maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_items.*.componen_product_name')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Componen product name maksimal 255 karakter')
+    .trim(),
   body('manage_quotation_items.*.description')
     .optional()
     .trim(),
@@ -134,6 +179,59 @@ const createValidation = [
     .withMessage('Quantity harus berupa angka positif'),
   body('manage_quotation_item_accessories.*.description')
     .optional()
+    .trim(),
+  body('manage_quotation_item_accessories.*.accessory_part_number')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Accessory part number maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_item_accessories.*.accessory_part_name')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Accessory part name maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_item_accessories.*.accessory_specification')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Accessory specification maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_item_accessories.*.accessory_brand')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Accessory brand maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_item_accessories.*.accessory_remark')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Accessory remark maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_item_accessories.*.accessory_region')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Accessory region maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_item_accessories.*.accessory_description')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Accessory description maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_item_specifications')
+    .optional()
+    .isArray({ min: 0 })
+    .withMessage('Manage quotation item specifications harus berupa array'),
+  body('manage_quotation_item_specifications.*.componen_product_id')
+    .optional()
+    .isUUID()
+    .withMessage('Format componen_product_id pada specification tidak valid'),
+  body('manage_quotation_item_specifications.*.manage_quotation_item_specification_label')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Label specification maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_item_specifications.*.manage_quotation_item_specification_value')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Value specification maksimal 255 karakter')
     .trim(),
 ];
 
@@ -259,6 +357,51 @@ const updateValidation = [
     .optional()
     .notEmpty()
     .withMessage('Total tidak boleh kosong'),
+  body('manage_quotation_items.*.code_unique')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Code unique maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_items.*.segment')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Segment maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_items.*.msi_model')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('MSI model maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_items.*.wheel_no')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Wheel no maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_items.*.engine')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Engine maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_items.*.volume')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Volume maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_items.*.horse_power')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Horse power maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_items.*.market_price')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Market price maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_items.*.componen_product_name')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Componen product name maksimal 255 karakter')
+    .trim(),
   body('manage_quotation_items.*.description')
     .optional()
     .trim(),
@@ -276,6 +419,59 @@ const updateValidation = [
     .withMessage('Quantity harus berupa angka positif'),
   body('manage_quotation_item_accessories.*.description')
     .optional()
+    .trim(),
+  body('manage_quotation_item_accessories.*.accessory_part_number')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Accessory part number maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_item_accessories.*.accessory_part_name')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Accessory part name maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_item_accessories.*.accessory_specification')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Accessory specification maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_item_accessories.*.accessory_brand')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Accessory brand maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_item_accessories.*.accessory_remark')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Accessory remark maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_item_accessories.*.accessory_region')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Accessory region maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_item_accessories.*.accessory_description')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Accessory description maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_item_specifications')
+    .optional()
+    .isArray({ min: 0 })
+    .withMessage('Manage quotation item specifications harus berupa array'),
+  body('manage_quotation_item_specifications.*.componen_product_id')
+    .optional()
+    .isUUID()
+    .withMessage('Format componen_product_id pada specification tidak valid'),
+  body('manage_quotation_item_specifications.*.manage_quotation_item_specification_label')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Label specification maksimal 255 karakter')
+    .trim(),
+  body('manage_quotation_item_specifications.*.manage_quotation_item_specification_value')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Value specification maksimal 255 karakter')
     .trim(),
 ];
 

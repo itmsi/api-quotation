@@ -168,17 +168,20 @@ const manageQuotationPaths = {
               manage_quotation_franco: '',
               manage_quotation_lead_time: '',
               term_content_id: '123e4567-e89b-12d3-a456-426614174000',
-              term_content_directory: {
-                title: 'Updated Term & Condition',
-                items: [
-                  'Pembayaran dilakukan 7 hari setelah invoice',
-                  'Pengiriman dilakukan dalam 5 hari kerja'
-                ]
-              },
+              term_content_directory: '<p>halo ini test</p>',
               status: 'draft',
               manage_quotation_items: [
                 {
                   componen_product_id: '123e4567-e89b-12d3-a456-426614174004',
+                  code_unique: 'CU-002',
+                  segment: 'Segment A',
+                  msi_model: 'MSI Model 2',
+                  wheel_no: 'Wheel-02',
+                  engine: 'Engine 2',
+                  volume: '2500',
+                  horse_power: '150',
+                  market_price: '180000',
+                  componen_product_name: 'Excavator Arm Deluxe',
                   quantity: 2,
                   price: '150000',
                   total: '300000',
@@ -189,7 +192,21 @@ const manageQuotationPaths = {
                 {
                   accessory_id: '123e4567-e89b-12d3-a456-426614174004',
                   quantity: 1,
-                  description: 'Updated notes about the accessory'
+                  description: 'Updated notes about the accessory',
+                  accessory_part_number: 'ACC-001',
+                  accessory_part_name: 'Brake Pad Deluxe',
+                  accessory_specification: 'Ceramic Brake Pad',
+                  accessory_brand: 'Brand X',
+                  accessory_remark: 'High quality',
+                  accessory_region: 'Asia',
+                  accessory_description: 'Accessory description for quotation'
+                }
+              ],
+              manage_quotation_item_specifications: [
+                {
+                  componen_product_id: '123e4567-e89b-12d3-a456-426614174004',
+                  manage_quotation_item_specification_label: 'model',
+                  manage_quotation_item_specification_value: 'SX32434534534'
                 }
               ]
             }
@@ -336,6 +353,15 @@ const manageQuotationPaths = {
               manage_quotation_items: [
                 {
                   componen_product_id: '123e4567-e89b-12d3-a456-426614174004',
+                  code_unique: '',
+                  segment: '',
+                  msi_model: '',
+                  wheel_no: '',
+                  engine: '',
+                  volume: '',
+                  horse_power: '',
+                  market_price: '',
+                  componen_product_name: '',
                   quantity: 1,
                   price: '100000',
                   total: '100000',
@@ -346,7 +372,21 @@ const manageQuotationPaths = {
                 {
                   accessory_id: '123e4567-e89b-12d3-a456-426614174004',
                   quantity: 1,
-                  description: 'Additional notes about the item'
+                  description: 'Additional notes about the item',
+                  accessory_part_number: '',
+                  accessory_part_name: '',
+                  accessory_specification: '',
+                  accessory_brand: '',
+                  accessory_remark: '',
+                  accessory_region: '',
+                  accessory_description: ''
+                }
+              ],
+              manage_quotation_item_specifications: [
+                {
+                  componen_product_id: '123e4567-e89b-12d3-a456-426614174004',
+                  manage_quotation_item_specification_label: 'model',
+                  manage_quotation_item_specification_value: 'SX32434534534'
                 }
               ]
             }
