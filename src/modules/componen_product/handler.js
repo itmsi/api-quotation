@@ -113,6 +113,68 @@ const mapSortBy = (sortBy) => {
 };
 
 /**
+ * Parse and normalize specifications payload from request body
+ */
+const parseSpecificationsInput = (rawInput) => {
+  if (rawInput === undefined) {
+    return {
+      provided: false,
+      items: []
+    };
+  }
+
+  let parsedInput = rawInput;
+
+  if (typeof parsedInput === 'string') {
+    const trimmed = parsedInput.trim();
+
+    if (trimmed === '') {
+      return {
+        provided: true,
+        items: []
+      };
+    }
+
+    try {
+      parsedInput = JSON.parse(trimmed);
+    } catch (error) {
+      const formatError = new Error('Format componen_product_specifications harus berupa JSON yang valid');
+      formatError.statusCode = 400;
+      throw formatError;
+    }
+  }
+
+  if (!Array.isArray(parsedInput)) {
+    parsedInput = [parsedInput];
+  }
+
+  const normalized = parsedInput
+    .filter((item) => item && typeof item === 'object')
+    .map((item) => {
+      const labelRaw = item.componen_product_specification_label ?? item.label ?? null;
+      const valueRaw = item.componen_product_specification_value ?? item.value ?? null;
+      const descriptionRaw = item.componen_product_specification_description ?? item.description ?? null;
+
+      return {
+        componen_product_specification_label: labelRaw !== null && labelRaw !== undefined ? String(labelRaw).trim() || null : null,
+        componen_product_specification_value: valueRaw !== null && valueRaw !== undefined ? String(valueRaw).trim() || null : null,
+        componen_product_specification_description: descriptionRaw !== null && descriptionRaw !== undefined ? String(descriptionRaw).trim() || null : null
+      };
+    })
+    .filter(
+      (item) =>
+        item.componen_product_specification_label !== null ||
+        item.componen_product_specification_value !== null ||
+        item.componen_product_specification_description !== null
+    );
+
+  return {
+    provided: true,
+    items: normalized
+  };
+};
+
+/**
  * Get all componen products with pagination, search, and sort
  */
 const getAll = async (req, res) => {
@@ -184,7 +246,6 @@ const create = async (req, res) => {
     }
     
     const componenProductData = {
-      product_dimensi_id: req.body.product_dimensi_id || null,
       componen_product_name: req.body.componen_product_name || null,
       componen_type: req.body.componen_type ? parseInt(req.body.componen_type) : null,
       code_unique: req.body.code_unique || null,
@@ -205,8 +266,10 @@ const create = async (req, res) => {
       componen_product_description: req.body.componen_product_description || null,
       created_by: tokenData.created_by
     };
+
+    const specificationsPayload = parseSpecificationsInput(req.body.componen_product_specifications);
     
-    const data = await repository.create(componenProductData);
+    const data = await repository.create(componenProductData, specificationsPayload.items);
     const response = mappingSuccess('Data componen product berhasil dibuat', data, 201);
     return baseResponse(res, response);
   } catch (error) {
@@ -247,7 +310,6 @@ const update = async (req, res) => {
     }
     
     const componenProductData = {
-      product_dimensi_id: req.body.product_dimensi_id,
       componen_product_name: req.body.componen_product_name,
       componen_type: req.body.componen_type !== undefined ? (req.body.componen_type ? parseInt(req.body.componen_type) : null) : undefined,
       code_unique: req.body.code_unique,
@@ -272,8 +334,13 @@ const update = async (req, res) => {
     if (imageUrl !== undefined && imageUrl !== null) {
       componenProductData.image = imageUrl;
     }
+
+    const specificationsPayload = parseSpecificationsInput(req.body.componen_product_specifications);
     
-    const data = await repository.update(id, componenProductData);
+    const data = await repository.update(id, componenProductData, {
+      specifications: specificationsPayload.items,
+      specificationsProvided: specificationsPayload.provided
+    });
     
     if (!data) {
       const response = mappingError('Data componen product tidak ditemukan', 404);

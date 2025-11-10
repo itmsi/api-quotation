@@ -12,13 +12,6 @@ const componenProductSchemas = {
         description: 'Unique identifier',
         example: '123e4567-e89b-12d3-a456-426614174000'
       },
-      product_dimensi_id: {
-        type: 'string',
-        format: 'uuid',
-        nullable: true,
-        description: 'Product dimensi ID',
-        example: '123e4567-e89b-12d3-a456-426614174000'
-      },
       componen_product_name: {
         type: 'string',
         nullable: true,
@@ -128,6 +121,39 @@ const componenProductSchemas = {
         description: 'Product description',
         example: 'This is a componen product description'
       },
+      componen_product_specifications: {
+        type: 'array',
+        description: 'Daftar spesifikasi yang tersimpan untuk componen product',
+        items: {
+          type: 'object',
+          properties: {
+            componen_product_specification_id: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID spesifikasi komponen',
+              example: '123e4567-e89b-12d3-a456-426614174000'
+            },
+            componen_product_specification_label: {
+              type: 'string',
+              nullable: true,
+              description: 'Label spesifikasi',
+              example: 'Horse Power'
+            },
+            componen_product_specification_value: {
+              type: 'string',
+              nullable: true,
+              description: 'Nilai spesifikasi',
+              example: '200 HP'
+            },
+            componen_product_specification_description: {
+              type: 'string',
+              nullable: true,
+              description: 'Deskripsi tambahan spesifikasi',
+              example: 'Informasi tambahan mengenai horse power'
+            }
+          }
+        }
+      },
       created_at: {
         type: 'string',
         format: 'date-time',
@@ -175,21 +201,33 @@ const componenProductSchemas = {
       },
       datase_specification: {
         type: 'array',
-        description: 'Daftar spesifikasi terkait komponen product',
+        description: 'Alias daftar spesifikasi terkait componen product (kompatibilitas mundur)',
         items: {
           type: 'object',
           properties: {
-            specification_label_name: {
+            componen_product_specification_id: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID spesifikasi komponen',
+              example: '123e4567-e89b-12d3-a456-426614174000'
+            },
+            componen_product_specification_label: {
               type: 'string',
               nullable: true,
-              description: 'Nama label spesifikasi',
-              example: 'Specification Label Name'
+              description: 'Label spesifikasi',
+              example: 'Horse Power'
             },
-            specification_value_name: {
+            componen_product_specification_value: {
               type: 'string',
               nullable: true,
               description: 'Nilai spesifikasi',
-              example: 'Specification Value Name'
+              example: '200 HP'
+            },
+            componen_product_specification_description: {
+              type: 'string',
+              nullable: true,
+              description: 'Deskripsi tambahan spesifikasi',
+              example: 'Informasi tambahan mengenai horse power'
             }
           }
         }
@@ -199,12 +237,6 @@ const componenProductSchemas = {
   ComponenProductInput: {
     type: 'object',
     properties: {
-      product_dimensi_id: {
-        type: 'string',
-        format: 'uuid',
-        description: 'Product dimensi ID',
-        example: '123e4567-e89b-12d3-a456-426614174000'
-      },
       componen_type: {
         type: 'integer',
         enum: [1, 2, 3],
@@ -310,6 +342,11 @@ const componenProductSchemas = {
         type: 'string',
         description: 'Product description',
         example: 'This is a componen product description'
+      },
+      componen_product_specifications: {
+        type: 'string',
+        description: 'String JSON berisi daftar spesifikasi komponen. Contoh: [{"componen_product_specification_label":"Horse Power","componen_product_specification_value":"200 HP"}]',
+        example: '[{"componen_product_specification_label":"Horse Power","componen_product_specification_value":"200 HP","componen_product_specification_description":"Informasi tambahan mengenai horse power"}]'
       }
     }
   },

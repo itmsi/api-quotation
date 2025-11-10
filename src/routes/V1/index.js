@@ -46,6 +46,10 @@ routing.use(`${API_TAG}/item_product`, itemProductModule)
 const componenProductModule = require('../../modules/componen_product')
 routing.use(`${API_TAG}/componen_product`, componenProductModule)
 
+// Componen Product Specification Module
+const componenProductSpecificationModule = require('../../modules/componen_product_specification')
+routing.use(`${API_TAG}/componen_product/specification`, componenProductSpecificationModule)
+
 // Accessory Module
 const accessoryModule = require('../../modules/accessory')
 routing.use(`${API_TAG}/accessory`, accessoryModule)

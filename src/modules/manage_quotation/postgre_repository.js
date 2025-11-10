@@ -30,6 +30,9 @@ const findAll = async (params) => {
       'manage_quotation_shipping_term',
       'manage_quotation_franco',
       'manage_quotation_lead_time',
+      'bank_account_name',
+      'bank_account_number',
+      'bank_account_bank_name',
       'term_content_id',
       'term_content_directory',
       'include_aftersales_page',
@@ -187,6 +190,9 @@ const create = async (data) => {
     manage_quotation_shipping_term: data.manage_quotation_shipping_term || null,
     manage_quotation_franco: data.manage_quotation_franco || null,
     manage_quotation_lead_time: data.manage_quotation_lead_time || null,
+    bank_account_name: data.bank_account_name || null,
+    bank_account_number: data.bank_account_number || null,
+    bank_account_bank_name: data.bank_account_bank_name || null,
     term_content_id: data.term_content_id || null,
     term_content_directory: data.term_content_directory || null,
     status: data.status || 'submit',
@@ -231,6 +237,9 @@ const update = async (id, data) => {
   if (data.manage_quotation_shipping_term !== undefined) updateFields.manage_quotation_shipping_term = data.manage_quotation_shipping_term;
   if (data.manage_quotation_franco !== undefined) updateFields.manage_quotation_franco = data.manage_quotation_franco;
   if (data.manage_quotation_lead_time !== undefined) updateFields.manage_quotation_lead_time = data.manage_quotation_lead_time;
+  if (data.bank_account_name !== undefined) updateFields.bank_account_name = data.bank_account_name;
+  if (data.bank_account_number !== undefined) updateFields.bank_account_number = data.bank_account_number;
+  if (data.bank_account_bank_name !== undefined) updateFields.bank_account_bank_name = data.bank_account_bank_name;
   if (data.term_content_id !== undefined) updateFields.term_content_id = data.term_content_id;
   if (data.term_content_directory !== undefined) updateFields.term_content_directory = data.term_content_directory;
   if (data.include_aftersales_page !== undefined) updateFields.include_aftersales_page = data.include_aftersales_page;

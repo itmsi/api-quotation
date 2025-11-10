@@ -72,6 +72,21 @@ const createValidation = [
     .isLength({ max: 255 })
     .withMessage('Lead time maksimal 255 karakter')
     .trim(),
+  body('bank_account_name')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Bank account name maksimal 255 karakter')
+    .trim(),
+  body('bank_account_number')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Bank account number maksimal 255 karakter')
+    .trim(),
+  body('bank_account_bank_name')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Bank name maksimal 255 karakter')
+    .trim(),
   body('term_content_id')
     .optional()
     .isUUID()
@@ -325,6 +340,21 @@ const updateValidation = [
     .optional()
     .isLength({ max: 255 })
     .withMessage('Lead time maksimal 255 karakter')
+    .trim(),
+  body('bank_account_name')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Bank account name maksimal 255 karakter')
+    .trim(),
+  body('bank_account_number')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Bank account number maksimal 255 karakter')
+    .trim(),
+  body('bank_account_bank_name')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Bank name maksimal 255 karakter')
     .trim(),
   body('term_content_id')
     .optional()

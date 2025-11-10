@@ -109,6 +109,27 @@ const manageQuotationSchemas = {
         description: 'Lead time',
         example: ''
       },
+      bank_account_name: {
+        type: 'string',
+        nullable: true,
+        maxLength: 255,
+        description: 'Nama pemilik rekening bank',
+        example: 'John Doe'
+      },
+      bank_account_number: {
+        type: 'string',
+        nullable: true,
+        maxLength: 255,
+        description: 'Nomor rekening bank',
+        example: '1234567890'
+      },
+      bank_account_bank_name: {
+        type: 'string',
+        nullable: true,
+        maxLength: 255,
+        description: 'Nama bank',
+        example: 'Bank Mandiri'
+      },
       term_content_id: {
         type: 'string',
         format: 'uuid',
@@ -294,6 +315,27 @@ const manageQuotationSchemas = {
         nullable: true,
         description: 'Lead time',
         example: ''
+      },
+      bank_account_name: {
+        type: 'string',
+        maxLength: 255,
+        nullable: true,
+        description: 'Nama pemilik rekening bank',
+        example: 'John Doe'
+      },
+      bank_account_number: {
+        type: 'string',
+        maxLength: 255,
+        nullable: true,
+        description: 'Nomor rekening bank',
+        example: '1234567890'
+      },
+      bank_account_bank_name: {
+        type: 'string',
+        maxLength: 255,
+        nullable: true,
+        description: 'Nama bank',
+        example: 'Bank Mandiri'
       },
       term_content_id: {
         type: 'string',

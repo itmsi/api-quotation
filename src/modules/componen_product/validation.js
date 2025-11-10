@@ -4,10 +4,6 @@ const { body, param } = require('express-validator');
  * Validation rules for creating componen product
  */
 const createValidation = [
-  body('product_dimensi_id')
-    .optional()
-    .isUUID()
-    .withMessage('Product dimensi ID harus berupa UUID yang valid'),
   body('componen_type')
     .optional()
     .isInt({ min: 1, max: 3 })
@@ -94,7 +90,43 @@ const createValidation = [
   body('componen_product_description')
     .optional()
     .isString()
-    .withMessage('Componen product description harus berupa string')
+    .withMessage('Componen product description harus berupa string'),
+  body('componen_product_specifications')
+    .optional()
+    .custom((value) => {
+      if (value === undefined || value === null || value === '') {
+        return true;
+      }
+
+      let parsed = value;
+
+      if (typeof parsed === 'string') {
+        const trimmed = parsed.trim();
+        if (trimmed === '') {
+          return true;
+        }
+        try {
+          parsed = JSON.parse(trimmed);
+        } catch (error) {
+          throw new Error('Format componen_product_specifications harus berupa JSON yang valid');
+        }
+      }
+
+      if (!Array.isArray(parsed)) {
+        if (typeof parsed !== 'object' || parsed === null) {
+          throw new Error('componen_product_specifications harus berupa objek atau array objek');
+        }
+        parsed = [parsed];
+      }
+
+      parsed.forEach((item) => {
+        if (typeof item !== 'object' || item === null) {
+          throw new Error('Setiap item componen_product_specifications harus berupa objek');
+        }
+      });
+
+      return true;
+    })
 ];
 
 /**
@@ -106,10 +138,6 @@ const updateValidation = [
     .withMessage('ID wajib diisi')
     .isUUID()
     .withMessage('Format ID tidak valid'),
-  body('product_dimensi_id')
-    .optional()
-    .isUUID()
-    .withMessage('Product dimensi ID harus berupa UUID yang valid'),
   body('componen_type')
     .optional()
     .isInt({ min: 1, max: 3 })
@@ -196,7 +224,43 @@ const updateValidation = [
   body('componen_product_description')
     .optional()
     .isString()
-    .withMessage('Componen product description harus berupa string')
+    .withMessage('Componen product description harus berupa string'),
+  body('componen_product_specifications')
+    .optional()
+    .custom((value) => {
+      if (value === undefined || value === null || value === '') {
+        return true;
+      }
+
+      let parsed = value;
+
+      if (typeof parsed === 'string') {
+        const trimmed = parsed.trim();
+        if (trimmed === '') {
+          return true;
+        }
+        try {
+          parsed = JSON.parse(trimmed);
+        } catch (error) {
+          throw new Error('Format componen_product_specifications harus berupa JSON yang valid');
+        }
+      }
+
+      if (!Array.isArray(parsed)) {
+        if (typeof parsed !== 'object' || parsed === null) {
+          throw new Error('componen_product_specifications harus berupa objek atau array objek');
+        }
+        parsed = [parsed];
+      }
+
+      parsed.forEach((item) => {
+        if (typeof item !== 'object' || item === null) {
+          throw new Error('Setiap item componen_product_specifications harus berupa objek');
+        }
+      });
+
+      return true;
+    })
 ];
 
 /**
