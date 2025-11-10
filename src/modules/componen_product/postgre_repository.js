@@ -19,6 +19,7 @@ const buildSearchWhere = (search) => {
         .orWhereRaw('LOWER(wheel_no) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(engine) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(horse_power) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(componen_product_unit_model) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(volume) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(componen_product_description) LIKE ?', [searchPattern]);
     });
@@ -84,11 +85,31 @@ const findAll = async (params) => {
  * Find single componen product by ID
  */
 const findById = async (id) => {
-  const result = await db(TABLE_NAME)
+  const componenProduct = await db(TABLE_NAME)
     .where({ componen_product_id: id, is_delete: false })
     .first();
-  
-  return result || null;
+
+  if (!componenProduct) {
+    return null;
+  }
+
+  const specifications = await db('mst_specification_values as msv')
+    .leftJoin(
+      'mst_specification_labels as msl',
+      'msv.specification_label_id',
+      'msl.specification_label_id'
+    )
+    .select(
+      'msl.specification_label_name',
+      'msv.specification_value_name'
+    )
+    .where('msv.componen_product_id', id)
+    .whereNull('msv.deleted_at');
+
+  return {
+    ...componenProduct,
+    datase_specification: specifications || []
+  };
 };
 
 /**
@@ -115,6 +136,7 @@ const create = async (data) => {
     engine: data.engine || null,
     horse_power: data.horse_power || null,
     volume: data.volume || null,
+    componen_product_unit_model: data.componen_product_unit_model || null,
     market_price: data.market_price || null,
     selling_price_star_1: data.selling_price_star_1 || null,
     selling_price_star_2: data.selling_price_star_2 || null,
@@ -149,6 +171,7 @@ const update = async (id, data) => {
   if (data.engine !== undefined) updateFields.engine = data.engine;
   if (data.horse_power !== undefined) updateFields.horse_power = data.horse_power;
   if (data.volume !== undefined) updateFields.volume = data.volume;
+  if (data.componen_product_unit_model !== undefined) updateFields.componen_product_unit_model = data.componen_product_unit_model;
   if (data.market_price !== undefined) updateFields.market_price = data.market_price;
   if (data.selling_price_star_1 !== undefined) updateFields.selling_price_star_1 = data.selling_price_star_1;
   if (data.selling_price_star_2 !== undefined) updateFields.selling_price_star_2 = data.selling_price_star_2;

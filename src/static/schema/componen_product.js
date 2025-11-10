@@ -68,6 +68,12 @@ const componenProductSchemas = {
         description: 'Horse power',
         example: '200 HP'
       },
+      componen_product_unit_model: {
+        type: 'string',
+        nullable: true,
+        description: 'Componen product unit model',
+        example: 'Unit Model A'
+      },
       volume: {
         type: 'string',
         nullable: true,
@@ -166,6 +172,27 @@ const componenProductSchemas = {
         type: 'boolean',
         description: 'Soft delete flag',
         example: false
+      },
+      datase_specification: {
+        type: 'array',
+        description: 'Daftar spesifikasi terkait komponen product',
+        items: {
+          type: 'object',
+          properties: {
+            specification_label_name: {
+              type: 'string',
+              nullable: true,
+              description: 'Nama label spesifikasi',
+              example: 'Specification Label Name'
+            },
+            specification_value_name: {
+              type: 'string',
+              nullable: true,
+              description: 'Nilai spesifikasi',
+              example: 'Specification Value Name'
+            }
+          }
+        }
       }
     }
   },
@@ -225,6 +252,12 @@ const componenProductSchemas = {
         maxLength: 255,
         description: 'Horse power',
         example: '200 HP'
+      },
+      componen_product_unit_model: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Componen product unit model',
+        example: 'Unit Model A'
       },
       volume: {
         type: 'string',

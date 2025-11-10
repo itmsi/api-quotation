@@ -33,7 +33,7 @@ const componenProductPaths = {
                 },
                 sort_by: {
                   type: 'string',
-                  enum: ['created_at', 'code_unique', 'componen_product_name', 'segment', 'msi_model', 'volume'],
+                  enum: ['created_at', 'code_unique', 'componen_product_name', 'segment', 'msi_model', 'volume', 'componen_product_unit_model'],
                   default: 'created_at',
                   example: 'created_at'
                 },

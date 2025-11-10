@@ -47,6 +47,11 @@ const createValidation = [
     .isLength({ max: 255 })
     .withMessage('Horse power maksimal 255 karakter')
     .trim(),
+  body('componen_product_unit_model')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Componen product unit model maksimal 255 karakter')
+    .trim(),
   body('volume')
     .optional()
     .isLength({ max: 255 })
@@ -144,6 +149,11 @@ const updateValidation = [
     .isLength({ max: 255 })
     .withMessage('Horse power maksimal 255 karakter')
     .trim(),
+  body('componen_product_unit_model')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Componen product unit model maksimal 255 karakter')
+    .trim(),
   body('volume')
     .optional()
     .isLength({ max: 255 })
@@ -219,8 +229,8 @@ const listValidation = [
     .trim(),
   body('sort_by')
     .optional()
-    .isIn(['created_at', 'code_unique', 'componen_product_name', 'segment', 'msi_model', 'volume'])
-    .withMessage('Sort by harus salah satu dari: created_at, code_unique, componen_product_name, segment, msi_model, volume'),
+    .isIn(['created_at', 'code_unique', 'componen_product_name', 'segment', 'msi_model', 'volume', 'componen_product_unit_model'])
+    .withMessage('Sort by harus salah satu dari: created_at, code_unique, componen_product_name, segment, msi_model, volume, componen_product_unit_model'),
   body('sort_order')
     .optional()
     .isIn(['asc', 'desc'])
