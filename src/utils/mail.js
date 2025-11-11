@@ -104,7 +104,7 @@ class Mail {
       option.config = config;
       // queue(this.channel, option)
       return {
-        success: true,
+        status: true,
         queue: true,
         channel: this.channel,
         data: option
@@ -114,11 +114,11 @@ class Mail {
     try {
       const info = await this.transporter.sendMail(option);
       logger(`${option.subject.toLowerCase().replaceAll(' ', '')}.txt`, 'mail').write(`[SENT] Subject: ${option.subject}, Recipient: "${option.to}".\n`)
-      return { success: true, data: info }
+      return { status: true, data: info }
     } catch (err) {
       console.log(err)
       logger(`${option.subject.toLowerCase().replaceAll(' ', '')}.txt`, 'mail').write(`[FAILED] Subject: ${option.subject}, Recipient: "${option.to}", Message: ${err.message}.\n`)
-      return { success: false, message: err.message, data: {} };
+      return { status: false, message: err.message, data: {} };
     }
   }
 

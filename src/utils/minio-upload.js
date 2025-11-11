@@ -23,7 +23,7 @@ const generateMinioUpload = async (req, num, paths, naming, defaults = '', addit
       return {
         pathForDatabase: defaults,
         fileNames: defaults,
-        success: false
+        status: false
       };
     }
 
@@ -77,14 +77,14 @@ const generateMinioUpload = async (req, num, paths, naming, defaults = '', addit
     return {
       pathForDatabase: uploadResult.success ? uploadResult.url : defaults,
       fileNames,
-      success: uploadResult.success
+      status: uploadResult.success
     };
   } catch (error) {
     console.error('Error MinIO Upload : ', error);
     return {
       pathForDatabase: defaults,
       fileNames: defaults,
-      success: false
+      status: false
     };
   }
 };

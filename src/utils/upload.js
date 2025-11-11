@@ -18,7 +18,7 @@ const generateUpload = async (req, num, paths, naming, defaults = '', additional
       return {
         pathForDatabase: defaults,
         fileNames: defaults,
-        success: false
+        status: false
       }
     }
 
@@ -74,14 +74,14 @@ const generateUpload = async (req, num, paths, naming, defaults = '', additional
     return {
       pathForDatabase: await bucketPath,
       fileNames,
-      success: !!await bucketPath
+      status: !!await bucketPath
     }
   } catch (error) {
     console.error('Error Upload : ', error)
     return {
       pathForDatabase: defaults,
       fileNames: defaults,
-      success: false
+      status: false
     }
   }
 }
@@ -206,7 +206,7 @@ const storeToAws = async (
     if (!isAwsEnabled) {
       console.log('AWS is disabled, returning error status for storeToAws')
       return {
-        success: false,
+        status: false,
         path: '',
         error: { message: 'AWS is disabled' }
       }
@@ -246,14 +246,14 @@ const storeToAws = async (
       });
     })
     return {
-      success: true,
+      status: true,
       path: await bucketPath
     }
   } catch (error) {
     console.log('error uploaded file', error);
     error.path_filename = __filename;
     return {
-      success: false,
+      status: false,
       path: '',
       error
     };
@@ -277,8 +277,8 @@ const singleUploadFileToStorage = async (
     };
     const result = await storeToAws(option);
 
-    if (result?.success && result?.path !== '') {
-      return { success: result.success, path: result.path };
+    if (result?.status && result?.path !== '') {
+      return { success: result.status, path: result.path };
     }
   }
 

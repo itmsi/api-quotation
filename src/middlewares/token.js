@@ -8,7 +8,7 @@ const verifyToken = async (req, res, next) => {
     const decode = jwtDecode(token)
     if (decode?.roles && decode.roles[0] === ROLE.CUSTOMER_BUYER) {
       res.status(201).send({
-        success: false,
+        status: false,
         message: lang.__('token.invalid'),
         data: []
       })
@@ -19,7 +19,7 @@ const verifyToken = async (req, res, next) => {
     }
   } else {
     res.status(201).send({
-      success: false,
+      status: false,
       message: lang.__('token.required'),
       data: []
     })
@@ -28,7 +28,7 @@ const verifyToken = async (req, res, next) => {
 
 const verifyTokenCustomer = async (req, res, next) => {
   const response = (message) => res.status(201).send({
-    success: false,
+    status: false,
     message,
     data: []
   })
@@ -52,7 +52,7 @@ const verifyTokenCustomer = async (req, res, next) => {
 
 const verifyTokenClient = async (req, res, next) => {
   const response = (message) => res.status(201).send({
-    success: false,
+    status: false,
     message,
     data: []
   })
@@ -72,7 +72,7 @@ const verifyTokenClient = async (req, res, next) => {
 
 const verifyTokenAuction = async (req, res, next) => {
   const response = (message) => res.status(201).send({
-    success: false,
+    status: false,
     message,
     data: []
   })

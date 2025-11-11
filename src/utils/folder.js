@@ -17,7 +17,7 @@ const generateFolder = (
       pathForAws = `${pathName}/${year}/${month}/${date}/${fileName}${ext}`;
     }
     return {
-      success: true,
+      status: true,
       pathForAws,
       pathForDatabase
     };
@@ -26,7 +26,7 @@ const generateFolder = (
     return {
       pathForDatabase: '',
       pathForAws: '',
-      success: false
+      status: false
     };
   }
 };
@@ -48,7 +48,7 @@ const generateFolderWithSlash = (
       pathForAws = `${pathName}/${year}/${month}/${date}/${fileName}${ext}`;
     }
     return {
-      success: true,
+      status: true,
       pathForAws,
       pathForDatabase
     };
@@ -57,7 +57,7 @@ const generateFolderWithSlash = (
     return {
       pathForDatabase: '',
       pathForAws: '',
-      success: false
+      status: false
     };
   }
 };

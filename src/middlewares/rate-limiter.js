@@ -9,7 +9,7 @@ const rateLimiterConfiguration = {
   keyGenerator: (req, _res) => (req.headers.realip ? req.headers.realip : req.headers['x-forwarded-for']), // IP address from requestIp.mw(), as opposed to req.ip,
   handler: (req, res, _next, _options) => {
     res.status(201).send({
-      success: false,
+      status: false,
       message: lang.__('failed.rate_limit', { menit: process.env.RATE_LIMIT_RETRY }),
       data: []
     })
