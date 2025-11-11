@@ -39,7 +39,7 @@ const notFoundHandler = (req, res) => {
   const err = new Error(message)
   res.status(HTTP.OK).json({
     error: err.toString(),
-    status: true,
+    success: true,
     message,
   })
 }
@@ -65,7 +65,7 @@ const errorHandler = (error, res) => {
     console.log('error sending', err)
   })
   res.status(HTTP.OK).json({
-    status: true,
+    success: true,
     message: lang.__('error.invalid.syntax'),
     data: [],
   })
@@ -73,7 +73,7 @@ const errorHandler = (error, res) => {
 
 const syntaxError = (err, req, res, next) => {
   const result = {
-    status: true,
+    success: true,
     message: `syntax error ${err}`,
     data: []
   }
@@ -105,7 +105,7 @@ const paginationResponse = (req, res, rows) => {
   const countTotal = Number(rows?.data?.response?.count) || 0
   res.status(HTTP.OK).json({
     message: lang.__('get.success'),
-    status: true,
+    success: true,
     data: rows?.data?.response?.result || [],
     _meta: {
       page: Number(req.query?.page) || +PAGE,
@@ -120,7 +120,7 @@ const paginationResponse = (req, res, rows) => {
 const paginationResponsePublic = (req, res, rows) => {
   res.status(HTTP.OK).json({
     message: lang.__('get.success'),
-    status: true,
+    success: true,
     data: rows?.data?.response?.result || []
   })
 }
@@ -150,19 +150,19 @@ const baseResponse = (res, data) => res.status(data?.code ?? HTTP.OK).json(data?
 
 const baseResponseGeneral = (res, data) => res.status(data?.code ?? HTTP.OK).json(data)
 
-const mappingSuccessPagination = (message, response = [], code = HTTP.OK, status = true) => ({
+const mappingSuccessPagination = (message, response = [], code = HTTP.OK, success = true) => ({
   code,
   data: {
-    status,
+    success,
     message,
     response
   }
 })
 
-const mappingSuccess = (message, data = [], code = HTTP.OK, status = true) => ({
+const mappingSuccess = (message, data = [], code = HTTP.OK, success = true) => ({
   code,
   data: {
-    status,
+    success,
     message,
     data
   }
@@ -178,7 +178,7 @@ const mappingErrorValidation = (error, code = HTTP.CREATED) => {
   return {
     code,
     data: {
-      status: false,
+      success: false,
       message,
       exception,
       data: []
@@ -233,7 +233,7 @@ const mappingError = (error, code = HTTP.CREATED) => {
   return {
     code,
     data: {
-      status: false,
+      success: false,
       message,
       exception,
       data: []

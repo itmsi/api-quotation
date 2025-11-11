@@ -28,7 +28,7 @@ Mendapatkan daftar customer dengan pagination, search, dan sorting.
 **Response:**
 ```json
 {
-  "status": true,
+  "success": true,
   "message": "Data berhasil diambil",
   "data": {
     "items": [...],
@@ -48,7 +48,7 @@ Mendapatkan detail customer berdasarkan ID.
 **Response:**
 ```json
 {
-  "status": true,
+  "success": true,
   "message": "Data berhasil diambil",
   "data": {...}
 }
@@ -69,7 +69,7 @@ Membuat customer baru.
 **Response:**
 ```json
 {
-  "status": true,
+  "success": true,
   "message": "Data berhasil dibuat",
   "data": {...}
 }
@@ -89,7 +89,7 @@ Mengupdate data customer.
 **Response:**
 ```json
 {
-  "status": true,
+  "success": true,
   "message": "Data berhasil diupdate",
   "data": {...}
 }
@@ -101,7 +101,7 @@ Soft delete customer (mengisi deleted_at).
 **Response:**
 ```json
 {
-  "status": true,
+  "success": true,
   "message": "Data berhasil dihapus",
   "data": {...}
 }
@@ -113,7 +113,7 @@ Restore customer yang sudah dihapus.
 **Response:**
 ```json
 {
-  "status": true,
+  "success": true,
   "message": "Data berhasil direstore",
   "data": {...}
 }

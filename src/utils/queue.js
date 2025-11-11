@@ -75,14 +75,14 @@ const queueConsumerEmail = (channelQueue) => {
       .config(message.config)
       .send();
 
-    if (send.status) {
+    if (send.success) {
       channel.ack(data);
-      console.log({ channel: channelQueue, status: true, to: message.to })
+      console.log({ channel: channelQueue, success: true, to: message.to })
       logger('queue.txt', 'queue').write(`[CONSUME][SUCCESS]Channel: ${channelQueue}, Data: ${message}.\n`)
     } else {
       channel.nack(data);
       console.log({
-        channel: channelQueue, status: false, to: message.to, message: send.message
+        channel: channelQueue, success: false, to: message.to, message: send.message
       })
       logger('queue.txt', 'queue').write(`[CONSUME][FAILED]Channel: ${channelQueue}, Data: ${message}, Message: ${send.message}.\n`)
     }

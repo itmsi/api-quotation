@@ -4,7 +4,7 @@ const { lang } = require('../lang');
 
 const validateRecaptcha = async (req, res, next) => {
   const response = (message) => res.status(201).send({
-    status: false,
+    success: false,
     message,
     data: [],
   });
