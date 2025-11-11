@@ -18,6 +18,28 @@ const mapSpecificationResponse = (specifications = []) => {
 };
 
 /**
+ * Map nilai componen_type menjadi product_type
+ */
+const mapProductType = (componenType) => {
+  if (componenType === null || componenType === undefined || componenType === '') {
+    return '';
+  }
+
+  const normalizedType = Number(componenType);
+
+  switch (normalizedType) {
+    case 1:
+      return 'OFF ROAD REGULAR';
+    case 2:
+      return 'ON ROAD REGULAR';
+    case 3:
+      return 'OFF ROAD IRREGULAR';
+    default:
+      return '';
+  }
+};
+
+/**
  * Build where clause for search
  */
 const buildSearchWhere = (search) => {
@@ -72,6 +94,10 @@ const findAll = async (params) => {
     .offset(offsetNumber);
   
   const data = await query;
+  const itemsWithProductType = (data || []).map((item) => ({
+    ...item,
+    product_type: mapProductType(item.componen_type)
+  }));
   
   // Count total
   let countQuery = db(TABLE_NAME)
@@ -86,7 +112,7 @@ const findAll = async (params) => {
   const total = parseInt(totalResult?.count || 0, 10);
   
   return {
-    items: data || [],
+    items: itemsWithProductType,
     pagination: {
       page: pageNumber,
       limit: limitNumber,
@@ -129,7 +155,8 @@ const findById = async (id) => {
 
   return {
     ...componenProduct,
-    componen_product_specifications: normalizedSpecs
+    componen_product_specifications: normalizedSpecs,
+    product_type: mapProductType(componenProduct.componen_type)
   };
 };
 
@@ -204,7 +231,8 @@ const create = async (data, specifications = []) => {
 
     return {
       ...product,
-      componen_product_specifications: normalizedSpecs
+      componen_product_specifications: normalizedSpecs,
+      product_type: mapProductType(product.componen_type)
     };
   });
 };
@@ -314,7 +342,8 @@ const update = async (id, data, options = {}) => {
 
     return {
       ...product,
-      componen_product_specifications: normalizedSpecs
+      componen_product_specifications: normalizedSpecs,
+      product_type: mapProductType(product.componen_type)
     };
   });
 };
