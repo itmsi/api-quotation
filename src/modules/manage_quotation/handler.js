@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const db = require('../../config/database');
 const repository = require('./postgre_repository');
+const customerRepository = require('../cutomer/postgre_repository');
 const { baseResponse, mappingError, mappingSuccess, Logger } = require('../../utils');
 const { decodeToken } = require('../../utils/auth');
 
@@ -113,6 +114,30 @@ const mapSortBy = (sortBy) => {
   return mapping[sortBy] || sortBy;
 };
 
+const insertCustomerNameAfterId = (item, customerName) => {
+  if (!item || typeof item !== 'object') {
+    return item;
+  }
+
+  const entries = Object.entries(item);
+  const resultEntries = [];
+  let inserted = false;
+
+  for (const [key, value] of entries) {
+    resultEntries.push([key, value]);
+    if (!inserted && key === 'customer_id') {
+      resultEntries.push(['customer_name', customerName]);
+      inserted = true;
+    }
+  }
+
+  if (!inserted) {
+    resultEntries.push(['customer_name', customerName]);
+  }
+
+  return Object.fromEntries(resultEntries);
+};
+
 /**
  * Get all manage quotations with pagination, search, and sort
  */
@@ -132,6 +157,38 @@ const getAll = async (req, res) => {
     };
     
     const data = await repository.findAll(params);
+
+    if (Array.isArray(data?.items) && data.items.length > 0) {
+      const customerCache = {};
+
+      const enrichedItems = await Promise.all(
+        data.items.map(async (item) => {
+          if (!item || !item.customer_id) {
+            return insertCustomerNameAfterId(item, null);
+          }
+
+          if (!customerCache[item.customer_id]) {
+            customerCache[item.customer_id] = customerRepository
+              .findById(item.customer_id)
+              .catch((error) => {
+                Logger.error('[manage-quotation:getAll] gagal mengambil customer', {
+                  customer_id: item.customer_id,
+                  message: error?.message
+                });
+                return null;
+              });
+          }
+
+          const customer = await customerCache[item.customer_id];
+          const customerName = customer?.customer_name || null;
+
+          return insertCustomerNameAfterId(item, customerName);
+        })
+      );
+
+      data.items = enrichedItems;
+    }
+
     const response = mappingSuccess('Data berhasil diambil', data);
     return baseResponse(res, response);
   } catch (error) {
