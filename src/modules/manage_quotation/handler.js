@@ -1,7 +1,8 @@
 const path = require('path');
 const fs = require('fs');
+const db = require('../../config/database');
 const repository = require('./postgre_repository');
-const { baseResponse, mappingError, mappingSuccess } = require('../../utils');
+const { baseResponse, mappingError, mappingSuccess, Logger } = require('../../utils');
 const { decodeToken } = require('../../utils/auth');
 
 const ROOT_DIR = path.join(__dirname, '../../..');
@@ -200,13 +201,38 @@ const getById = async (req, res) => {
  */
 const create = async (req, res) => {
   let relativePath = null;
+  let createdQuotation = null;
+  const processLogs = [];
+
+  const logStep = (stage, status, details = {}) => {
+    const entry = {
+      stage,
+      status,
+      timestamp: new Date().toISOString(),
+      details
+    };
+    processLogs.push(entry);
+
+    const logPayload = { stage, status, ...details };
+    if (status === 'error') {
+      Logger.error('[manage-quotation:create]', logPayload);
+    } else {
+      Logger.info('[manage-quotation:create]', logPayload);
+    }
+
+    return entry;
+  };
   
   try {
-    // Get user info from token
+    logStep('request.received', 'info', {
+      bodyKeys: Object.keys(req.body || {}),
+      hasItems: Array.isArray(req.body?.manage_quotation_items),
+      itemsCount: Array.isArray(req.body?.manage_quotation_items) ? req.body.manage_quotation_items.length : 0
+    });
+
     const tokenData = decodeToken('created', req);
+    logStep('token.decoded', 'success', { created_by: tokenData.created_by });
     
-    // Extract items and accessories from request body
-    // Remove manage_quotation_no from body as it will be auto-generated if status is submit
     const {
       manage_quotation_items,
       manage_quotation_no,
@@ -272,107 +298,142 @@ const create = async (req, res) => {
         });
       }
     }
+
+    logStep('payload.normalized', 'success', {
+      items: itemsForInsert.length,
+      accessories: accessoriesForInsert.length,
+      specifications: specificationsForInsert.length
+    });
     
     const hasAccessoriesArray = accessoriesForInsert.length > 0;
     const hasSpecificationsArray = specificationsForInsert.length > 0;
     
-    // Validate componen_product_id if items provided
     if (itemsForInsert.length > 0) {
       const validation = await repository.validateComponenProductIds(itemsForInsert);
       if (!validation.isValid) {
+        logStep('validation.items', 'error', { invalidIds: validation.invalidIds });
         const invalidIdsList = validation.invalidIds.join(', ');
         const response = mappingError(
           `Componen product dengan ID berikut tidak ditemukan: ${invalidIdsList}`,
           400
         );
+        response.data.logs = processLogs;
         return baseResponse(res, response);
       }
+      logStep('validation.items', 'success', { validatedCount: itemsForInsert.length });
+    } else {
+      logStep('validation.items', 'skipped', { reason: 'no items provided' });
     }
     
-    // Validate accessory_id if accessories provided
     if (hasAccessoriesArray) {
       const validation = await repository.validateAccessoryIds(accessoriesForInsert);
       if (!validation.isValid) {
+        logStep('validation.accessories', 'error', { invalidIds: validation.invalidIds });
         const invalidIdsList = validation.invalidIds.join(', ');
         const response = mappingError(
           `Accessory dengan ID berikut tidak ditemukan: ${invalidIdsList}`,
           400
         );
+        response.data.logs = processLogs;
         return baseResponse(res, response);
       }
+      logStep('validation.accessories', 'success', { validatedCount: accessoriesForInsert.length });
+    } else {
+      logStep('validation.accessories', 'skipped', { reason: 'no accessories provided' });
     }
 
-    // Validate componen_product_id untuk specifications jika ada
     if (hasSpecificationsArray) {
       const validation = await repository.validateSpecificationComponenProductIds(specificationsForInsert);
       if (!validation.isValid) {
+        logStep('validation.specifications', 'error', { invalidIds: validation.invalidIds });
         const invalidIdsList = validation.invalidIds.join(', ');
         const response = mappingError(
           `Componen product pada specification dengan ID berikut tidak ditemukan: ${invalidIdsList}`,
           400
         );
+        response.data.logs = processLogs;
         return baseResponse(res, response);
       }
+      logStep('validation.specifications', 'success', { validatedCount: specificationsForInsert.length });
+    } else {
+      logStep('validation.specifications', 'skipped', { reason: 'no specifications provided' });
     }
     
-    // Add created_by and term_content_id
     quotationData.created_by = tokenData.created_by;
     if (term_content_id !== undefined) {
       quotationData.term_content_id = term_content_id || null;
     }
-    
-    // Create quotation
-    const data = await repository.create(quotationData);
-    
-    // Handle term_content_directory - save as JSON file if provided
-    if (term_content_directory !== undefined && term_content_directory !== null && term_content_directory !== '') {
-      relativePath = await writeJsonFile(
-        data.manage_quotation_no || 'term_content',
-        data.manage_quotation_id,
-        term_content_directory
-      );
-      
-      // Update quotation with term_content_directory path
-      await repository.update(data.manage_quotation_id, {
-        term_content_directory: relativePath
-      });
-      data.term_content_directory = relativePath;
-    }
-    
-    // Create items if provided
-    if (itemsForInsert.length > 0) {
-      await repository.createItems(data.manage_quotation_id, itemsForInsert, tokenData.created_by);
-    }
-    
-    // Create accessories if provided
-    if (accessoriesForInsert.length > 0) {
-      await repository.createAccessories(data.manage_quotation_id, accessoriesForInsert, tokenData.created_by);
-    }
 
-    // Create specifications jika disediakan
-    if (specificationsForInsert.length > 0) {
-      await repository.createSpecifications(data.manage_quotation_id, specificationsForInsert, tokenData.created_by);
+    await db.transaction(async (trx) => {
+      createdQuotation = await repository.create(quotationData, trx);
+      logStep('transaction.createQuotation', 'success', {
+        manage_quotation_id: createdQuotation.manage_quotation_id,
+        manage_quotation_no: createdQuotation.manage_quotation_no
+      });
+
+      if (term_content_directory !== undefined && term_content_directory !== null && term_content_directory !== '') {
+        relativePath = await writeJsonFile(
+          createdQuotation.manage_quotation_no || 'term_content',
+          createdQuotation.manage_quotation_id,
+          term_content_directory
+        );
+        logStep('transaction.termContent.write', 'success', { relativePath });
+
+        await repository.update(createdQuotation.manage_quotation_id, {
+          term_content_directory: relativePath
+        }, trx);
+
+        createdQuotation.term_content_directory = relativePath;
+      } else {
+        logStep('transaction.termContent.write', 'skipped', { reason: 'no term_content_directory provided' });
+      }
+      
+      if (itemsForInsert.length > 0) {
+        await repository.createItems(createdQuotation.manage_quotation_id, itemsForInsert, tokenData.created_by, trx);
+        logStep('transaction.items.create', 'success', { count: itemsForInsert.length });
+      } else {
+        logStep('transaction.items.create', 'skipped', { reason: 'no items to insert' });
+      }
+      
+      if (accessoriesForInsert.length > 0) {
+        await repository.createAccessories(createdQuotation.manage_quotation_id, accessoriesForInsert, tokenData.created_by, trx);
+        logStep('transaction.accessories.create', 'success', { count: accessoriesForInsert.length });
+      } else {
+        logStep('transaction.accessories.create', 'skipped', { reason: 'no accessories to insert' });
+      }
+
+      if (specificationsForInsert.length > 0) {
+        await repository.createSpecifications(createdQuotation.manage_quotation_id, specificationsForInsert, tokenData.created_by, trx);
+        logStep('transaction.specifications.create', 'success', { count: specificationsForInsert.length });
+      } else {
+        logStep('transaction.specifications.create', 'skipped', { reason: 'no specifications to insert' });
+      }
+    });
+    
+    if (createdQuotation?.term_content_directory) {
+      const payload = await readJsonFile(createdQuotation.term_content_directory);
+      createdQuotation.term_content_payload = payload;
+      logStep('postProcess.termContent.read', 'success', { hasPayload: Boolean(payload) });
     }
     
-    // Read term_content_directory JSON file if exists
-    if (data.term_content_directory) {
-      const payload = await readJsonFile(data.term_content_directory);
-      data.term_content_payload = payload;
-    }
-    
-    const response = mappingSuccess('Data berhasil dibuat', data, 201);
+    const response = mappingSuccess('Data berhasil dibuat', createdQuotation, 201);
+    response.data.logs = processLogs;
     return baseResponse(res, response);
   } catch (error) {
-    // Cleanup file if error occurred
+    logStep('process.failed', 'error', { message: error.message });
+
     if (relativePath) {
       try {
         await deleteJsonFile(relativePath);
+        logStep('rollback.termContent.delete', 'success', { relativePath });
       } catch (cleanupError) {
+        logStep('rollback.termContent.delete', 'error', { message: cleanupError.message });
         console.error('Gagal menghapus file term content saat rollback create:', cleanupError);
       }
     }
     
     const response = mappingError(error);
+    response.data.logs = processLogs;
     return baseResponse(res, response);
   }
 };

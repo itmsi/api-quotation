@@ -129,13 +129,13 @@ const findOne = async (conditions) => {
  * Format: {sequence}/IEC-MSI/{year}
  * Sequence increments per year, resets to 001 when year changes
  */
-const generateQuotationNumber = async () => {
+const generateQuotationNumber = async (trx = db) => {
   const currentYear = moment().format('YYYY');
   const prefix = 'IEC-MSI';
   
   // Find the last quotation number for current year
   // Extract sequence number (first 3 digits before '/') and sort numerically
-  const lastQuotation = await db(TABLE_NAME)
+  const lastQuotation = await trx(TABLE_NAME)
     .select('manage_quotation_no')
     .where('is_delete', false)
     .whereNotNull('manage_quotation_no')
@@ -166,11 +166,11 @@ const generateQuotationNumber = async () => {
 /**
  * Create new manage quotation
  */
-const create = async (data) => {
+const create = async (data, trx = db) => {
   // Generate quotation number if status is submit and no number provided
   let quotationNumber = data.manage_quotation_no || null;
   if (data.status === 'submit' && !quotationNumber) {
-    quotationNumber = await generateQuotationNumber();
+    quotationNumber = await generateQuotationNumber(trx);
   }
   
   // Build fields object - include all expected fields
@@ -201,7 +201,7 @@ const create = async (data) => {
     created_by: data.created_by || null
   };
   
-  const result = await db(TABLE_NAME)
+  const result = await trx(TABLE_NAME)
     .insert(fields)
     .returning('*');
   
@@ -211,13 +211,13 @@ const create = async (data) => {
 /**
  * Update existing manage quotation
  */
-const update = async (id, data) => {
+const update = async (id, data, trx = db) => {
   // Check if status is changing to submit and quotation number is not set
   if (data.status === 'submit') {
     const existingQuotation = await findById(id);
     if (existingQuotation && !existingQuotation.manage_quotation_no) {
       // Generate quotation number if status is submit and no number exists
-      data.manage_quotation_no = await generateQuotationNumber();
+      data.manage_quotation_no = await generateQuotationNumber(trx);
     }
   }
   
@@ -253,9 +253,9 @@ const update = async (id, data) => {
   }
   
   // Use Knex query builder instead of raw query to avoid binding issues
-  updateFields.updated_at = db.fn.now();
-  
-  const result = await db(TABLE_NAME)
+  updateFields.updated_at = trx.fn.now();
+
+  const result = await trx(TABLE_NAME)
     .where({ manage_quotation_id: id, is_delete: false })
     .update(updateFields)
     .returning('*');
@@ -356,7 +356,7 @@ const validateComponenProductIds = async (items) => {
 /**
  * Create quotation items
  */
-const createItems = async (manage_quotation_id, items, created_by) => {
+const createItems = async (manage_quotation_id, items, created_by, trx = db) => {
   if (!items || items.length === 0) {
     return [];
   }
@@ -383,7 +383,7 @@ const createItems = async (manage_quotation_id, items, created_by) => {
       created_by: created_by || null
     };
     
-    const result = await db(ITEMS_TABLE_NAME)
+    const result = await trx(ITEMS_TABLE_NAME)
       .insert(fields)
       .returning('*');
     
@@ -546,7 +546,7 @@ const validateSpecificationComponenProductIds = async (specifications) => {
 /**
  * Create quotation accessories
  */
-const createAccessories = async (manage_quotation_id, accessories, created_by) => {
+const createAccessories = async (manage_quotation_id, accessories, created_by, trx = db) => {
   if (!accessories || accessories.length === 0) {
     return [];
   }
@@ -570,7 +570,7 @@ const createAccessories = async (manage_quotation_id, accessories, created_by) =
       created_by: created_by || null
     };
     
-    const result = await db(ACCESSORIES_TABLE_NAME)
+    const result = await trx(ACCESSORIES_TABLE_NAME)
       .insert(fields)
       .returning('*');
     
@@ -665,7 +665,7 @@ const replaceAccessories = async (manage_quotation_id, accessories, updated_by) 
  * SPECIFICATION FUNCTIONS
  */
 
-const createSpecifications = async (manage_quotation_id, specifications, created_by) => {
+const createSpecifications = async (manage_quotation_id, specifications, created_by, trx = db) => {
   if (!specifications || specifications.length === 0) {
     return [];
   }
@@ -681,7 +681,7 @@ const createSpecifications = async (manage_quotation_id, specifications, created
       created_by: created_by || null
     };
 
-    const result = await db(SPECIFICATIONS_TABLE_NAME)
+    const result = await trx(SPECIFICATIONS_TABLE_NAME)
       .insert(fields)
       .returning('*');
 
