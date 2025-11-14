@@ -260,6 +260,32 @@ const getById = async (req, res) => {
       return baseResponse(res, response);
     }
     
+    if (data.customer_id && (data.customer_name === undefined || data.customer_name === null)) {
+      try {
+        const customer = await customerRepository.findById(data.customer_id);
+        data.customer_name = customer?.customer_name || null;
+      } catch (error) {
+        Logger.error('[manage-quotation:getById] gagal memuat customer', {
+          customer_id: data.customer_id,
+          message: error?.message
+        });
+        data.customer_name = null;
+      }
+    }
+    
+    if (data.employee_id && (data.employee_name === undefined || data.employee_name === null)) {
+      try {
+        const employee = await employeeRepository.findById(data.employee_id);
+        data.employee_name = employee?.employee_name || null;
+      } catch (error) {
+        Logger.error('[manage-quotation:getById] gagal memuat employee', {
+          employee_id: data.employee_id,
+          message: error?.message
+        });
+        data.employee_name = null;
+      }
+    }
+    
     // Get detail data
     const items = await repository.getItemsByQuotationId(id);
     const accessories = await repository.getAccessoriesByQuotationId(id);
