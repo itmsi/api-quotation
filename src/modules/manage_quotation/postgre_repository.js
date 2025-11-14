@@ -1,3 +1,5 @@
+const customerRepository = require('../cutomer/postgre_repository');
+const CUSTOMER_DBLINK_NAME = 'gate_sso_dblink';
 const db = require('../../config/database');
 const moment = require('moment');
 const componenProductRepository = require('../componen_product/postgre_repository');
@@ -11,57 +13,70 @@ const TABLE_NAME = 'manage_quotations';
 const findAll = async (params) => {
   const { page, limit, offset, search, sortBy, sortOrder } = params;
   
+  await customerRepository.ensureConnection();
+
+  const customerJoin = db.raw(
+    `dblink('${CUSTOMER_DBLINK_NAME}', 'SELECT customer_id, customer_name FROM customers WHERE customer_id IS NOT NULL') AS customer_data(customer_id uuid, customer_name varchar)`
+  );
+
   // Query data - use parameterized query with knex
-  let query = db(TABLE_NAME)
+  let query = db({ mq: TABLE_NAME })
     .select(
-      'manage_quotation_id',
-      'manage_quotation_no',
-      'customer_id',
-      'employee_id',
-      'manage_quotation_date',
-      'manage_quotation_valid_date',
-      'manage_quotation_grand_total',
-      'manage_quotation_ppn',
-      'manage_quotation_delivery_fee',
-      'manage_quotation_other',
-      'manage_quotation_payment_presentase',
-      'manage_quotation_payment_nominal',
-      'manage_quotation_description',
-      'manage_quotation_shipping_term',
-      'manage_quotation_franco',
-      'manage_quotation_lead_time',
-      'bank_account_name',
-      'bank_account_number',
-      'bank_account_bank_name',
-      'term_content_id',
-      'term_content_directory',
-      'include_aftersales_page',
-      'include_msf_page',
-      'status',
-      'created_by',
-      'updated_by',
-      'deleted_by',
-      'created_at',
-      'updated_at',
-      'deleted_at',
-      'is_delete'
+      'mq.manage_quotation_id',
+      'mq.manage_quotation_no',
+      'mq.customer_id',
+      db.raw('customer_data.customer_name as customer_name'),
+      'mq.employee_id',
+      'mq.manage_quotation_date',
+      'mq.manage_quotation_valid_date',
+      'mq.manage_quotation_grand_total',
+      'mq.manage_quotation_ppn',
+      'mq.manage_quotation_delivery_fee',
+      'mq.manage_quotation_other',
+      'mq.manage_quotation_payment_presentase',
+      'mq.manage_quotation_payment_nominal',
+      'mq.manage_quotation_description',
+      'mq.manage_quotation_shipping_term',
+      'mq.manage_quotation_franco',
+      'mq.manage_quotation_lead_time',
+      'mq.bank_account_name',
+      'mq.bank_account_number',
+      'mq.bank_account_bank_name',
+      'mq.term_content_id',
+      'mq.term_content_directory',
+      'mq.include_aftersales_page',
+      'mq.include_msf_page',
+      'mq.status',
+      'mq.created_by',
+      'mq.updated_by',
+      'mq.deleted_by',
+      'mq.created_at',
+      'mq.updated_at',
+      'mq.deleted_at',
+      'mq.is_delete'
     )
-    .where('is_delete', false);
+    .leftJoin(customerJoin, 'mq.customer_id', 'customer_data.customer_id')
+    .where('mq.is_delete', false);
   
   // Add search condition
   if (search && search.trim() !== '') {
     const searchLower = `%${search.toLowerCase()}%`;
     query = query.where(function() {
-      this.where('manage_quotation_no', 'ILIKE', searchLower)
-        .orWhere(db.raw('LOWER(CAST(customer_id AS TEXT))'), 'LIKE', searchLower)
-        .orWhere(db.raw('LOWER(CAST(employee_id AS TEXT))'), 'LIKE', searchLower);
+      this.where('mq.manage_quotation_no', 'ILIKE', searchLower)
+        .orWhere(db.raw('LOWER(CAST(mq.customer_id AS TEXT))'), 'LIKE', searchLower)
+        .orWhere(db.raw('LOWER(CAST(mq.employee_id AS TEXT))'), 'LIKE', searchLower)
+        .orWhere(db.raw('LOWER(customer_data.customer_name)'), 'LIKE', searchLower);
     });
   }
   
   // Add sorting
-  const sortBySafe = ['created_at', 'manage_quotation_no', 'manage_quotation_date', 'manage_quotation_valid_date'].includes(sortBy) 
-    ? sortBy 
-    : 'created_at';
+  const sortColumnMap = {
+    'created_at': 'mq.created_at',
+    'manage_quotation_no': 'mq.manage_quotation_no',
+    'manage_quotation_date': 'mq.manage_quotation_date',
+    'manage_quotation_valid_date': 'mq.manage_quotation_valid_date'
+  };
+  const sortBySafe = sortColumnMap[sortBy] || sortColumnMap.created_at;
   const sortOrderSafe = ['asc', 'desc'].includes(sortOrder?.toLowerCase()) ? sortOrder : 'desc';
   
   query = query.orderBy(sortBySafe, sortOrderSafe).limit(parseInt(limit)).offset(parseInt(offset));
@@ -69,14 +84,18 @@ const findAll = async (params) => {
   const data = await query;
   
   // Query total count
-  let countQuery = db(TABLE_NAME).count('* as count').where('is_delete', false);
+  let countQuery = db({ mq: TABLE_NAME })
+    .count('* as count')
+    .leftJoin(customerJoin, 'mq.customer_id', 'customer_data.customer_id')
+    .where('mq.is_delete', false);
   
   if (search && search.trim() !== '') {
     const searchLower = `%${search.toLowerCase()}%`;
     countQuery = countQuery.where(function() {
-      this.where('manage_quotation_no', 'ILIKE', searchLower)
-        .orWhere(db.raw('LOWER(CAST(customer_id AS TEXT))'), 'LIKE', searchLower)
-        .orWhere(db.raw('LOWER(CAST(employee_id AS TEXT))'), 'LIKE', searchLower);
+      this.where('mq.manage_quotation_no', 'ILIKE', searchLower)
+        .orWhere(db.raw('LOWER(CAST(mq.customer_id AS TEXT))'), 'LIKE', searchLower)
+        .orWhere(db.raw('LOWER(CAST(mq.employee_id AS TEXT))'), 'LIKE', searchLower)
+        .orWhere(db.raw('LOWER(customer_data.customer_name)'), 'LIKE', searchLower);
     });
   }
   

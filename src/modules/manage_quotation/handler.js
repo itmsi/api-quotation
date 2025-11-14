@@ -119,7 +119,7 @@ const insertCustomerNameAfterId = (item, customerName) => {
     return item;
   }
 
-  const entries = Object.entries(item);
+  const entries = Object.entries(item).filter(([key]) => key !== 'customer_name');
   const resultEntries = [];
   let inserted = false;
 
@@ -159,34 +159,46 @@ const getAll = async (req, res) => {
     const data = await repository.findAll(params);
 
     if (Array.isArray(data?.items) && data.items.length > 0) {
-      const customerCache = {};
-
-      const enrichedItems = await Promise.all(
-        data.items.map(async (item) => {
-          if (!item || !item.customer_id) {
-            return insertCustomerNameAfterId(item, null);
-          }
-
-          if (!customerCache[item.customer_id]) {
-            customerCache[item.customer_id] = customerRepository
-              .findById(item.customer_id)
-              .catch((error) => {
-                Logger.error('[manage-quotation:getAll] gagal mengambil customer', {
-                  customer_id: item.customer_id,
-                  message: error?.message
-                });
-                return null;
-              });
-          }
-
-          const customer = await customerCache[item.customer_id];
-          const customerName = customer?.customer_name || null;
-
-          return insertCustomerNameAfterId(item, customerName);
-        })
+      const itemsNeedingCustomer = data.items.filter(
+        (item) => item && item.customer_id && (item.customer_name === undefined || item.customer_name === null)
       );
 
-      data.items = enrichedItems;
+      let customerMap = {};
+
+      if (itemsNeedingCustomer.length > 0) {
+        const uniqueCustomerIds = [
+          ...new Set(itemsNeedingCustomer.map((item) => item.customer_id).filter(Boolean))
+        ];
+
+        if (uniqueCustomerIds.length > 0) {
+          try {
+            const customers = await customerRepository.findByIds(uniqueCustomerIds);
+            if (Array.isArray(customers)) {
+              customerMap = customers.reduce((acc, customer) => {
+                if (customer?.customer_id) {
+                  acc[customer.customer_id] = customer.customer_name || null;
+                }
+                return acc;
+              }, {});
+            }
+          } catch (error) {
+            Logger.error('[manage-quotation:getAll] gagal memuat customer fallback', {
+              customer_ids: uniqueCustomerIds,
+              message: error?.message
+            });
+          }
+        }
+      }
+
+      data.items = data.items.map((item) => {
+        if (!item) {
+          return item;
+        }
+        const customerName = Object.prototype.hasOwnProperty.call(item, 'customer_name')
+          ? item.customer_name
+          : (item.customer_id ? customerMap[item.customer_id] ?? null : null);
+        return insertCustomerNameAfterId(item, customerName);
+      });
     }
 
     const response = mappingSuccess('Data berhasil diambil', data);

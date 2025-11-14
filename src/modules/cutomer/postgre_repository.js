@@ -229,6 +229,58 @@ const findOne = async (conditions) => {
 };
 
 /**
+ * Find multiple customers by IDs
+ */
+const findByIds = async (ids = []) => {
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return [];
+  }
+
+  const uniqueIds = [...new Set(ids.filter(Boolean))];
+  if (uniqueIds.length === 0) {
+    return [];
+  }
+
+  await ensureConnection();
+
+  const escapedIdPromises = uniqueIds.map(async (id) => {
+    const escapedIdResult = await db.raw(`SELECT quote_literal(?) as escaped`, [id]);
+    return escapedIdResult.rows[0]?.escaped;
+  });
+
+  const escapedIds = await Promise.all(escapedIdPromises);
+  const sanitizedIds = escapedIds.filter(Boolean);
+  if (sanitizedIds.length === 0) {
+    return [];
+  }
+
+  const innerQueryParts = [
+    'SELECT customer_id, customer_name, customer_email, customer_phone, customer_address, created_at FROM customers',
+    `WHERE customer_id IN (${sanitizedIds.join(', ')})`
+  ];
+  const innerQuery = innerQueryParts.join(' ');
+
+  const escapedInnerQueryResult = await db.raw(`SELECT quote_literal(?) as escaped`, [innerQuery]);
+  const escapedInnerQuery = escapedInnerQueryResult.rows[0]?.escaped;
+
+  const query = `
+    SELECT * FROM dblink('${DB_LINK_NAME}', 
+      ${escapedInnerQuery}
+    ) AS customers (
+      customer_id uuid,
+      customer_name varchar,
+      customer_email varchar,
+      customer_phone varchar,
+      customer_address varchar,
+      created_at timestamp
+    )
+  `;
+
+  const result = await db.raw(query);
+  return result.rows || [];
+};
+
+/**
  * Create new customer
  */
 const create = async (data) => {
@@ -371,8 +423,10 @@ const hardDelete = async (id) => {
 };
 
 module.exports = {
+  ensureConnection,
   findAll,
   findById,
+  findByIds,
   findOne,
   create,
   update,
