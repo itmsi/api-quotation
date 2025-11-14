@@ -225,9 +225,64 @@ const findOne = async (conditions) => {
   return result.rows[0] || null;
 };
 
+/**
+ * Find multiple employees by IDs
+ */
+const findByIds = async (ids = []) => {
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return [];
+  }
+
+  const uniqueIds = [...new Set(ids.filter(Boolean))];
+  if (uniqueIds.length === 0) {
+    return [];
+  }
+
+  await ensureConnection();
+
+  const escapedIdPromises = uniqueIds.map(async (id) => {
+    const escapedIdResult = await db.raw(`SELECT quote_literal(?) as escaped`, [id]);
+    return escapedIdResult.rows[0]?.escaped;
+  });
+
+  const escapedIds = await Promise.all(escapedIdPromises);
+  const sanitizedIds = escapedIds.filter(Boolean);
+  if (sanitizedIds.length === 0) {
+    return [];
+  }
+
+  const innerQuery = [
+    'SELECT employee_id, employee_name, employee_email, employee_phone, department_id, title_id, created_at FROM',
+    TABLE_NAME,
+    `WHERE employee_id IN (${sanitizedIds.join(', ')}) AND is_delete = false`
+  ].join(' ');
+
+  const escapedInnerQueryResult = await db.raw(`SELECT quote_literal(?) as escaped`, [innerQuery]);
+  const escapedInnerQuery = escapedInnerQueryResult.rows[0]?.escaped;
+
+  const query = `
+    SELECT * FROM dblink('${DB_LINK_NAME}',
+      ${escapedInnerQuery}
+    ) AS employees (
+      employee_id uuid,
+      employee_name varchar,
+      employee_email varchar,
+      employee_phone varchar,
+      department_id uuid,
+      title_id uuid,
+      created_at timestamp
+    )
+  `;
+
+  const result = await db.raw(query);
+  return result.rows || [];
+};
+
 module.exports = {
+  ensureConnection,
   findAll,
   findById,
+  findByIds,
   findOne
 };
 

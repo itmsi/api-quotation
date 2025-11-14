@@ -3,6 +3,7 @@ const fs = require('fs');
 const db = require('../../config/database');
 const repository = require('./postgre_repository');
 const customerRepository = require('../cutomer/postgre_repository');
+const employeeRepository = require('../sales/postgre_repository');
 const { baseResponse, mappingError, mappingSuccess, Logger } = require('../../utils');
 const { decodeToken } = require('../../utils/auth');
 
@@ -114,25 +115,25 @@ const mapSortBy = (sortBy) => {
   return mapping[sortBy] || sortBy;
 };
 
-const insertCustomerNameAfterId = (item, customerName) => {
+const insertFieldAfterKey = (item, targetKey, fieldName, fieldValue) => {
   if (!item || typeof item !== 'object') {
     return item;
   }
 
-  const entries = Object.entries(item).filter(([key]) => key !== 'customer_name');
+  const entries = Object.entries(item).filter(([key]) => key !== fieldName);
   const resultEntries = [];
   let inserted = false;
 
   for (const [key, value] of entries) {
     resultEntries.push([key, value]);
-    if (!inserted && key === 'customer_id') {
-      resultEntries.push(['customer_name', customerName]);
+    if (!inserted && key === targetKey) {
+      resultEntries.push([fieldName, fieldValue]);
       inserted = true;
     }
   }
 
   if (!inserted) {
-    resultEntries.push(['customer_name', customerName]);
+    resultEntries.push([fieldName, fieldValue]);
   }
 
   return Object.fromEntries(resultEntries);
@@ -162,8 +163,12 @@ const getAll = async (req, res) => {
       const itemsNeedingCustomer = data.items.filter(
         (item) => item && item.customer_id && (item.customer_name === undefined || item.customer_name === null)
       );
+      const itemsNeedingEmployee = data.items.filter(
+        (item) => item && item.employee_id && (item.employee_name === undefined || item.employee_name === null)
+      );
 
       let customerMap = {};
+      let employeeMap = {};
 
       if (itemsNeedingCustomer.length > 0) {
         const uniqueCustomerIds = [
@@ -190,14 +195,47 @@ const getAll = async (req, res) => {
         }
       }
 
+      if (itemsNeedingEmployee.length > 0) {
+        const uniqueEmployeeIds = [
+          ...new Set(itemsNeedingEmployee.map((item) => item.employee_id).filter(Boolean))
+        ];
+
+        if (uniqueEmployeeIds.length > 0) {
+          try {
+            const employees = await employeeRepository.findByIds(uniqueEmployeeIds);
+            if (Array.isArray(employees)) {
+              employeeMap = employees.reduce((acc, employee) => {
+                if (employee?.employee_id) {
+                  acc[employee.employee_id] = employee.employee_name || null;
+                }
+                return acc;
+              }, {});
+            }
+          } catch (error) {
+            Logger.error('[manage-quotation:getAll] gagal memuat employee fallback', {
+              employee_ids: uniqueEmployeeIds,
+              message: error?.message
+            });
+          }
+        }
+      }
+
       data.items = data.items.map((item) => {
         if (!item) {
           return item;
         }
+
         const customerName = Object.prototype.hasOwnProperty.call(item, 'customer_name')
           ? item.customer_name
           : (item.customer_id ? customerMap[item.customer_id] ?? null : null);
-        return insertCustomerNameAfterId(item, customerName);
+
+        const employeeName = Object.prototype.hasOwnProperty.call(item, 'employee_name')
+          ? item.employee_name
+          : (item.employee_id ? employeeMap[item.employee_id] ?? null : null);
+
+        let result = insertFieldAfterKey(item, 'customer_id', 'customer_name', customerName);
+        result = insertFieldAfterKey(result, 'employee_id', 'employee_name', employeeName);
+        return result;
       });
     }
 

@@ -1,5 +1,5 @@
 const customerRepository = require('../cutomer/postgre_repository');
-const CUSTOMER_DBLINK_NAME = 'gate_sso_dblink';
+const DBLINK_NAME = 'gate_sso_dblink';
 const db = require('../../config/database');
 const moment = require('moment');
 const componenProductRepository = require('../componen_product/postgre_repository');
@@ -16,7 +16,11 @@ const findAll = async (params) => {
   await customerRepository.ensureConnection();
 
   const customerJoin = db.raw(
-    `dblink('${CUSTOMER_DBLINK_NAME}', 'SELECT customer_id, customer_name FROM customers WHERE customer_id IS NOT NULL') AS customer_data(customer_id uuid, customer_name varchar)`
+    `dblink('${DBLINK_NAME}', 'SELECT customer_id, customer_name FROM customers WHERE customer_id IS NOT NULL') AS customer_data(customer_id uuid, customer_name varchar)`
+  );
+
+  const employeeJoin = db.raw(
+    `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS employee_data(employee_id uuid, employee_name varchar)`
   );
 
   // Query data - use parameterized query with knex
@@ -27,6 +31,7 @@ const findAll = async (params) => {
       'mq.customer_id',
       db.raw('customer_data.customer_name as customer_name'),
       'mq.employee_id',
+      db.raw('employee_data.employee_name as employee_name'),
       'mq.manage_quotation_date',
       'mq.manage_quotation_valid_date',
       'mq.manage_quotation_grand_total',
@@ -56,6 +61,7 @@ const findAll = async (params) => {
       'mq.is_delete'
     )
     .leftJoin(customerJoin, 'mq.customer_id', 'customer_data.customer_id')
+    .leftJoin(employeeJoin, 'mq.employee_id', 'employee_data.employee_id')
     .where('mq.is_delete', false);
   
   // Add search condition
@@ -65,7 +71,8 @@ const findAll = async (params) => {
       this.where('mq.manage_quotation_no', 'ILIKE', searchLower)
         .orWhere(db.raw('LOWER(CAST(mq.customer_id AS TEXT))'), 'LIKE', searchLower)
         .orWhere(db.raw('LOWER(CAST(mq.employee_id AS TEXT))'), 'LIKE', searchLower)
-        .orWhere(db.raw('LOWER(customer_data.customer_name)'), 'LIKE', searchLower);
+        .orWhere(db.raw('LOWER(customer_data.customer_name)'), 'LIKE', searchLower)
+        .orWhere(db.raw('LOWER(employee_data.employee_name)'), 'LIKE', searchLower);
     });
   }
   
@@ -87,6 +94,7 @@ const findAll = async (params) => {
   let countQuery = db({ mq: TABLE_NAME })
     .count('* as count')
     .leftJoin(customerJoin, 'mq.customer_id', 'customer_data.customer_id')
+    .leftJoin(employeeJoin, 'mq.employee_id', 'employee_data.employee_id')
     .where('mq.is_delete', false);
   
   if (search && search.trim() !== '') {
@@ -95,7 +103,8 @@ const findAll = async (params) => {
       this.where('mq.manage_quotation_no', 'ILIKE', searchLower)
         .orWhere(db.raw('LOWER(CAST(mq.customer_id AS TEXT))'), 'LIKE', searchLower)
         .orWhere(db.raw('LOWER(CAST(mq.employee_id AS TEXT))'), 'LIKE', searchLower)
-        .orWhere(db.raw('LOWER(customer_data.customer_name)'), 'LIKE', searchLower);
+        .orWhere(db.raw('LOWER(customer_data.customer_name)'), 'LIKE', searchLower)
+        .orWhere(db.raw('LOWER(employee_data.employee_name)'), 'LIKE', searchLower);
     });
   }
   
