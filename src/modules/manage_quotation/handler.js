@@ -330,6 +330,88 @@ const getById = async (req, res) => {
 };
 
 /**
+ * Get single manage quotation by ID for PDF
+ */
+const getPdfById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = await repository.findById(id);
+    
+    if (!data) {
+      const response = mappingError('Data tidak ditemukan', 404);
+      return baseResponse(res, response);
+    }
+    
+    if (data.customer_id && (data.customer_name === undefined || data.customer_name === null)) {
+      try {
+        const customer = await customerRepository.findById(data.customer_id);
+        data.customer_name = customer?.customer_name || null;
+      } catch (error) {
+        Logger.error('[manage-quotation:getPdfById] gagal memuat customer', {
+          customer_id: data.customer_id,
+          message: error?.message
+        });
+        data.customer_name = null;
+      }
+    }
+    
+    if (data.employee_id && (data.employee_name === undefined || data.employee_name === null)) {
+      try {
+        const employee = await employeeRepository.findById(data.employee_id);
+        data.employee_name = employee?.employee_name || null;
+      } catch (error) {
+        Logger.error('[manage-quotation:getPdfById] gagal memuat employee', {
+          employee_id: data.employee_id,
+          message: error?.message
+        });
+        data.employee_name = null;
+      }
+    }
+    
+    // Get detail data
+    const items = await repository.getItemsByQuotationId(id);
+    const accessories = await repository.getAccessoriesByQuotationId(id);
+    const specifications = await repository.getSpecificationsByQuotationId(id);
+
+    const itemsWithRelations = items.map((item) => {
+      const itemAccessories = accessories.filter((accessory) => {
+        if (item.componen_product_id && accessory.componen_product_id) {
+          return accessory.componen_product_id === item.componen_product_id;
+        }
+        return false;
+      });
+
+      const itemSpecifications = specifications.filter((specification) => {
+        if (item.componen_product_id && specification.componen_product_id) {
+          return specification.componen_product_id === item.componen_product_id;
+        }
+        return false;
+      });
+
+      return {
+        ...item,
+        manage_quotation_item_accessories: itemAccessories,
+        manage_quotation_item_specifications: itemSpecifications
+      };
+    });
+
+    data.manage_quotation_items = itemsWithRelations;
+    
+    // Read term_content_directory JSON file if exists
+    if (data.term_content_directory) {
+      const payload = await readJsonFile(data.term_content_directory);
+      data.term_content_payload = payload;
+    }
+    
+    const response = mappingSuccess('Data berhasil diambil', data);
+    return baseResponse(res, response);
+  } catch (error) {
+    const response = mappingError(error);
+    return baseResponse(res, response);
+  }
+};
+
+/**
  * Create new manage quotation
  */
 const create = async (req, res) => {
@@ -838,6 +920,7 @@ const restore = async (req, res) => {
 module.exports = {
   getAll,
   getById,
+  getPdfById,
   create,
   update,
   remove,

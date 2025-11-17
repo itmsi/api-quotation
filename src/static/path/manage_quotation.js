@@ -71,6 +71,62 @@ const manageQuotationPaths = {
       }
     }
   },
+  '/manage-quotation/pdf/{id}': {
+    get: {
+      tags: ['Manage Quotation'],
+      summary: 'Get manage quotation by ID for PDF',
+      description: 'Retrieve a single manage quotation by ID for PDF generation',
+      security: [
+        {
+          bearerAuth: []
+        }
+      ],
+      parameters: [
+        {
+          name: 'id',
+          in: 'path',
+          required: true,
+          description: 'Manage Quotation UUID',
+          schema: {
+            type: 'string',
+            format: 'uuid'
+          }
+        }
+      ],
+      responses: {
+        200: {
+          description: 'Success',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  success: { type: 'boolean', example: true },
+                  data: { $ref: '#/components/schemas/ManageQuotation' }
+                }
+              }
+            }
+          }
+        },
+        404: {
+          description: 'Not found',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+            }
+          }
+        },
+        401: {
+          description: 'Unauthorized',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+            }
+          }
+        }
+      }
+    }
+  },
   '/manage-quotation/{id}': {
     get: {
       tags: ['Manage Quotation'],

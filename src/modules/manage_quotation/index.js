@@ -24,6 +24,19 @@ router.post(
 );
 
 /**
+ * @route   GET /api/quotation/manage-quotation/pdf/:id
+ * @desc    Get manage quotation by ID for PDF
+ * @access  Protected
+ */
+router.get(
+  '/pdf/:id',
+  getByIdValidation,
+  validateMiddleware,
+  verifyToken,
+  handler.getPdfById
+);
+
+/**
  * @route   GET /api/quotation/manage-quotation/:id
  * @desc    Get manage quotation by ID
  * @access  Protected
