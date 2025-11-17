@@ -342,16 +342,24 @@ const getPdfById = async (req, res) => {
       return baseResponse(res, response);
     }
     
-    if (data.customer_id && (data.customer_name === undefined || data.customer_name === null)) {
+    if (data.customer_id) {
       try {
         const customer = await customerRepository.findById(data.customer_id);
-        data.customer_name = customer?.customer_name || null;
+        if (customer) {
+          if (data.customer_name === undefined || data.customer_name === null) {
+            data.customer_name = customer?.customer_name || null;
+          }
+          data.contact_person = customer?.contact_person || null;
+        }
       } catch (error) {
         Logger.error('[manage-quotation:getPdfById] gagal memuat customer', {
           customer_id: data.customer_id,
           message: error?.message
         });
-        data.customer_name = null;
+        if (data.customer_name === undefined || data.customer_name === null) {
+          data.customer_name = null;
+        }
+        data.contact_person = null;
       }
     }
     

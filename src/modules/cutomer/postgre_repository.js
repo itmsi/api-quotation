@@ -157,7 +157,7 @@ const findById = async (id) => {
   const escapedId = escapedIdResult.rows[0]?.escaped;
   
   // Build inner query
-  const innerQuery = `SELECT customer_id, customer_name, customer_email, customer_phone, customer_address, created_at FROM customers WHERE customer_id = ${escapedId}`;
+  const innerQuery = `SELECT customer_id, customer_name, customer_email, customer_phone, customer_address, contact_person, created_at FROM customers WHERE customer_id = ${escapedId}`;
   
   // Escape the entire inner query
   const escapedQueryResult = await db.raw(`SELECT quote_literal(?) as escaped`, [innerQuery]);
@@ -172,6 +172,7 @@ const findById = async (id) => {
       customer_email varchar,
       customer_phone varchar,
       customer_address varchar,
+      contact_person varchar,
       created_at timestamp
     )
   `;
@@ -255,7 +256,7 @@ const findByIds = async (ids = []) => {
   }
 
   const innerQueryParts = [
-    'SELECT customer_id, customer_name, customer_email, customer_phone, customer_address, created_at FROM customers',
+    'SELECT customer_id, customer_name, customer_email, customer_phone, customer_address, contact_person, created_at FROM customers',
     `WHERE customer_id IN (${sanitizedIds.join(', ')})`
   ];
   const innerQuery = innerQueryParts.join(' ');
@@ -272,6 +273,7 @@ const findByIds = async (ids = []) => {
       customer_email varchar,
       customer_phone varchar,
       customer_address varchar,
+      contact_person varchar,
       created_at timestamp
     )
   `;
