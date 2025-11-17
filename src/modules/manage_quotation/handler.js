@@ -410,6 +410,7 @@ const getPdfById = async (req, res) => {
 
       return {
         ...item,
+        componen_product_unit_model: item.cp_componen_product_unit_model || null,
         manage_quotation_item_accessories: itemAccessories,
         manage_quotation_item_specifications: itemSpecifications
       };
