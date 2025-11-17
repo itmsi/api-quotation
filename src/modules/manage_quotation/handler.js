@@ -350,6 +350,8 @@ const getPdfById = async (req, res) => {
             data.customer_name = customer?.customer_name || null;
           }
           data.contact_person = customer?.contact_person || null;
+          data.customer_phone = customer?.customer_phone || null;
+          data.customer_address = customer?.customer_address || null;
         }
       } catch (error) {
         Logger.error('[manage-quotation:getPdfById] gagal memuat customer', {
@@ -360,19 +362,29 @@ const getPdfById = async (req, res) => {
           data.customer_name = null;
         }
         data.contact_person = null;
+        data.customer_phone = null;
+        data.customer_address = null;
       }
     }
     
-    if (data.employee_id && (data.employee_name === undefined || data.employee_name === null)) {
+    if (data.employee_id) {
       try {
         const employee = await employeeRepository.findById(data.employee_id);
-        data.employee_name = employee?.employee_name || null;
+        if (employee) {
+          if (data.employee_name === undefined || data.employee_name === null) {
+            data.employee_name = employee?.employee_name || null;
+          }
+          data.employee_phone = employee?.employee_phone || null;
+        }
       } catch (error) {
         Logger.error('[manage-quotation:getPdfById] gagal memuat employee', {
           employee_id: data.employee_id,
           message: error?.message
         });
-        data.employee_name = null;
+        if (data.employee_name === undefined || data.employee_name === null) {
+          data.employee_name = null;
+        }
+        data.employee_phone = null;
       }
     }
     
