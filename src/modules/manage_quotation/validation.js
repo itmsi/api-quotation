@@ -190,6 +190,10 @@ const createValidation = [
   body('manage_quotation_items.*.description')
     .optional()
     .trim(),
+  body('manage_quotation_items.*.order_number')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Order number harus berupa angka bulat non-negatif'),
   body('manage_quotation_items.*.manage_quotation_item_accessories')
     .optional()
     .isArray({ min: 0 })
@@ -459,6 +463,10 @@ const updateValidation = [
   body('manage_quotation_items.*.description')
     .optional()
     .trim(),
+  body('manage_quotation_items.*.order_number')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Order number harus berupa angka bulat non-negatif'),
   body('manage_quotation_items.*.manage_quotation_item_accessories')
     .optional()
     .isArray({ min: 0 })

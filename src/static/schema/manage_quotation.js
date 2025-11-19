@@ -549,6 +549,12 @@ const manageQuotationSchemas = {
         description: 'Item description',
         example: 'Additional notes about the item'
       },
+      order_number: {
+        type: 'integer',
+        description: 'Order number untuk urutan item dalam quotation',
+        example: 0,
+        default: 0
+      },
       created_by: {
         type: 'string',
         format: 'uuid',
@@ -692,6 +698,12 @@ const manageQuotationSchemas = {
         nullable: true,
         description: 'Item description',
         example: 'Additional notes about the item'
+      },
+      order_number: {
+        type: 'integer',
+        description: 'Order number untuk urutan item dalam quotation',
+        example: 0,
+        default: 0
       },
       manage_quotation_item_accessories: {
         type: 'array',

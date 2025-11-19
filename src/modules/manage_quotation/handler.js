@@ -29,7 +29,16 @@ const normalizeJsonPayload = (payload) => {
     return {};
   }
 
-  if (typeof payload === 'object') {
+  if (typeof payload === 'object' && !Array.isArray(payload)) {
+    // Check if it's a plain object (not Date, Buffer, etc.)
+    if (payload.constructor === Object) {
+      return payload;
+    }
+    // For other object types, convert to string representation
+    return { content: String(payload) };
+  }
+
+  if (Array.isArray(payload)) {
     return payload;
   }
 
@@ -39,14 +48,22 @@ const normalizeJsonPayload = (payload) => {
       return {};
     }
 
+    // Try to parse as JSON first
     try {
-      return JSON.parse(trimmed);
+      const parsed = JSON.parse(trimmed);
+      // If parsed result is a primitive, wrap it in an object
+      if (typeof parsed !== 'object' || parsed === null) {
+        return { content: parsed };
+      }
+      return parsed;
     } catch (error) {
-      return trimmed;
+      // If not valid JSON, treat as plain string content
+      return { content: trimmed };
     }
   }
 
-  return payload;
+  // For other types (number, boolean, etc.), wrap in object
+  return { content: payload };
 };
 
 const writeJsonFile = async (manageQuotationNo, manageQuotationId, payload) => {
@@ -58,7 +75,19 @@ const writeJsonFile = async (manageQuotationNo, manageQuotationId, payload) => {
   const relativePath = path.relative(ROOT_DIR, absolutePath);
 
   const dataToWrite = normalizeJsonPayload(payload);
-  const fileContent = JSON.stringify(dataToWrite, null, 2);
+  
+  // Ensure dataToWrite is always a valid object/array for JSON.stringify
+  let fileContent;
+  try {
+    fileContent = JSON.stringify(dataToWrite, null, 2);
+    // Ensure fileContent is a string
+    if (typeof fileContent !== 'string') {
+      fileContent = JSON.stringify({ content: String(fileContent) }, null, 2);
+    }
+  } catch (error) {
+    // If stringify fails (e.g., circular reference), wrap in object
+    fileContent = JSON.stringify({ content: String(dataToWrite) }, null, 2);
+  }
 
   await fs.promises.writeFile(absolutePath, fileContent, 'utf8');
 

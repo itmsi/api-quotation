@@ -247,6 +247,7 @@ const manageQuotationPaths = {
                   price: '150000',
                   total: '300000',
                   description: 'Updated notes about the item',
+                  order_number: 1,
                   manage_quotation_item_accessories: [
                     {
                       accessory_id: '123e4567-e89b-12d3-a456-426614174004',
@@ -267,6 +268,25 @@ const manageQuotationPaths = {
                       manage_quotation_item_specification_value: 'SX32434534534'
                     }
                   ]
+                },
+                {
+                  componen_product_id: '123e4567-e89b-12d3-a456-426614174005',
+                  code_unique: 'CU-003',
+                  segment: 'Segment B',
+                  msi_model: 'MSI Model 3',
+                  wheel_no: 'Wheel-03',
+                  engine: 'Engine 3',
+                  volume: '3000',
+                  horse_power: '200',
+                  market_price: '220000',
+                  componen_product_name: 'Excavator Bucket',
+                  quantity: 1,
+                  price: '200000',
+                  total: '200000',
+                  description: 'Second item in quotation',
+                  order_number: 2,
+                  manage_quotation_item_accessories: [],
+                  manage_quotation_item_specifications: []
                 }
               ]
             }
@@ -418,19 +438,20 @@ const manageQuotationPaths = {
               manage_quotation_items: [
                 {
                   componen_product_id: '123e4567-e89b-12d3-a456-426614174004',
-                  code_unique: '',
-                  segment: '',
-                  msi_model: '',
-                  wheel_no: '',
-                  engine: '',
-                  volume: '',
-                  horse_power: '',
-                  market_price: '',
-                  componen_product_name: '',
+                  code_unique: 'CU-001',
+                  segment: 'Segment 1',
+                  msi_model: 'MSI Model 1',
+                  wheel_no: 'Wheel-01',
+                  engine: 'Engine 1',
+                  volume: '2000',
+                  horse_power: '100',
+                  market_price: '95000',
+                  componen_product_name: 'Excavator Arm',
                   quantity: 1,
                   price: '100000',
                   total: '100000',
                   description: 'Additional notes about the item',
+                  order_number: 1,
                   manage_quotation_item_accessories: [
                     {
                       accessory_id: '123e4567-e89b-12d3-a456-426614174004',

@@ -114,7 +114,21 @@ const decodeToken = (type, req) => {
   try {
     const payload = {}
     const tokenHeader = req?.headers?.authorization ?? ''
-    const token = tokenHeader.split(' ')[1]
+    
+    // Check if token header exists and has Bearer format
+    if (!tokenHeader || typeof tokenHeader !== 'string') {
+      throw new Error('Authorization header tidak ditemukan atau tidak valid')
+    }
+    
+    const parts = tokenHeader.split(' ')
+    if (parts.length < 2 || !parts[1]) {
+      throw new Error('Token tidak ditemukan di Authorization header')
+    }
+    
+    const token = parts[1]
+    if (!token || token === 'YOUR_TOKEN_HERE' || token.trim() === '') {
+      throw new Error('Token tidak valid atau kosong')
+    }
 
     const decode = decodeWithFallback(token)
     const userId = resolveUserId(decode)

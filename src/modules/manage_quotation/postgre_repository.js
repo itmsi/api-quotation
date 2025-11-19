@@ -392,6 +392,32 @@ const createItems = async (manage_quotation_id, items, created_by, trx = db) => 
   const results = [];
   
   for (const item of items) {
+    // Convert order_number to integer, default to 0 if not provided or invalid
+    let orderNumber = 0;
+    if (item.order_number !== undefined && item.order_number !== null) {
+      // Handle both string and number types
+      if (typeof item.order_number === 'number') {
+        orderNumber = isNaN(item.order_number) ? 0 : Math.floor(item.order_number);
+      } else if (typeof item.order_number === 'string') {
+        const parsed = parseInt(item.order_number, 10);
+        orderNumber = isNaN(parsed) ? 0 : parsed;
+      } else {
+        // If it's an object or other type, default to 0
+        orderNumber = 0;
+      }
+    }
+    
+    // Ensure quantity is also an integer
+    let quantity = 1;
+    if (item.quantity !== undefined && item.quantity !== null) {
+      if (typeof item.quantity === 'number') {
+        quantity = isNaN(item.quantity) ? 1 : Math.floor(item.quantity);
+      } else if (typeof item.quantity === 'string') {
+        const parsed = parseInt(item.quantity, 10);
+        quantity = isNaN(parsed) ? 1 : parsed;
+      }
+    }
+    
     const fields = {
       manage_quotation_id: manage_quotation_id || null,
       componen_product_id: item.componen_product_id || null,
@@ -404,10 +430,11 @@ const createItems = async (manage_quotation_id, items, created_by, trx = db) => 
       horse_power: item.horse_power ?? null,
       market_price: item.market_price ?? null,
       componen_product_name: item.componen_product_name ?? null,
-      quantity: item.quantity ?? 1,
+      quantity: quantity,
       price: item.price ?? null,
       total: item.total ?? null,
       description: item.description ?? null,
+      order_number: orderNumber,
       created_by: created_by || null
     };
     
@@ -447,6 +474,7 @@ const getItemsByQuotationId = async (manage_quotation_id) => {
       'mqi.price',
       'mqi.total',
       'mqi.description',
+      'mqi.order_number',
       'mqi.created_by',
       'mqi.updated_by',
       'mqi.deleted_by',
@@ -473,6 +501,7 @@ const getItemsByQuotationId = async (manage_quotation_id) => {
     })
     .where('mqi.manage_quotation_id', manage_quotation_id)
     .where('mqi.is_delete', false)
+    .orderBy('mqi.order_number', 'asc')
     .orderBy('mqi.created_at', 'asc');
   
   return result || [];
