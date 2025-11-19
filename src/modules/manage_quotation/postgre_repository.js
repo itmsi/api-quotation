@@ -501,8 +501,7 @@ const getItemsByQuotationId = async (manage_quotation_id) => {
     })
     .where('mqi.manage_quotation_id', manage_quotation_id)
     .where('mqi.is_delete', false)
-    .orderBy('mqi.order_number', 'asc')
-    .orderBy('mqi.created_at', 'asc');
+    .orderBy('mqi.order_number', 'asc');
   
   return result || [];
 };
