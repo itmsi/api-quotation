@@ -1,0 +1,27 @@
+{
+  "watch": false,
+  "ext": "js,json",
+  "ignore": [
+    "node_modules/**/*",
+    "logs/**/*",
+    "uploads/**/*",
+    "storages/**/*",
+    "public/uploads/**/*",
+    "public/pdf/**/*",
+    "public/excel/**/*",
+    "test/**/*",
+    "*.log",
+    ".git/**/*",
+    "*.md",
+    "*.sql",
+    "sql_product/**/*"
+  ],
+  "exec": "node src/server.js",
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "delay": 500,
+  "legacyWatch": false,
+  "restartable": false
+}
+
