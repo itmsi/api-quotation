@@ -132,6 +132,30 @@ const readJsonFile = async (relativePath) => {
 };
 
 /**
+ * Extract term_content_payload as string from payload object
+ * If payload has content property, return it as string
+ * Otherwise, convert payload to string
+ */
+const extractTermContentPayload = (payload) => {
+  if (!payload) {
+    return null;
+  }
+  
+  // If payload has content property, extract it
+  if (payload && typeof payload === 'object' && payload.content !== undefined) {
+    return typeof payload.content === 'string' ? payload.content : JSON.stringify(payload.content);
+  }
+  
+  // If payload is already a string, return it
+  if (typeof payload === 'string') {
+    return payload;
+  }
+  
+  // Otherwise, stringify the payload
+  return JSON.stringify(payload);
+};
+
+/**
  * Map sort_by from API format to database column format
  */
 const mapSortBy = (sortBy) => {
@@ -347,7 +371,7 @@ const getById = async (req, res) => {
     // Read term_content_directory JSON file if exists
     if (data.term_content_directory) {
       const payload = await readJsonFile(data.term_content_directory);
-      data.term_content_payload = payload;
+      data.term_content_payload = extractTermContentPayload(payload);
     }
     
     const response = mappingSuccess('Data berhasil diambil', data);
@@ -450,7 +474,7 @@ const getPdfById = async (req, res) => {
     // Read term_content_directory JSON file if exists
     if (data.term_content_directory) {
       const payload = await readJsonFile(data.term_content_directory);
-      data.term_content_payload = payload;
+      data.term_content_payload = extractTermContentPayload(payload);
     }
     
     const response = mappingSuccess('Data berhasil diambil', data);
@@ -677,7 +701,7 @@ const create = async (req, res) => {
     
     if (createdQuotation?.term_content_directory) {
       const payload = await readJsonFile(createdQuotation.term_content_directory);
-      createdQuotation.term_content_payload = payload;
+      createdQuotation.term_content_payload = extractTermContentPayload(payload);
       logStep('postProcess.termContent.read', 'success', { hasPayload: Boolean(payload) });
     }
     
@@ -896,7 +920,7 @@ const update = async (req, res) => {
     // Read term_content_directory JSON file if exists
     if (data.term_content_directory) {
       const payload = await readJsonFile(data.term_content_directory);
-      data.term_content_payload = payload;
+      data.term_content_payload = extractTermContentPayload(payload);
     }
     
     const response = mappingSuccess('Data berhasil diupdate', data);
