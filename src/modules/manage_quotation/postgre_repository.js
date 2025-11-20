@@ -493,7 +493,8 @@ const getItemsByQuotationId = async (manage_quotation_id) => {
       db.raw('cp.market_price as cp_market_price'),
       db.raw('cp.componen_product_name as cp_componen_product_name'),
       db.raw('cp.componen_product_unit_model as cp_componen_product_unit_model'),
-      db.raw('cp.image as cp_image')
+      db.raw('cp.image as cp_image'),
+      db.raw('cp.componen_type as cp_componen_type')
     )
     .leftJoin('componen_products as cp', function() {
       this.on('mqi.componen_product_id', '=', 'cp.componen_product_id')

@@ -193,6 +193,28 @@ const insertFieldAfterKey = (item, targetKey, fieldName, fieldValue) => {
 };
 
 /**
+ * Map nilai componen_type menjadi product_type
+ */
+const mapProductType = (componenType) => {
+  if (componenType === null || componenType === undefined || componenType === '') {
+    return '';
+  }
+
+  const normalizedType = Number(componenType);
+
+  switch (normalizedType) {
+    case 1:
+      return 'OFF ROAD REGULAR';
+    case 2:
+      return 'ON ROAD REGULAR';
+    case 3:
+      return 'OFF ROAD IRREGULAR';
+    default:
+      return '';
+  }
+};
+
+/**
  * Get all manage quotations with pagination, search, and sort
  */
 const getAll = async (req, res) => {
@@ -359,8 +381,11 @@ const getById = async (req, res) => {
         return false;
       });
 
+      const productType = mapProductType(item.cp_componen_type);
+
       return {
         ...item,
+        product_type: productType,
         manage_quotation_item_accessories: itemAccessories,
         manage_quotation_item_specifications: itemSpecifications
       };
@@ -461,9 +486,12 @@ const getPdfById = async (req, res) => {
         return false;
       });
 
+      const productType = mapProductType(item.cp_componen_type);
+
       return {
         ...item,
         componen_product_unit_model: item.cp_componen_product_unit_model || null,
+        product_type: productType,
         manage_quotation_item_accessories: itemAccessories,
         manage_quotation_item_specifications: itemSpecifications
       };
