@@ -765,8 +765,24 @@ const update = async (req, res) => {
   try {
     const { id } = req.params;
     
+    // Log request start
+    if (process.env.NODE_ENV === 'development') {
+      Logger.info('[manage-quotation:update] request received', {
+        id,
+        bodyKeys: Object.keys(req.body || {}),
+        hasItems: Array.isArray(req.body?.manage_quotation_items)
+      });
+    }
+    
     // Get user info from token
     const tokenData = decodeToken('updated', req);
+    
+    // Validate token data
+    if (!tokenData.updated_by || tokenData.updated_by === '') {
+      Logger.error('[manage-quotation:update] invalid token data', { tokenData });
+      const response = mappingError('Token tidak valid atau tidak memiliki informasi user', 401);
+      return baseResponse(res, response);
+    }
     
     // Extract items and accessories from request body
     // Remove manage_quotation_no from body as it will be auto-generated if status changes to submit
@@ -952,14 +968,31 @@ const update = async (req, res) => {
     }
     
     const response = mappingSuccess('Data berhasil diupdate', data);
+    
+    // Log success
+    if (process.env.NODE_ENV === 'development') {
+      Logger.info('[manage-quotation:update] update successful', { id });
+    }
+    
     return baseResponse(res, response);
   } catch (error) {
+    // Log error details
+    Logger.error('[manage-quotation:update] update failed', {
+      id: req.params?.id,
+      error: error.message,
+      stack: error.stack,
+      bodyKeys: Object.keys(req.body || {})
+    });
+    
     // Cleanup new file if error occurred
     if (newRelativePath && existing && existing.term_content_directory !== newRelativePath) {
       try {
         await deleteJsonFile(newRelativePath);
       } catch (cleanupError) {
-        console.error('Gagal menghapus file term content saat rollback update:', cleanupError);
+        Logger.error('[manage-quotation:update] cleanup failed', {
+          error: cleanupError.message,
+          relativePath: newRelativePath
+        });
       }
     }
     

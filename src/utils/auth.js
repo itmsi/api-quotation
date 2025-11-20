@@ -166,12 +166,28 @@ const decodeToken = (type, req) => {
     if (process.env.NODE_ENV === 'development') {
       console.error(`error decoded token : ${error}`)
     }
-    return {
+    
+    // Return appropriate default based on type
+    const defaultPayload = {
       users_id: '',
       created_by: '',
+      updated_by: '',
+      deleted_by: '',
       is_admin: 1,
       roles: ['']
     }
+    
+    // Add type-specific defaults
+    switch (type) {
+      case 'updated':
+        defaultPayload.updated_at = new Date().toISOString()
+        break
+      case 'deleted':
+        defaultPayload.deleted_at = new Date().toISOString()
+        break
+    }
+    
+    return defaultPayload
   }
 }
 
