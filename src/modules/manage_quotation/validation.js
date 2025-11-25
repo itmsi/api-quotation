@@ -602,6 +602,29 @@ const listValidation = [
       return false;
     })
     .withMessage('Status harus salah satu dari: draft, submit, reject atau kosong'),
+  body('island_id')
+    .optional()
+    .custom((value) => {
+      // Allow empty string, null, undefined, NaN, or valid UUID
+      if (value === null || value === undefined || value === '') {
+        return true;
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
+          return true;
+        }
+        // If not empty, must be valid UUID
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        return uuidRegex.test(trimmed);
+      }
+      // Allow NaN
+      if (typeof value === 'number' && isNaN(value)) {
+        return true;
+      }
+      return false;
+    })
+    .withMessage('island_id harus berupa UUID yang valid, string kosong, null, atau NaN'),
 ];
 
 module.exports = {

@@ -298,9 +298,18 @@ const mapProductType = (componenType) => {
  */
 const getAll = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = '', sort_by = 'created_at', sort_order = 'desc', status = '' } = req.body;
+    const { page = 1, limit = 10, search = '', sort_by = 'created_at', sort_order = 'desc', status = '', island_id = '' } = req.body;
     
     const offset = (page - 1) * limit;
+    
+    // Validate and normalize island_id
+    let normalizedIslandId = null;
+    if (island_id && island_id !== '' && island_id !== null && island_id !== undefined) {
+      const islandIdStr = String(island_id).trim();
+      if (islandIdStr !== '' && islandIdStr !== 'NaN' && islandIdStr !== 'null') {
+        normalizedIslandId = islandIdStr;
+      }
+    }
     
     const params = {
       page,
@@ -309,7 +318,8 @@ const getAll = async (req, res) => {
       search,
       sortBy: mapSortBy(sort_by),
       sortOrder: sort_order,
-      status: status && status.trim() !== '' ? status.trim() : null
+      status: status && status.trim() !== '' ? status.trim() : null,
+      islandId: normalizedIslandId
     };
     
     const data = await repository.findAll(params);

@@ -28,7 +28,8 @@ const manageQuotationPaths = {
                   search: '',
                   sort_by: 'created_at',
                   sort_order: 'desc',
-                  status: ''
+                  status: '',
+                  island_id: ''
                 }
               },
               getDraftOnly: {
@@ -40,7 +41,8 @@ const manageQuotationPaths = {
                   search: '',
                   sort_by: 'created_at',
                   sort_order: 'desc',
-                  status: 'draft'
+                  status: 'draft',
+                  island_id: ''
                 }
               },
               getSubmitOnly: {
@@ -52,7 +54,8 @@ const manageQuotationPaths = {
                   search: '',
                   sort_by: 'created_at',
                   sort_order: 'desc',
-                  status: 'submit'
+                  status: 'submit',
+                  island_id: ''
                 }
               },
               getRejectOnly: {
@@ -64,7 +67,34 @@ const manageQuotationPaths = {
                   search: '',
                   sort_by: 'created_at',
                   sort_order: 'desc',
-                  status: 'reject'
+                  status: 'reject',
+                  island_id: ''
+                }
+              },
+              getByIslandId: {
+                summary: 'Get quotations by island_id',
+                description: 'Filter quotations by specific island_id',
+                value: {
+                  page: 1,
+                  limit: 10,
+                  search: '',
+                  sort_by: 'created_at',
+                  sort_order: 'desc',
+                  status: '',
+                  island_id: '123e4567-e89b-12d3-a456-426614174003'
+                }
+              },
+              getAllWithEmptyIslandId: {
+                summary: 'Get all quotations (island_id empty)',
+                description: 'Get all quotations without filtering by island_id',
+                value: {
+                  page: 1,
+                  limit: 10,
+                  search: '',
+                  sort_by: 'created_at',
+                  sort_order: 'desc',
+                  status: '',
+                  island_id: ''
                 }
               }
             }

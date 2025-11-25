@@ -11,7 +11,7 @@ const TABLE_NAME = 'manage_quotations';
  * Find all manage quotations with pagination, search, and sort
  */
 const findAll = async (params) => {
-  const { page, limit, offset, search, sortBy, sortOrder, status } = params;
+  const { page, limit, offset, search, sortBy, sortOrder, status, islandId } = params;
   
   await customerRepository.ensureConnection();
 
@@ -90,6 +90,11 @@ const findAll = async (params) => {
     query = query.where('mq.status', status.trim().toLowerCase());
   }
   
+  // Add island_id filter condition
+  if (islandId && islandId.trim() !== '') {
+    query = query.where('mq.island_id', islandId.trim());
+  }
+  
   // Add sorting
   const sortColumnMap = {
     'created_at': 'mq.created_at',
@@ -128,6 +133,11 @@ const findAll = async (params) => {
   // Add status filter condition to count query
   if (status && status.trim() !== '') {
     countQuery = countQuery.where('mq.status', status.trim().toLowerCase());
+  }
+  
+  // Add island_id filter condition to count query
+  if (islandId && islandId.trim() !== '') {
+    countQuery = countQuery.where('mq.island_id', islandId.trim());
   }
   
   const totalResult = await countQuery;

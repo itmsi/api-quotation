@@ -1175,6 +1175,13 @@ const manageQuotationSchemas = {
         enum: ['draft', 'submit', 'reject'],
         description: 'Filter by status (draft, submit, reject). Leave empty or null to get all statuses',
         example: ''
+      },
+      island_id: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Filter by island_id (UUID). Leave empty, null, or NaN to get all islands',
+        example: ''
       }
     }
   },
