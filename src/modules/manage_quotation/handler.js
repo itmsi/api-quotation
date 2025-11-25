@@ -7,6 +7,60 @@ const employeeRepository = require('../sales/postgre_repository');
 const { baseResponse, mappingError, mappingSuccess, Logger } = require('../../utils');
 const { decodeToken } = require('../../utils/auth');
 
+const DBLINK_NAME = 'gate_sso_dblink';
+const DB_LINK_CONNECTION = `dbname=${process.env.DB_GATE_SSO_NAME} user=${process.env.DB_GATE_SSO_USER} password=${process.env.DB_GATE_SSO_PASSWORD} host=${process.env.DB_GATE_SSO_HOST} port=${process.env.DB_GATE_SSO_PORT}`;
+
+/**
+ * Get islands by IDs from gate_sso using dblink
+ */
+const getIslandsByIds = async (ids = []) => {
+  if (!ids || ids.length === 0) {
+    return [];
+  }
+
+  try {
+    await customerRepository.ensureConnection();
+
+    const uniqueIds = [...new Set(ids.filter(Boolean))];
+    if (uniqueIds.length === 0) {
+      return [];
+    }
+
+    // Escape IDs using PostgreSQL quote_literal
+    const escapedIds = [];
+    for (const id of uniqueIds) {
+      const escapedIdResult = await db.raw(`SELECT quote_literal(?) as escaped`, [id]);
+      const escapedId = escapedIdResult.rows[0]?.escaped;
+      escapedIds.push(escapedId);
+    }
+
+    const idsList = escapedIds.join(', ');
+    const innerQuery = `SELECT island_id, island_name FROM islands WHERE island_id IN (${idsList})`;
+
+    // Escape the entire inner query
+    const escapedQueryResult = await db.raw(`SELECT quote_literal(?) as escaped`, [innerQuery]);
+    const escapedInnerQuery = escapedQueryResult.rows[0]?.escaped;
+
+    const query = `
+      SELECT * FROM dblink('${DBLINK_NAME}', 
+        ${escapedInnerQuery}
+      ) AS islands (
+        island_id uuid,
+        island_name varchar
+      )
+    `;
+
+    const result = await db.raw(query);
+    return result.rows || [];
+  } catch (error) {
+    Logger.error('[manage-quotation:getIslandsByIds] gagal memuat islands', {
+      island_ids: ids,
+      message: error?.message
+    });
+    return [];
+  }
+};
+
 const ROOT_DIR = path.join(__dirname, '../../..');
 const TERM_CONTENT_FOLDER = path.join(ROOT_DIR, 'uploads/manage_quotation_term_contents');
 
@@ -267,9 +321,26 @@ const getAll = async (req, res) => {
       const itemsNeedingEmployee = data.items.filter(
         (item) => item && item.employee_id && (item.employee_name === undefined || item.employee_name === null)
       );
+      // Always process items with island_id to ensure island_name is populated
+      const itemsNeedingIsland = data.items.filter(
+        (item) => item && item.island_id
+      );
 
       let customerMap = {};
       let employeeMap = {};
+      let islandMap = {};
+
+      // Debug: Log items to see what data we're getting
+      if (itemsNeedingIsland.length > 0) {
+        Logger.info('[manage-quotation:getAll] items dengan island_id', {
+          count: itemsNeedingIsland.length,
+          sample: itemsNeedingIsland[0] ? {
+            island_id: itemsNeedingIsland[0].island_id,
+            has_island_name: Object.prototype.hasOwnProperty.call(itemsNeedingIsland[0], 'island_name'),
+            island_name: itemsNeedingIsland[0].island_name
+          } : null
+        });
+      }
 
       if (itemsNeedingCustomer.length > 0) {
         const uniqueCustomerIds = [
@@ -321,6 +392,31 @@ const getAll = async (req, res) => {
         }
       }
 
+      if (itemsNeedingIsland.length > 0) {
+        const uniqueIslandIds = [
+          ...new Set(itemsNeedingIsland.map((item) => item.island_id).filter(Boolean))
+        ];
+
+        if (uniqueIslandIds.length > 0) {
+          try {
+            const islands = await getIslandsByIds(uniqueIslandIds);
+            if (Array.isArray(islands)) {
+              islandMap = islands.reduce((acc, island) => {
+                if (island?.island_id) {
+                  acc[island.island_id] = island.island_name || null;
+                }
+                return acc;
+              }, {});
+            }
+          } catch (error) {
+            Logger.error('[manage-quotation:getAll] gagal memuat island fallback', {
+              island_ids: uniqueIslandIds,
+              message: error?.message
+            });
+          }
+        }
+      }
+
       data.items = data.items.map((item) => {
         if (!item) {
           return item;
@@ -334,8 +430,21 @@ const getAll = async (req, res) => {
           ? item.employee_name
           : (item.employee_id ? employeeMap[item.employee_id] ?? null : null);
 
+        // Always try to get island_name from item first, then from map
+        let islandName = null;
+        if (item.island_id) {
+          // First check if island_name exists in the item (from dblink join)
+          if (item.island_name !== undefined && item.island_name !== null) {
+            islandName = item.island_name;
+          } else {
+            // Fallback to map if not in item
+            islandName = islandMap[item.island_id] ?? null;
+          }
+        }
+
         let result = insertFieldAfterKey(item, 'customer_id', 'customer_name', customerName);
         result = insertFieldAfterKey(result, 'employee_id', 'employee_name', employeeName);
+        result = insertFieldAfterKey(result, 'island_id', 'island_name', islandName);
         return result;
       });
     }
@@ -384,6 +493,19 @@ const getById = async (req, res) => {
           message: error?.message
         });
         data.employee_name = null;
+      }
+    }
+    
+    if (data.island_id && (data.island_name === undefined || data.island_name === null)) {
+      try {
+        const islands = await getIslandsByIds([data.island_id]);
+        data.island_name = islands?.[0]?.island_name || null;
+      } catch (error) {
+        Logger.error('[manage-quotation:getById] gagal memuat island', {
+          island_id: data.island_id,
+          message: error?.message
+        });
+        data.island_name = null;
       }
     }
     
@@ -489,6 +611,25 @@ const getPdfById = async (req, res) => {
           data.employee_name = null;
         }
         data.employee_phone = null;
+      }
+    }
+    
+    if (data.island_id) {
+      try {
+        const islands = await getIslandsByIds([data.island_id]);
+        if (islands && islands.length > 0) {
+          if (data.island_name === undefined || data.island_name === null) {
+            data.island_name = islands[0]?.island_name || null;
+          }
+        }
+      } catch (error) {
+        Logger.error('[manage-quotation:getPdfById] gagal memuat island', {
+          island_id: data.island_id,
+          message: error?.message
+        });
+        if (data.island_name === undefined || data.island_name === null) {
+          data.island_name = null;
+        }
       }
     }
     

@@ -23,6 +23,10 @@ const findAll = async (params) => {
     `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS employee_data(employee_id uuid, employee_name varchar)`
   );
 
+  const islandJoin = db.raw(
+    `dblink('${DBLINK_NAME}', 'SELECT island_id, island_name FROM islands WHERE island_id IS NOT NULL') AS island_data(island_id uuid, island_name varchar)`
+  );
+
   // Query data - use parameterized query with knex
   let query = db({ mq: TABLE_NAME })
     .select(
@@ -32,6 +36,8 @@ const findAll = async (params) => {
       db.raw('customer_data.customer_name as customer_name'),
       'mq.employee_id',
       db.raw('employee_data.employee_name as employee_name'),
+      'mq.island_id',
+      db.raw('island_data.island_name as island_name'),
       'mq.manage_quotation_date',
       'mq.manage_quotation_valid_date',
       'mq.manage_quotation_grand_total',
@@ -62,6 +68,7 @@ const findAll = async (params) => {
     )
     .leftJoin(customerJoin, 'mq.customer_id', 'customer_data.customer_id')
     .leftJoin(employeeJoin, 'mq.employee_id', 'employee_data.employee_id')
+    .leftJoin(islandJoin, 'mq.island_id', 'island_data.island_id')
     .where('mq.is_delete', false);
   
   // Add search condition
@@ -71,8 +78,10 @@ const findAll = async (params) => {
       this.where('mq.manage_quotation_no', 'ILIKE', searchLower)
         .orWhere(db.raw('LOWER(CAST(mq.customer_id AS TEXT))'), 'LIKE', searchLower)
         .orWhere(db.raw('LOWER(CAST(mq.employee_id AS TEXT))'), 'LIKE', searchLower)
+        .orWhere(db.raw('LOWER(CAST(mq.island_id AS TEXT))'), 'LIKE', searchLower)
         .orWhere(db.raw('LOWER(customer_data.customer_name)'), 'LIKE', searchLower)
-        .orWhere(db.raw('LOWER(employee_data.employee_name)'), 'LIKE', searchLower);
+        .orWhere(db.raw('LOWER(employee_data.employee_name)'), 'LIKE', searchLower)
+        .orWhere(db.raw('LOWER(island_data.island_name)'), 'LIKE', searchLower);
     });
   }
   
@@ -100,6 +109,7 @@ const findAll = async (params) => {
     .count('* as count')
     .leftJoin(customerJoin, 'mq.customer_id', 'customer_data.customer_id')
     .leftJoin(employeeJoin, 'mq.employee_id', 'employee_data.employee_id')
+    .leftJoin(islandJoin, 'mq.island_id', 'island_data.island_id')
     .where('mq.is_delete', false);
   
   if (search && search.trim() !== '') {
@@ -108,8 +118,10 @@ const findAll = async (params) => {
       this.where('mq.manage_quotation_no', 'ILIKE', searchLower)
         .orWhere(db.raw('LOWER(CAST(mq.customer_id AS TEXT))'), 'LIKE', searchLower)
         .orWhere(db.raw('LOWER(CAST(mq.employee_id AS TEXT))'), 'LIKE', searchLower)
+        .orWhere(db.raw('LOWER(CAST(mq.island_id AS TEXT))'), 'LIKE', searchLower)
         .orWhere(db.raw('LOWER(customer_data.customer_name)'), 'LIKE', searchLower)
-        .orWhere(db.raw('LOWER(employee_data.employee_name)'), 'LIKE', searchLower);
+        .orWhere(db.raw('LOWER(employee_data.employee_name)'), 'LIKE', searchLower)
+        .orWhere(db.raw('LOWER(island_data.island_name)'), 'LIKE', searchLower);
     });
   }
   
@@ -236,6 +248,7 @@ const create = async (data, trx = db) => {
     status: data.status || 'submit',
     include_aftersales_page: data.include_aftersales_page ?? false,
     include_msf_page: data.include_msf_page ?? false,
+    island_id: data.island_id || null,
     created_by: data.created_by || null
   };
   
@@ -283,6 +296,7 @@ const update = async (id, data, trx = db) => {
   if (data.include_aftersales_page !== undefined) updateFields.include_aftersales_page = data.include_aftersales_page;
   if (data.include_msf_page !== undefined) updateFields.include_msf_page = data.include_msf_page;
   if (data.status !== undefined) updateFields.status = data.status;
+  if (data.island_id !== undefined) updateFields.island_id = data.island_id;
   if (data.updated_by !== undefined) updateFields.updated_by = data.updated_by;
   if (data.deleted_by !== undefined) updateFields.deleted_by = data.deleted_by;
   

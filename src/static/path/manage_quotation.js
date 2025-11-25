@@ -147,6 +147,19 @@ const manageQuotationPaths = {
                   success: { type: 'boolean', example: true },
                   data: { $ref: '#/components/schemas/ManageQuotation' }
                 }
+              },
+              example: {
+                success: true,
+                data: {
+                  manage_quotation_id: '123e4567-e89b-12d3-a456-426614174000',
+                  manage_quotation_no: '001/IEC-MSI/2025',
+                  customer_id: '7dbe5e70-87c4-4761-82de-9d9f54eea45f',
+                  employee_id: '3659340c-46b0-43f5-bf5c-d1d0222eb7f9',
+                  island_id: '123e4567-e89b-12d3-a456-426614174003',
+                  manage_quotation_date: '2025-01-15',
+                  manage_quotation_valid_date: '2025-01-30',
+                  status: 'submit'
+                }
               }
             }
           }
@@ -203,6 +216,19 @@ const manageQuotationPaths = {
                   success: { type: 'boolean', example: true },
                   data: { $ref: '#/components/schemas/ManageQuotation' }
                 }
+              },
+              example: {
+                success: true,
+                data: {
+                  manage_quotation_id: '123e4567-e89b-12d3-a456-426614174000',
+                  manage_quotation_no: '001/IEC-MSI/2025',
+                  customer_id: '7dbe5e70-87c4-4761-82de-9d9f54eea45f',
+                  employee_id: '3659340c-46b0-43f5-bf5c-d1d0222eb7f9',
+                  island_id: '123e4567-e89b-12d3-a456-426614174003',
+                  manage_quotation_date: '2025-01-15',
+                  manage_quotation_valid_date: '2025-01-30',
+                  status: 'submit'
+                }
               }
             }
           }
@@ -254,6 +280,7 @@ const manageQuotationPaths = {
             example: {
               customer_id: '7dbe5e70-87c4-4761-82de-9d9f54eea45f',
               employee_id: '3659340c-46b0-43f5-bf5c-d1d0222eb7f9',
+              island_id: '123e4567-e89b-12d3-a456-426614174003',
               manage_quotation_date: '2025-01-15',
               manage_quotation_valid_date: '2025-01-30',
               manage_quotation_grand_total: '1200000',
@@ -346,6 +373,19 @@ const manageQuotationPaths = {
                 properties: {
                   success: { type: 'boolean', example: true },
                   data: { $ref: '#/components/schemas/ManageQuotation' }
+                }
+              },
+              example: {
+                success: true,
+                data: {
+                  manage_quotation_id: '123e4567-e89b-12d3-a456-426614174000',
+                  manage_quotation_no: '001/IEC-MSI/2025',
+                  customer_id: '7dbe5e70-87c4-4761-82de-9d9f54eea45f',
+                  employee_id: '3659340c-46b0-43f5-bf5c-d1d0222eb7f9',
+                  island_id: '123e4567-e89b-12d3-a456-426614174003',
+                  manage_quotation_date: '2025-01-15',
+                  manage_quotation_valid_date: '2025-01-30',
+                  status: 'submit'
                 }
               }
             }
@@ -458,6 +498,7 @@ const manageQuotationPaths = {
             example: {
               customer_id: '7dbe5e70-87c4-4761-82de-9d9f54eea45f',
               employee_id: '3659340c-46b0-43f5-bf5c-d1d0222eb7f9',
+              island_id: '123e4567-e89b-12d3-a456-426614174003',
               manage_quotation_date: '2025-01-15',
               manage_quotation_valid_date: '2025-01-30',
               manage_quotation_grand_total: '1000000',
@@ -532,6 +573,21 @@ const manageQuotationPaths = {
                   success: { type: 'boolean', example: true },
                   data: { $ref: '#/components/schemas/ManageQuotation' },
                   message: { type: 'string', example: 'Data berhasil dibuat' }
+                }
+              },
+              example: {
+                success: true,
+                message: 'Data berhasil dibuat',
+                data: {
+                  manage_quotation_id: '123e4567-e89b-12d3-a456-426614174000',
+                  manage_quotation_no: '001/IEC-MSI/2025',
+                  customer_id: '7dbe5e70-87c4-4761-82de-9d9f54eea45f',
+                  employee_id: '3659340c-46b0-43f5-bf5c-d1d0222eb7f9',
+                  island_id: '123e4567-e89b-12d3-a456-426614174003',
+                  manage_quotation_date: '2025-01-15',
+                  manage_quotation_valid_date: '2025-01-30',
+                  status: 'submit',
+                  created_at: '2025-01-15T10:00:00.000Z'
                 }
               }
             }

@@ -17,7 +17,8 @@ Module untuk mengelola data quotation/penawaran.
   "limit": 10,
   "search": "",
   "sort_by": "created_at",
-  "sort_order": "desc"
+  "sort_order": "desc",
+  "status": ""
 }
 ```
 
@@ -36,6 +37,7 @@ Module untuk mengelola data quotation/penawaran.
   "manage_quotation_no": "QUO-2025-001",
   "customer_id": "uuid",
   "employee_id": "uuid",
+  "island_id": "uuid",
   "manage_quotation_date": "2025-01-15",
   "manage_quotation_valid_date": "2025-01-30",
   "manage_quotation_grand_total": "1000000",
@@ -74,6 +76,7 @@ Table: `manage_quotations`
 | manage_quotation_no | string | Nomor quotation |
 | customer_id | uuid | ID customer |
 | employee_id | uuid | ID employee |
+| island_id | uuid (nullable) | ID island |
 | manage_quotation_date | date | Tanggal quotation |
 | manage_quotation_valid_date | date | Tanggal berlaku quotation |
 | manage_quotation_grand_total | string | Total keseluruhan |

@@ -32,6 +32,13 @@ const manageQuotationSchemas = {
         description: 'Employee ID',
         example: '123e4567-e89b-12d3-a456-426614174002'
       },
+      island_id: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Island ID',
+        example: '123e4567-e89b-12d3-a456-426614174003'
+      },
       manage_quotation_date: {
         type: 'string',
         format: 'date',
@@ -241,6 +248,13 @@ const manageQuotationSchemas = {
         format: 'uuid',
         description: 'Employee ID',
         example: '3659340c-46b0-43f5-bf5c-d1d0222eb7f9'
+      },
+      island_id: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Island ID',
+        example: '123e4567-e89b-12d3-a456-426614174003'
       },
       manage_quotation_date: {
         type: 'string',
