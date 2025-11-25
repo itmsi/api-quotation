@@ -5,7 +5,8 @@ const {
   createValidation,
   updateValidation,
   getByIdValidation,
-  listValidation
+  listValidation,
+  duplikatValidation
 } = require('./validation');
 const { verifyToken } = require('../../middlewares');
 const { validateMiddleware } = require('../../middlewares/validation');
@@ -34,6 +35,19 @@ router.get(
   validateMiddleware,
   verifyToken,
   handler.getPdfById
+);
+
+/**
+ * @route   POST /api/quotation/manage-quotation/duplikat/:manage_quotation_id
+ * @desc    Duplicate manage quotation
+ * @access  Protected
+ */
+router.post(
+  '/duplikat/:manage_quotation_id',
+  duplikatValidation,
+  validateMiddleware,
+  verifyToken,
+  handler.duplikat
 );
 
 /**

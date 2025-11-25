@@ -458,6 +458,7 @@ const createItems = async (manage_quotation_id, items, created_by, trx = db) => 
       code_unique: item.code_unique ?? null,
       segment: item.segment ?? null,
       msi_model: item.msi_model ?? null,
+      msi_product: item.msi_product ?? null,
       wheel_no: item.wheel_no ?? null,
       engine: item.engine ?? null,
       volume: item.volume ?? null,
@@ -498,6 +499,7 @@ const getItemsByQuotationId = async (manage_quotation_id) => {
       'mqi.code_unique',
       'mqi.segment',
       'mqi.msi_model',
+      'mqi.msi_product',
       'mqi.wheel_no',
       'mqi.engine',
       'mqi.volume',
@@ -520,6 +522,7 @@ const getItemsByQuotationId = async (manage_quotation_id) => {
       db.raw('cp.code_unique as cp_code_unique'),
       db.raw('cp.segment as cp_segment'),
       db.raw('cp.msi_model as cp_msi_model'),
+      db.raw('cp.msi_product as cp_msi_product'),
       db.raw('cp.wheel_no as cp_wheel_no'),
       db.raw('cp.engine as cp_engine'),
       db.raw('cp.volume as cp_volume'),
@@ -806,6 +809,7 @@ const getSpecificationsByQuotationId = async (manage_quotation_id) => {
       db.raw('cp.componen_product_name as cp_componen_product_name'),
       db.raw('cp.segment as cp_segment'),
       db.raw('cp.msi_model as cp_msi_model'),
+      db.raw('cp.msi_product as cp_msi_product'),
       db.raw('cp.wheel_no as cp_wheel_no'),
       db.raw('cp.engine as cp_engine'),
       db.raw('cp.volume as cp_volume'),
@@ -844,6 +848,170 @@ const replaceSpecifications = async (manage_quotation_id, specifications, update
   return newSpecifications;
 };
 
+/**
+ * Duplicate manage quotation with all related data
+ * Creates a new quotation with:
+ * - New manage_quotation_no (generated)
+ * - status = 'draft'
+ * - manage_quotation_description = copy from manage_quotation_no mana
+ */
+const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
+  // Get source quotation
+  const sourceQuotation = await findById(sourceQuotationId);
+  if (!sourceQuotation) {
+    throw new Error('Quotation tidak ditemukan');
+  }
+
+  // Get all related data
+  const sourceItems = await getItemsByQuotationId(sourceQuotationId);
+  const sourceAccessories = await getAccessoriesByQuotationId(sourceQuotationId);
+  const sourceSpecifications = await getSpecificationsByQuotationId(sourceQuotationId);
+
+  // Generate new quotation number
+  const newQuotationNo = await generateQuotationNumber(trx);
+
+  // Build description: copy from manage_quotation_no mana
+  const descriptionPrefix = sourceQuotation.manage_quotation_no 
+    ? `Copy dari ${sourceQuotation.manage_quotation_no}` 
+    : 'Copy dari quotation';
+  const newDescription = sourceQuotation.manage_quotation_description
+    ? `${descriptionPrefix}. ${sourceQuotation.manage_quotation_description}`
+    : descriptionPrefix;
+
+  // Prepare new quotation data
+  const newQuotationData = {
+    manage_quotation_no: newQuotationNo,
+    customer_id: sourceQuotation.customer_id,
+    employee_id: sourceQuotation.employee_id,
+    island_id: sourceQuotation.island_id,
+    manage_quotation_date: sourceQuotation.manage_quotation_date,
+    manage_quotation_valid_date: sourceQuotation.manage_quotation_valid_date,
+    manage_quotation_grand_total: sourceQuotation.manage_quotation_grand_total,
+    manage_quotation_ppn: sourceQuotation.manage_quotation_ppn,
+    manage_quotation_delivery_fee: sourceQuotation.manage_quotation_delivery_fee,
+    manage_quotation_other: sourceQuotation.manage_quotation_other,
+    manage_quotation_payment_presentase: sourceQuotation.manage_quotation_payment_presentase,
+    manage_quotation_payment_nominal: sourceQuotation.manage_quotation_payment_nominal,
+    manage_quotation_description: newDescription,
+    manage_quotation_shipping_term: sourceQuotation.manage_quotation_shipping_term,
+    manage_quotation_franco: sourceQuotation.manage_quotation_franco,
+    manage_quotation_lead_time: sourceQuotation.manage_quotation_lead_time,
+    bank_account_name: sourceQuotation.bank_account_name,
+    bank_account_number: sourceQuotation.bank_account_number,
+    bank_account_bank_name: sourceQuotation.bank_account_bank_name,
+    term_content_id: sourceQuotation.term_content_id,
+    term_content_directory: sourceQuotation.term_content_directory,
+    status: 'draft',
+    include_aftersales_page: sourceQuotation.include_aftersales_page ?? false,
+    include_msf_page: sourceQuotation.include_msf_page ?? false,
+    created_by: created_by
+  };
+
+  // Create new quotation
+  const newQuotation = await create(newQuotationData, trx);
+
+  // Prepare items for duplication (remove IDs and manage_quotation_id)
+  const itemsForInsert = sourceItems.map(item => {
+    const { 
+      manage_quotation_item_id, 
+      manage_quotation_id, 
+      created_at, 
+      updated_at, 
+      deleted_at,
+      created_by: item_created_by,
+      updated_by: item_updated_by,
+      deleted_by: item_deleted_by,
+      is_delete,
+      // Remove fields from JOIN with componen_products
+      cp_code_unique,
+      cp_segment,
+      cp_msi_model,
+      cp_msi_product,
+      cp_wheel_no,
+      cp_engine,
+      cp_volume,
+      cp_horse_power,
+      cp_market_price,
+      cp_componen_product_name,
+      cp_componen_product_unit_model,
+      cp_image,
+      cp_componen_type,
+      ...rest
+    } = item;
+    return rest;
+  });
+
+  // Prepare accessories for duplication
+  const accessoriesForInsert = sourceAccessories.map(accessory => {
+    const {
+      manage_quotation_item_accessory_id,
+      manage_quotation_id,
+      created_at,
+      updated_at,
+      deleted_at,
+      created_by: acc_created_by,
+      updated_by: acc_updated_by,
+      deleted_by: acc_deleted_by,
+      is_delete,
+      // Remove fields from JOIN with accessories
+      accessory_part_number_source,
+      accessory_part_name_source,
+      accessory_specification_source,
+      accessory_brand_source,
+      accessory_remark_source,
+      accessory_region_source,
+      accessory_description_source,
+      ...rest
+    } = accessory;
+    return rest;
+  });
+
+  // Prepare specifications for duplication
+  const specificationsForInsert = sourceSpecifications.map(spec => {
+    const {
+      manage_quotation_item_specification_id,
+      manage_quotation_id,
+      created_at,
+      updated_at,
+      deleted_at,
+      created_by: spec_created_by,
+      updated_by: spec_updated_by,
+      deleted_by: spec_deleted_by,
+      is_delete,
+      // Remove fields from JOIN with componen_products
+      cp_code_unique,
+      cp_componen_product_name,
+      cp_segment,
+      cp_msi_model,
+      cp_msi_product,
+      cp_wheel_no,
+      cp_engine,
+      cp_volume,
+      cp_horse_power,
+      cp_market_price,
+      ...rest
+    } = spec;
+    return rest;
+  });
+
+  // Create items
+  if (itemsForInsert.length > 0) {
+    await createItems(newQuotation.manage_quotation_id, itemsForInsert, created_by, trx);
+  }
+
+  // Create accessories
+  if (accessoriesForInsert.length > 0) {
+    await createAccessories(newQuotation.manage_quotation_id, accessoriesForInsert, created_by, trx);
+  }
+
+  // Create specifications
+  if (specificationsForInsert.length > 0) {
+    await createSpecifications(newQuotation.manage_quotation_id, specificationsForInsert, created_by, trx);
+  }
+
+  return newQuotation;
+};
+
 module.exports = {
   findAll,
   findById,
@@ -868,6 +1036,7 @@ module.exports = {
   createSpecifications,
   getSpecificationsByQuotationId,
   deleteSpecificationsByQuotationId,
-  replaceSpecifications
+  replaceSpecifications,
+  duplicateQuotation
 };
 

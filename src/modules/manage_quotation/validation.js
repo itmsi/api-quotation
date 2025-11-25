@@ -161,6 +161,11 @@ const createValidation = [
     .isLength({ max: 255 })
     .withMessage('MSI model maksimal 255 karakter')
     .trim(),
+  body('manage_quotation_items.*.msi_product')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('MSI product maksimal 255 karakter')
+    .trim(),
   body('manage_quotation_items.*.wheel_no')
     .optional()
     .isLength({ max: 255 })
@@ -438,6 +443,11 @@ const updateValidation = [
     .isLength({ max: 255 })
     .withMessage('MSI model maksimal 255 karakter')
     .trim(),
+  body('manage_quotation_items.*.msi_product')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('MSI product maksimal 255 karakter')
+    .trim(),
   body('manage_quotation_items.*.wheel_no')
     .optional()
     .isLength({ max: 255 })
@@ -627,10 +637,22 @@ const listValidation = [
     .withMessage('island_id harus berupa UUID yang valid, string kosong, null, atau NaN'),
 ];
 
+/**
+ * Validation rules for duplicating manage quotation
+ */
+const duplikatValidation = [
+  param('manage_quotation_id')
+    .notEmpty()
+    .withMessage('manage_quotation_id wajib diisi')
+    .isUUID()
+    .withMessage('Format manage_quotation_id tidak valid'),
+];
+
 module.exports = {
   createValidation,
   updateValidation,
   getByIdValidation,
-  listValidation
+  listValidation,
+  duplikatValidation
 };
 

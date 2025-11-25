@@ -53,6 +53,7 @@ const buildSearchWhere = (search) => {
         .orWhereRaw('LOWER(componen_product_name) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(segment) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(msi_model) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(msi_product) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(wheel_no) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(engine) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(horse_power) LIKE ?', [searchPattern])
@@ -180,6 +181,7 @@ const create = async (data, specifications = []) => {
       code_unique: data.code_unique || null,
       segment: data.segment || null,
       msi_model: data.msi_model || null,
+      msi_product: data.msi_product || null,
       wheel_no: data.wheel_no || null,
       engine: data.engine || null,
       horse_power: data.horse_power || null,
@@ -254,6 +256,7 @@ const update = async (id, data, options = {}) => {
     if (data.code_unique !== undefined) updateFields.code_unique = data.code_unique;
     if (data.segment !== undefined) updateFields.segment = data.segment;
     if (data.msi_model !== undefined) updateFields.msi_model = data.msi_model;
+    if (data.msi_product !== undefined) updateFields.msi_product = data.msi_product;
     if (data.wheel_no !== undefined) updateFields.wheel_no = data.wheel_no;
     if (data.engine !== undefined) updateFields.engine = data.engine;
     if (data.horse_power !== undefined) updateFields.horse_power = data.horse_power;

@@ -446,6 +446,12 @@ const manageQuotationSchemas = {
         description: 'MSI model yang tersimpan pada item',
         example: 'MSI Model 1'
       },
+      msi_product: {
+        type: 'string',
+        nullable: true,
+        description: 'MSI product yang tersimpan pada item',
+        example: 'MSI Product 1'
+      },
       wheel_no: {
         type: 'string',
         nullable: true,
@@ -499,6 +505,12 @@ const manageQuotationSchemas = {
         nullable: true,
         description: 'MSI model dari master componen_products',
         example: 'MSI-Model-A'
+      },
+      cp_msi_product: {
+        type: 'string',
+        nullable: true,
+        description: 'MSI product dari master componen_products',
+        example: 'MSI-Product-A'
       },
       cp_wheel_no: {
         type: 'string',
@@ -655,6 +667,12 @@ const manageQuotationSchemas = {
         nullable: true,
         description: 'MSI model yang ingin disimpan pada item',
         example: 'MSI Model 1'
+      },
+      msi_product: {
+        type: 'string',
+        nullable: true,
+        description: 'MSI product yang ingin disimpan pada item',
+        example: 'MSI Product 1'
       },
       wheel_no: {
         type: 'string',

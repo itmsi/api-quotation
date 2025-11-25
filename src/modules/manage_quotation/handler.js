@@ -1332,6 +1332,95 @@ const restore = async (req, res) => {
   }
 };
 
+/**
+ * Duplicate manage quotation
+ */
+const duplikat = async (req, res) => {
+  try {
+    const { manage_quotation_id } = req.params;
+    
+    // Get user info from token
+    const tokenData = decodeToken('created', req);
+    
+    // Validate token data
+    if (!tokenData.created_by || tokenData.created_by === '') {
+      Logger.error('[manage-quotation:duplikat] invalid token data', { tokenData });
+      const response = mappingError('Token tidak valid atau tidak memiliki informasi user', 401);
+      return baseResponse(res, response);
+    }
+    
+    // Check if source quotation exists
+    const sourceQuotation = await repository.findById(manage_quotation_id);
+    if (!sourceQuotation) {
+      const response = mappingError('Quotation tidak ditemukan', 404);
+      return baseResponse(res, response);
+    }
+    
+    // Duplicate quotation within transaction
+    let duplicatedQuotation = null;
+    await db.transaction(async (trx) => {
+      duplicatedQuotation = await repository.duplicateQuotation(
+        manage_quotation_id,
+        tokenData.created_by,
+        trx
+      );
+    });
+    
+    // Get full data with relations
+    const data = await repository.findById(duplicatedQuotation.manage_quotation_id);
+    
+    // Get detail data
+    const items = await repository.getItemsByQuotationId(duplicatedQuotation.manage_quotation_id);
+    const accessories = await repository.getAccessoriesByQuotationId(duplicatedQuotation.manage_quotation_id);
+    const specifications = await repository.getSpecificationsByQuotationId(duplicatedQuotation.manage_quotation_id);
+
+    const itemsWithRelations = items.map((item) => {
+      const itemAccessories = accessories.filter((accessory) => {
+        if (item.componen_product_id && accessory.componen_product_id) {
+          return accessory.componen_product_id === item.componen_product_id;
+        }
+        return false;
+      });
+
+      const itemSpecifications = specifications.filter((specification) => {
+        if (item.componen_product_id && specification.componen_product_id) {
+          return specification.componen_product_id === item.componen_product_id;
+        }
+        return false;
+      });
+
+      const productType = mapProductType(item.cp_componen_type);
+
+      return {
+        ...item,
+        product_type: productType,
+        manage_quotation_item_accessories: itemAccessories,
+        manage_quotation_item_specifications: itemSpecifications
+      };
+    });
+
+    data.manage_quotation_items = itemsWithRelations;
+    
+    // Read term_content_directory JSON file if exists
+    if (data.term_content_directory) {
+      const payload = await readJsonFile(data.term_content_directory);
+      data.term_content_payload = extractTermContentPayload(payload);
+    }
+    
+    const response = mappingSuccess('Data berhasil diduplikat', data, 201);
+    return baseResponse(res, response);
+  } catch (error) {
+    Logger.error('[manage-quotation:duplikat] duplikat failed', {
+      manage_quotation_id: req.params?.manage_quotation_id,
+      error: error.message,
+      stack: error.stack
+    });
+    
+    const response = mappingError(error);
+    return baseResponse(res, response);
+  }
+};
+
 module.exports = {
   getAll,
   getById,
@@ -1339,6 +1428,7 @@ module.exports = {
   create,
   update,
   remove,
-  restore
+  restore,
+  duplikat
 };
 

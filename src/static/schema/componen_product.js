@@ -43,6 +43,12 @@ const componenProductSchemas = {
         description: 'MSI model',
         example: 'MSI-001'
       },
+      msi_product: {
+        type: 'string',
+        nullable: true,
+        description: 'MSI product',
+        example: 'MSI-Product-001'
+      },
       wheel_no: {
         type: 'string',
         nullable: true,
@@ -266,6 +272,12 @@ const componenProductSchemas = {
         maxLength: 255,
         description: 'MSI model',
         example: 'MSI-001'
+      },
+      msi_product: {
+        type: 'string',
+        maxLength: 255,
+        description: 'MSI product',
+        example: 'MSI-Product-001'
       },
       wheel_no: {
         type: 'string',

@@ -28,6 +28,11 @@ const createValidation = [
     .isLength({ max: 255 })
     .withMessage('MSI model maksimal 255 karakter')
     .trim(),
+  body('msi_product')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('MSI product maksimal 255 karakter')
+    .trim(),
   body('wheel_no')
     .optional()
     .isLength({ max: 255 })
@@ -162,6 +167,11 @@ const updateValidation = [
     .isLength({ max: 255 })
     .withMessage('MSI model maksimal 255 karakter')
     .trim(),
+  body('msi_product')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('MSI product maksimal 255 karakter')
+    .trim(),
   body('wheel_no')
     .optional()
     .isLength({ max: 255 })
@@ -293,8 +303,8 @@ const listValidation = [
     .trim(),
   body('sort_by')
     .optional()
-    .isIn(['created_at', 'code_unique', 'componen_product_name', 'segment', 'msi_model', 'volume', 'componen_product_unit_model'])
-    .withMessage('Sort by harus salah satu dari: created_at, code_unique, componen_product_name, segment, msi_model, volume, componen_product_unit_model'),
+    .isIn(['created_at', 'code_unique', 'componen_product_name', 'segment', 'msi_model', 'msi_product', 'volume', 'componen_product_unit_model'])
+    .withMessage('Sort by harus salah satu dari: created_at, code_unique, componen_product_name, segment, msi_model, msi_product, volume, componen_product_unit_model'),
   body('sort_order')
     .optional()
     .isIn(['asc', 'desc'])

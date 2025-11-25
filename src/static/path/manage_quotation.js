@@ -337,6 +337,7 @@ const manageQuotationPaths = {
                   code_unique: 'CU-002',
                   segment: 'Segment A',
                   msi_model: 'MSI Model 2',
+                  msi_product: 'MSI Product 2',
                   wheel_no: 'Wheel-02',
                   engine: 'Engine 2',
                   volume: '2500',
@@ -374,6 +375,7 @@ const manageQuotationPaths = {
                   code_unique: 'CU-003',
                   segment: 'Segment B',
                   msi_model: 'MSI Model 3',
+                  msi_product: 'MSI Product 3',
                   wheel_no: 'Wheel-03',
                   engine: 'Engine 3',
                   volume: '3000',
@@ -555,6 +557,7 @@ const manageQuotationPaths = {
                   code_unique: 'CU-001',
                   segment: 'Segment 1',
                   msi_model: 'MSI Model 1',
+                  msi_product: 'MSI Product 1',
                   wheel_no: 'Wheel-01',
                   engine: 'Engine 1',
                   volume: '2000',
@@ -675,6 +678,87 @@ const manageQuotationPaths = {
                   success: { type: 'boolean', example: true },
                   data: { $ref: '#/components/schemas/ManageQuotation' },
                   message: { type: 'string', example: 'Data berhasil direstore' }
+                }
+              }
+            }
+          }
+        },
+        400: {
+          description: 'Validation error',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+            }
+          }
+        },
+        404: {
+          description: 'Not found',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+            }
+          }
+        },
+        401: {
+          description: 'Unauthorized',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+            }
+          }
+        }
+      }
+    }
+  },
+  '/manage-quotation/duplikat/{manage_quotation_id}': {
+    post: {
+      tags: ['Manage Quotation'],
+      summary: 'Duplicate manage quotation',
+      description: 'Duplicate a manage quotation with all related data (items, accessories, specifications). Creates a new quotation with status draft and new quotation number.',
+      security: [
+        {
+          bearerAuth: []
+        }
+      ],
+      parameters: [
+        {
+          name: 'manage_quotation_id',
+          in: 'path',
+          required: true,
+          description: 'Manage Quotation UUID to duplicate',
+          schema: {
+            type: 'string',
+            format: 'uuid'
+          }
+        }
+      ],
+      responses: {
+        201: {
+          description: 'Created',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  success: { type: 'boolean', example: true },
+                  data: { $ref: '#/components/schemas/ManageQuotation' },
+                  message: { type: 'string', example: 'Data berhasil diduplikat' }
+                }
+              },
+              example: {
+                success: true,
+                message: 'Data berhasil diduplikat',
+                data: {
+                  manage_quotation_id: '123e4567-e89b-12d3-a456-426614174001',
+                  manage_quotation_no: '002/IEC-MSI/2025',
+                  customer_id: '7dbe5e70-87c4-4761-82de-9d9f54eea45f',
+                  employee_id: '3659340c-46b0-43f5-bf5c-d1d0222eb7f9',
+                  island_id: '123e4567-e89b-12d3-a456-426614174003',
+                  manage_quotation_date: '2025-01-15',
+                  manage_quotation_valid_date: '2025-01-30',
+                  manage_quotation_description: 'Copy dari 001/IEC-MSI/2025. Additional notes about the quotation',
+                  status: 'draft',
+                  created_at: '2025-01-15T10:00:00.000Z'
                 }
               }
             }

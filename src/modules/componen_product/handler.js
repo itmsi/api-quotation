@@ -106,6 +106,7 @@ const mapSortBy = (sortBy) => {
     'componen_product_name': 'componen_product_name',
     'segment': 'segment',
     'msi_model': 'msi_model',
+    'msi_product': 'msi_product',
     'volume': 'volume',
     'componen_product_unit_model': 'componen_product_unit_model'
   };
@@ -251,6 +252,7 @@ const create = async (req, res) => {
       code_unique: req.body.code_unique || null,
       segment: req.body.segment || null,
       msi_model: req.body.msi_model || null,
+      msi_product: req.body.msi_product || null,
       wheel_no: req.body.wheel_no || null,
       engine: req.body.engine || null,
       horse_power: req.body.horse_power || null,
@@ -315,6 +317,7 @@ const update = async (req, res) => {
       code_unique: req.body.code_unique,
       segment: req.body.segment,
       msi_model: req.body.msi_model,
+      msi_product: req.body.msi_product,
       wheel_no: req.body.wheel_no,
       engine: req.body.engine,
       horse_power: req.body.horse_power,
