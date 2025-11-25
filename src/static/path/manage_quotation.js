@@ -18,12 +18,55 @@ const manageQuotationPaths = {
         content: {
           'application/json': {
             schema: { $ref: '#/components/schemas/ManageQuotationFilterInput' },
-            example: {
-              page: 1,
-              limit: 10,
-              search: '',
-              sort_by: 'created_at',
-              sort_order: 'desc'
+            examples: {
+              getAllStatuses: {
+                summary: 'Get all quotations (all statuses)',
+                description: 'Get all quotations without filtering by status',
+                value: {
+                  page: 1,
+                  limit: 10,
+                  search: '',
+                  sort_by: 'created_at',
+                  sort_order: 'desc',
+                  status: ''
+                }
+              },
+              getDraftOnly: {
+                summary: 'Get draft quotations only',
+                description: 'Filter quotations with status draft',
+                value: {
+                  page: 1,
+                  limit: 10,
+                  search: '',
+                  sort_by: 'created_at',
+                  sort_order: 'desc',
+                  status: 'draft'
+                }
+              },
+              getSubmitOnly: {
+                summary: 'Get submit quotations only',
+                description: 'Filter quotations with status submit',
+                value: {
+                  page: 1,
+                  limit: 10,
+                  search: '',
+                  sort_by: 'created_at',
+                  sort_order: 'desc',
+                  status: 'submit'
+                }
+              },
+              getRejectOnly: {
+                summary: 'Get reject quotations only',
+                description: 'Filter quotations with status reject',
+                value: {
+                  page: 1,
+                  limit: 10,
+                  search: '',
+                  sort_by: 'created_at',
+                  sort_order: 'desc',
+                  status: 'reject'
+                }
+              }
             }
           }
         }

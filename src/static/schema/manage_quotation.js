@@ -1154,6 +1154,13 @@ const manageQuotationSchemas = {
         description: 'Sort order',
         example: 'desc',
         default: 'desc'
+      },
+      status: {
+        type: 'string',
+        nullable: true,
+        enum: ['draft', 'submit', 'reject'],
+        description: 'Filter by status (draft, submit, reject). Leave empty or null to get all statuses',
+        example: ''
       }
     }
   },

@@ -577,6 +577,23 @@ const listValidation = [
     .optional()
     .isIn(['asc', 'desc'])
     .withMessage('Sort order harus asc atau desc'),
+  body('status')
+    .optional()
+    .custom((value) => {
+      // Allow empty string, null, undefined, or valid status values
+      if (value === null || value === undefined || value === '') {
+        return true;
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed === '') {
+          return true;
+        }
+        return ['draft', 'submit', 'reject'].includes(trimmed.toLowerCase());
+      }
+      return false;
+    })
+    .withMessage('Status harus salah satu dari: draft, submit, reject atau kosong'),
 ];
 
 module.exports = {

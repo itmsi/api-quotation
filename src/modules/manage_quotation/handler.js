@@ -24,6 +24,31 @@ const sanitizeFileName = (fileName) => {
     .toLowerCase();
 };
 
+/**
+ * Remove "MSI[number] - " prefix from componen_product_name
+ * Handles patterns like: MSI001 - , MSI002 - , MSI003 - , MSI025 - , etc.
+ */
+const cleanComponenProductName = (productName) => {
+  if (!productName || typeof productName !== 'string') {
+    return productName;
+  }
+  
+  // Convert to string and trim
+  let cleaned = String(productName).trim();
+  
+  // Remove "MSI[digits] - " from the beginning (case-insensitive)
+  // Pattern matches: "MSI001 - ", "MSI002 -", "MSI003-", "msi025 - ", etc.
+  // Matches MSI followed by one or more digits, then optional spaces, dash, and optional spaces
+  const prefixPattern = /^MSI\d+\s*-\s*/i;
+  
+  if (prefixPattern.test(cleaned)) {
+    cleaned = cleaned.replace(prefixPattern, '');
+    cleaned = cleaned.trim(); // Trim again after removal
+  }
+  
+  return cleaned;
+};
+
 const normalizeJsonPayload = (payload) => {
   if (payload === null || payload === undefined) {
     return {};
@@ -219,7 +244,7 @@ const mapProductType = (componenType) => {
  */
 const getAll = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = '', sort_by = 'created_at', sort_order = 'desc' } = req.body;
+    const { page = 1, limit = 10, search = '', sort_by = 'created_at', sort_order = 'desc', status = '' } = req.body;
     
     const offset = (page - 1) * limit;
     
@@ -229,7 +254,8 @@ const getAll = async (req, res) => {
       offset,
       search,
       sortBy: mapSortBy(sort_by),
-      sortOrder: sort_order
+      sortOrder: sort_order,
+      status: status && status.trim() !== '' ? status.trim() : null
     };
     
     const data = await repository.findAll(params);
@@ -488,16 +514,119 @@ const getPdfById = async (req, res) => {
 
       const productType = mapProductType(item.cp_componen_type);
 
-      return {
+      // Clean componen_product_name by removing "MSI[number] - " prefix
+      // Get original value from item
+      let cleanedProductName = item.componen_product_name;
+      
+      // Clean the product name if it exists
+      if (cleanedProductName && typeof cleanedProductName === 'string') {
+        // Remove "MSI[number] - " prefix using helper function (handles MSI001, MSI002, MSI003, MSI025, etc.)
+        cleanedProductName = cleanComponenProductName(cleanedProductName);
+        
+        // Additional safety check: if still contains MSI prefix with numbers, remove it directly
+        cleanedProductName = String(cleanedProductName).trim();
+        if (/^MSI\d+/i.test(cleanedProductName)) {
+          cleanedProductName = cleanedProductName.replace(/^MSI\d+\s*-\s*/i, '').trim();
+        }
+      }
+
+      // Create new object, explicitly setting componen_product_name to cleaned value
+      const cleanedItem = {
         ...item,
+        componen_product_name: cleanedProductName, // Always use cleaned value
         componen_product_unit_model: item.cp_componen_product_unit_model || null,
         product_type: productType,
         manage_quotation_item_accessories: itemAccessories,
         manage_quotation_item_specifications: itemSpecifications
       };
+
+      return cleanedItem;
     });
 
-    data.manage_quotation_items = itemsWithRelations;
+    // Final cleanup: ensure all componen_product_name in items are cleaned
+    // This is the last chance to clean before setting to response
+    const finalItems = itemsWithRelations.map((item) => {
+      // Get current componen_product_name value
+      let productName = item.componen_product_name;
+      const originalProductName = productName; // Keep original for debugging
+      
+      // Clean if it's a string and not null/undefined
+      if (productName && typeof productName === 'string') {
+        productName = String(productName).trim();
+        
+        // Remove "MSI[number] - " prefix if present (case-insensitive)
+        // Handles MSI001, MSI002, MSI003, MSI025, etc.
+        // Try multiple patterns to catch all variations
+        const patterns = [
+          /^MSI\d+\s*-\s*/i,      // "MSI001 - " or "MSI025- " or "MSI003 -"
+          /^MSI\d+\s+-/i,          // "MSI001  -" (multiple spaces)
+          /^MSI\d+-/i              // "MSI001-" (no space)
+        ];
+        
+        // Try each pattern
+        for (const pattern of patterns) {
+          if (pattern.test(productName)) {
+            productName = productName.replace(pattern, '').trim();
+            break;
+          }
+        }
+        
+        // Final check: if still starts with MSI followed by numbers (any case), remove it
+        if (/^MSI\d+/i.test(productName)) {
+          productName = productName.replace(/^MSI\d+\s*-\s*/i, '').trim();
+        }
+        
+        // Debug log (can be removed later)
+        if (originalProductName !== productName) {
+          Logger.info('[manage-quotation:getPdfById] Cleaned componen_product_name', {
+            original: originalProductName,
+            cleaned: productName
+          });
+        }
+      }
+      
+      // Return new object with cleaned componen_product_name - MUST override original
+      return {
+        ...item,
+        componen_product_name: productName // Explicitly set cleaned value
+      };
+    });
+
+    // Set final items to data.manage_quotation_items
+    data.manage_quotation_items = finalItems;
+    
+    // Final aggressive cleanup: ensure ALL items in manage_quotation_items have cleaned componen_product_name
+    // This is the absolute last step before sending response
+    if (data.manage_quotation_items && Array.isArray(data.manage_quotation_items)) {
+      data.manage_quotation_items = data.manage_quotation_items.map((item) => {
+        if (item && item.componen_product_name && typeof item.componen_product_name === 'string') {
+          let productName = String(item.componen_product_name).trim();
+          
+          // Remove "MSI[number] - " prefix - be very aggressive about this
+          // Handles MSI001, MSI002, MSI003, MSI025, etc.
+          // Keep cleaning until it's gone
+          let previousName = '';
+          while (/^MSI\d+/i.test(productName) && productName !== previousName) {
+            previousName = productName;
+            productName = productName.replace(/^MSI\d+\s*-\s*/i, '').trim();
+            productName = productName.replace(/^MSI\d+\s+-/i, '').trim();
+            productName = productName.replace(/^MSI\d+-/i, '').trim();
+          }
+          
+          return {
+            ...item,
+            componen_product_name: productName
+          };
+        }
+        return item;
+      });
+    }
+    
+    // Debug: Verify finalItems has cleaned names
+    Logger.info('[manage-quotation:getPdfById] Final cleanup completed', {
+      itemsCount: data.manage_quotation_items?.length || 0,
+      firstItemProductName: data.manage_quotation_items?.[0]?.componen_product_name || 'N/A'
+    });
     
     // Read term_content_directory JSON file if exists
     if (data.term_content_directory) {
