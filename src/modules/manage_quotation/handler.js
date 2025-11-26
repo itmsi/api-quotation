@@ -4,6 +4,7 @@ const db = require('../../config/database');
 const repository = require('./postgre_repository');
 const customerRepository = require('../cutomer/postgre_repository');
 const employeeRepository = require('../sales/postgre_repository');
+const termContentRepository = require('../term_content/postgre_repository');
 const { baseResponse, mappingError, mappingSuccess, Logger } = require('../../utils');
 const { decodeToken } = require('../../utils/auth');
 
@@ -550,6 +551,27 @@ const getById = async (req, res) => {
     });
 
     data.manage_quotation_items = itemsWithRelations;
+    
+    // Get term_content_title if term_content_id exists
+    let termContentTitle = null;
+    if (data.term_content_id) {
+      try {
+        const termContent = await termContentRepository.findById(data.term_content_id);
+        termContentTitle = termContent?.term_content_title || null;
+      } catch (error) {
+        Logger.error('[manage-quotation:getById] gagal memuat term_content', {
+          term_content_id: data.term_content_id,
+          message: error?.message
+        });
+        termContentTitle = null;
+      }
+    }
+    
+    // Insert term_content_title after term_content_id
+    if (data.term_content_id !== undefined) {
+      const dataWithTermContentTitle = insertFieldAfterKey(data, 'term_content_id', 'term_content_title', termContentTitle);
+      Object.assign(data, dataWithTermContentTitle);
+    }
     
     // Read term_content_directory JSON file if exists
     if (data.term_content_directory) {
