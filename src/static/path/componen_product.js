@@ -244,6 +244,79 @@ const componenProductPaths = {
         }
       }
     }
+  },
+  '/componen_product/import-csv': {
+    post: {
+      tags: ['Componen Products'],
+      summary: 'Import componen products from CSV',
+      description: `Import multiple componen products from CSV file. 
+      
+**Format CSV yang diharapkan:**
+Header CSV harus berisi kolom-kolom berikut:
+\`msi_code,truck_type,segment,segment_type,msi_model,unit_model,engine,horse_power,wheel_number,volume_cbm,market_price,gvw,wheelbase,engine_brand_model,max_torque,displacement,emission_standard,engine_guard,gearbox_transmission,fuel_tank,Tyre\`
+
+**Mapping Data:**
+- \`msi_code\` → \`code_unique\`
+- \`truck_type\` → \`msi_model\`
+- \`segment\` → \`segment\`
+- \`truck_type\` → \`componen_type\` (OFF ROAD REGULAR=1, ON ROAD REGULAR=2, OFF ROAD IRREGULAR=3)
+- \`msi_model\` → \`msi_product\`
+- \`unit_model\` → \`componen_product_unit_model\`
+- \`engine\` → \`engine\`
+- \`horse_power\` → \`horse_power\`
+- \`wheel_number\` → \`wheel_no\`
+- \`volume_cbm\` → \`volume\`
+- \`market_price\` → \`market_price\`
+- \`selling_price_star_1\` sampai \`selling_price_star_5\` = '0'
+
+**Spesifikasi akan dibuat otomatis untuk:**
+GVW, Unit Model, Horse Power, Cargobox/Vessel, Wheelbase, Engine Brand Model, Max Torque, Displacement, Emission Standard, Engine Guard, Gearbox Transmission, Fuel Tank, Tyre`,
+      security: [{ bearerAuth: [] }],
+      requestBody: {
+        required: true,
+        content: {
+          'multipart/form-data': {
+            schema: {
+              type: 'object',
+              required: ['file'],
+              properties: {
+                file: {
+                  type: 'string',
+                  format: 'binary',
+                  description: 'CSV file dengan format yang sesuai. Maksimal 10MB.'
+                }
+              }
+            }
+          }
+        }
+      },
+      responses: {
+        201: {
+          description: 'Import berhasil',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ImportCSVResponse' }
+            }
+          }
+        },
+        400: {
+          description: 'Validation error atau file tidak valid',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+            }
+          }
+        },
+        500: {
+          description: 'Server error',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+            }
+          }
+        }
+      }
+    }
   }
 };
 

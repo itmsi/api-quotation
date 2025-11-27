@@ -77,5 +77,17 @@ router.delete(
   handler.remove
 );
 
+/**
+ * @route   POST /api/quotation/componen_product/import-csv
+ * @desc    Import componen products from CSV file
+ * @access  Protected
+ */
+router.post(
+  '/import-csv',
+  verifyToken,
+  handler.handleCSVUpload,
+  handler.importCSV
+);
+
 module.exports = router;
 

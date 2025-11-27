@@ -1,5 +1,7 @@
 const path = require('path');
 const multer = require('multer');
+const csv = require('csv-parser');
+const { Readable } = require('stream');
 const repository = require('./postgre_repository');
 const { baseResponse, mappingError, mappingSuccess } = require('../../utils');
 const { decodeToken } = require('../../utils/auth');
@@ -111,6 +113,52 @@ const mapSortBy = (sortBy) => {
     'componen_product_unit_model': 'componen_product_unit_model'
   };
   return mapping[sortBy] || 'created_at';
+};
+
+/**
+ * Generate componen_product_name based on format:
+ * code_unique - msi_product wheel_no engine msi_model volume - segment
+ */
+const generateComponenProductName = (data) => {
+  const parts = [];
+  
+  // code_unique
+  const codeUnique = data.code_unique ? String(data.code_unique).trim() : null;
+  
+  // Middle parts: msi_product wheel_no engine msi_model volume
+  const middleParts = [];
+  if (data.msi_product) middleParts.push(String(data.msi_product).trim());
+  if (data.wheel_no) middleParts.push(String(data.wheel_no).trim());
+  if (data.engine) middleParts.push(String(data.engine).trim());
+  if (data.msi_model) middleParts.push(String(data.msi_model).trim());
+  if (data.volume) middleParts.push(String(data.volume).trim());
+  
+  // segment
+  const segment = data.segment ? String(data.segment).trim() : null;
+  
+  // Build the name according to format: code_unique - msi_product wheel_no engine msi_model volume - segment
+  if (codeUnique) {
+    parts.push(codeUnique);
+  }
+  
+  if (middleParts.length > 0) {
+    if (parts.length > 0) {
+      parts.push('-');
+    }
+    parts.push(middleParts.join(' '));
+  }
+  
+  if (segment) {
+    if (parts.length > 0) {
+      parts.push('-');
+    }
+    parts.push(segment);
+  }
+  
+  const result = parts.join(' ').trim();
+  
+  // Return empty string if no valid parts, otherwise return the formatted name
+  return result || null;
 };
 
 /**
@@ -247,7 +295,6 @@ const create = async (req, res) => {
     }
     
     const componenProductData = {
-      componen_product_name: req.body.componen_product_name || null,
       componen_type: req.body.componen_type ? parseInt(req.body.componen_type) : null,
       code_unique: req.body.code_unique || null,
       segment: req.body.segment || null,
@@ -268,6 +315,13 @@ const create = async (req, res) => {
       componen_product_description: req.body.componen_product_description || null,
       created_by: tokenData.created_by
     };
+    
+    // Generate componen_product_name if not provided
+    if (req.body.componen_product_name) {
+      componenProductData.componen_product_name = req.body.componen_product_name;
+    } else {
+      componenProductData.componen_product_name = generateComponenProductName(componenProductData) || null;
+    }
 
     const specificationsPayload = parseSpecificationsInput(req.body.componen_product_specifications);
     
@@ -312,7 +366,6 @@ const update = async (req, res) => {
     }
     
     const componenProductData = {
-      componen_product_name: req.body.componen_product_name,
       componen_type: req.body.componen_type !== undefined ? (req.body.componen_type ? parseInt(req.body.componen_type) : null) : undefined,
       code_unique: req.body.code_unique,
       segment: req.body.segment,
@@ -332,6 +385,45 @@ const update = async (req, res) => {
       componen_product_description: req.body.componen_product_description,
       updated_by: tokenData.updated_by
     };
+    
+    // Generate componen_product_name if not provided or if relevant fields are updated
+    if (req.body.componen_product_name !== undefined) {
+      // If explicitly provided, use it
+      if (req.body.componen_product_name === null || req.body.componen_product_name === '') {
+        // If set to null/empty, generate from current data
+        const dataForGeneration = {
+          code_unique: req.body.code_unique !== undefined ? req.body.code_unique : existing.code_unique,
+          msi_product: req.body.msi_product !== undefined ? req.body.msi_product : existing.msi_product,
+          wheel_no: req.body.wheel_no !== undefined ? req.body.wheel_no : existing.wheel_no,
+          engine: req.body.engine !== undefined ? req.body.engine : existing.engine,
+          msi_model: req.body.msi_model !== undefined ? req.body.msi_model : existing.msi_model,
+          volume: req.body.volume !== undefined ? req.body.volume : existing.volume,
+          segment: req.body.segment !== undefined ? req.body.segment : existing.segment
+        };
+        componenProductData.componen_product_name = generateComponenProductName(dataForGeneration) || null;
+      } else {
+        componenProductData.componen_product_name = req.body.componen_product_name;
+      }
+    } else {
+      // If not provided, check if any relevant field is being updated
+      const relevantFields = ['code_unique', 'msi_product', 'wheel_no', 'engine', 'msi_model', 'volume', 'segment'];
+      const isRelevantFieldUpdated = relevantFields.some(field => req.body[field] !== undefined);
+      
+      if (isRelevantFieldUpdated) {
+        // Generate from updated data, using existing values for fields not updated
+        const dataForGeneration = {
+          code_unique: req.body.code_unique !== undefined ? req.body.code_unique : existing.code_unique,
+          msi_product: req.body.msi_product !== undefined ? req.body.msi_product : existing.msi_product,
+          wheel_no: req.body.wheel_no !== undefined ? req.body.wheel_no : existing.wheel_no,
+          engine: req.body.engine !== undefined ? req.body.engine : existing.engine,
+          msi_model: req.body.msi_model !== undefined ? req.body.msi_model : existing.msi_model,
+          volume: req.body.volume !== undefined ? req.body.volume : existing.volume,
+          segment: req.body.segment !== undefined ? req.body.segment : existing.segment
+        };
+        componenProductData.componen_product_name = generateComponenProductName(dataForGeneration) || null;
+      }
+      // If no relevant fields updated, don't update componen_product_name
+    }
     
     // Hanya masukkan image jika ada file baru yang berhasil diupload
     if (imageUrl !== undefined && imageUrl !== null) {
@@ -386,12 +478,264 @@ const remove = async (req, res) => {
   }
 };
 
+/**
+ * Map truck_type to componen_type
+ */
+const mapTruckTypeToComponenType = (truckType) => {
+  if (!truckType) return null;
+  
+  const normalizedType = String(truckType).trim().toUpperCase();
+  
+  if (normalizedType === 'OFF ROAD REGULAR') {
+    return 1;
+  } else if (normalizedType === 'ON ROAD REGULAR') {
+    return 2;
+  } else if (normalizedType === 'OFF ROAD IRREGULAR') {
+    return 3;
+  }
+  
+  return null;
+};
+
+/**
+ * Parse CSV file and return array of objects
+ */
+const parseCSV = (buffer) => {
+  return new Promise((resolve, reject) => {
+    const results = [];
+    const stream = Readable.from(buffer.toString());
+    
+    stream
+      .pipe(csv())
+      .on('data', (data) => results.push(data))
+      .on('end', () => resolve(results))
+      .on('error', (error) => reject(error));
+  });
+};
+
+/**
+ * Import componen products from CSV
+ */
+const importCSV = async (req, res) => {
+  try {
+    if (!req.file) {
+      const response = mappingError('File CSV tidak ditemukan', 400);
+      return baseResponse(res, response);
+    }
+
+    // Get user info from token
+    const tokenData = decodeToken('created', req);
+    
+    // Parse CSV file
+    const csvData = await parseCSV(req.file.buffer);
+    
+    if (!csvData || csvData.length === 0) {
+      const response = mappingError('File CSV kosong atau tidak valid', 400);
+      return baseResponse(res, response);
+    }
+
+    // Expected CSV columns
+    const expectedColumns = [
+      'msi_code',
+      'truck_type',
+      'segment',
+      'segment_type',
+      'msi_model',
+      'unit_model',
+      'engine',
+      'horse_power',
+      'wheel_number',
+      'volume_cbm',
+      'market_price',
+      'gvw',
+      'wheelbase',
+      'engine_brand_model',
+      'max_torque',
+      'displacement',
+      'emission_standard',
+      'engine_guard',
+      'gearbox_transmission',
+      'fuel_tank',
+      'Tyre'
+    ];
+
+    // Validate CSV columns (check first row)
+    const firstRow = csvData[0];
+    const missingColumns = expectedColumns.filter(col => !(col in firstRow));
+    
+    if (missingColumns.length > 0) {
+      const response = mappingError(
+        `Kolom CSV tidak lengkap. Kolom yang hilang: ${missingColumns.join(', ')}`,
+        400
+      );
+      return baseResponse(res, response);
+    }
+
+    const results = {
+      success: [],
+      failed: [],
+      total: csvData.length
+    };
+
+    // Process each row
+    for (let i = 0; i < csvData.length; i++) {
+      const row = csvData[i];
+      const rowNumber = i + 2; // +2 because CSV has header and 0-indexed
+      
+      try {
+        // Map truck_type to componen_type
+        const componenType = mapTruckTypeToComponenType(row.truck_type);
+        
+        // Prepare componen product data
+        const componenProductData = {
+          code_unique: row.msi_code || null,
+          msi_model: row.truck_type || null,
+          segment: row.segment || null,
+          componen_type: componenType,
+          msi_product: row.msi_model || null,
+          componen_product_unit_model: row.unit_model || null,
+          engine: row.engine || null,
+          horse_power: row.horse_power || null,
+          wheel_no: row.wheel_number || null,
+          volume: row.volume_cbm || null,
+          market_price: row.market_price || null,
+          selling_price_star_1: '0',
+          selling_price_star_2: '0',
+          selling_price_star_3: '0',
+          selling_price_star_4: '0',
+          selling_price_star_5: '0',
+          created_by: tokenData.created_by
+        };
+        
+        // Generate componen_product_name based on format
+        componenProductData.componen_product_name = generateComponenProductName(componenProductData) || null;
+
+        // Prepare specifications data
+        const specifications = [];
+        
+        // Helper function to add specification if value exists
+        const addSpecification = (label, value) => {
+          if (value && String(value).trim() !== '') {
+            specifications.push({
+              componen_product_specification_label: label,
+              componen_product_specification_value: String(value).trim()
+            });
+          }
+        };
+
+        // Add all specifications
+        addSpecification('GVW', row.gvw);
+        addSpecification('Unit Model', row.unit_model);
+        addSpecification('Horse Power', row.horse_power);
+        addSpecification('Cargobox/Vessel', row.volume_cbm);
+        addSpecification('Wheelbase', row.wheelbase);
+        addSpecification('Engine Brand Model', row.engine_brand_model);
+        addSpecification('Max Torque', row.max_torque);
+        addSpecification('Displacement', row.displacement);
+        addSpecification('Emission Standard', row.emission_standard);
+        addSpecification('Engine Guard', row.engine_guard);
+        addSpecification('Gearbox Transmission', row.gearbox_transmission);
+        addSpecification('Fuel Tank', row.fuel_tank);
+        addSpecification('Tyre', row.Tyre);
+
+        // Create componen product with specifications
+        const createdProduct = await repository.create(componenProductData, specifications);
+        
+        results.success.push({
+          row: rowNumber,
+          code_unique: row.msi_code,
+          componen_product_id: createdProduct.componen_product_id
+        });
+      } catch (error) {
+        results.failed.push({
+          row: rowNumber,
+          code_unique: row.msi_code || 'N/A',
+          error: error.message || 'Unknown error'
+        });
+      }
+    }
+
+    const response = mappingSuccess(
+      `Import CSV selesai. Berhasil: ${results.success.length}, Gagal: ${results.failed.length}`,
+      {
+        total: results.total,
+        success: results.success.length,
+        failed: results.failed.length,
+        details: {
+          success: results.success,
+          failed: results.failed
+        }
+      },
+      201
+    );
+    
+    return baseResponse(res, response);
+  } catch (error) {
+    console.error('Error importing CSV:', error);
+    const response = mappingError(error);
+    return baseResponse(res, response);
+  }
+};
+
+/**
+ * Middleware for CSV file upload
+ */
+const handleCSVUpload = (req, res, next) => {
+  const storage = multer.memoryStorage();
+  
+  const csvFilter = (req, file, cb) => {
+    const allowedTypes = ['text/csv', 'application/vnd.ms-excel'];
+    const allowedExtensions = ['.csv'];
+    const fileExtension = path.extname(file.originalname).toLowerCase();
+    
+    if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(fileExtension)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Hanya file CSV yang diizinkan'), false);
+    }
+  };
+  
+  const upload = multer({
+    storage: storage,
+    fileFilter: csvFilter,
+    limits: {
+      fileSize: 10 * 1024 * 1024 // 10MB limit
+    }
+  });
+  
+  upload.single('file')(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+          success: false,
+          message: 'File terlalu besar. Maksimal 10MB.',
+          error: err.message
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: 'Error upload file',
+        error: err.message
+      });
+    } else if (err) {
+      return res.status(400).json({
+        success: false,
+        message: err.message || 'Error validasi file',
+        error: err.message
+      });
+    }
+    next();
+  });
+};
+
 module.exports = {
   getAll,
   getById,
   create,
   update,
   remove,
-  handleImageUpload
+  importCSV,
+  handleImageUpload,
+  handleCSVUpload
 };
 

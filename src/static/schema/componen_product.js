@@ -405,6 +405,93 @@ const componenProductSchemas = {
         nullable: true
       }
     }
+  },
+  ImportCSVResponse: {
+    type: 'object',
+    properties: {
+      success: {
+        type: 'boolean',
+        example: true
+      },
+      message: {
+        type: 'string',
+        example: 'Import CSV selesai. Berhasil: 10, Gagal: 0'
+      },
+      data: {
+        type: 'object',
+        properties: {
+          total: {
+            type: 'integer',
+            description: 'Total jumlah baris dalam CSV',
+            example: 10
+          },
+          success: {
+            type: 'integer',
+            description: 'Jumlah baris yang berhasil diimport',
+            example: 10
+          },
+          failed: {
+            type: 'integer',
+            description: 'Jumlah baris yang gagal diimport',
+            example: 0
+          },
+          details: {
+            type: 'object',
+            properties: {
+              success: {
+                type: 'array',
+                description: 'Detail baris yang berhasil diimport',
+                items: {
+                  type: 'object',
+                  properties: {
+                    row: {
+                      type: 'integer',
+                      description: 'Nomor baris di CSV (dimulai dari 2 karena baris 1 adalah header)',
+                      example: 2
+                    },
+                    code_unique: {
+                      type: 'string',
+                      description: 'Code unique dari baris yang berhasil diimport',
+                      example: 'MSI-001'
+                    },
+                    componen_product_id: {
+                      type: 'string',
+                      format: 'uuid',
+                      description: 'ID componen product yang berhasil dibuat',
+                      example: '123e4567-e89b-12d3-a456-426614174000'
+                    }
+                  }
+                }
+              },
+              failed: {
+                type: 'array',
+                description: 'Detail baris yang gagal diimport',
+                items: {
+                  type: 'object',
+                  properties: {
+                    row: {
+                      type: 'integer',
+                      description: 'Nomor baris di CSV (dimulai dari 2 karena baris 1 adalah header)',
+                      example: 3
+                    },
+                    code_unique: {
+                      type: 'string',
+                      description: 'Code unique dari baris yang gagal diimport',
+                      example: 'MSI-002'
+                    },
+                    error: {
+                      type: 'string',
+                      description: 'Pesan error yang terjadi',
+                      example: 'Duplicate entry for code_unique'
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 };
 
