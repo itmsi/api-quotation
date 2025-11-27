@@ -5,7 +5,8 @@ const {
   createValidation,
   updateValidation,
   getByIdValidation,
-  listValidation
+  listValidation,
+  getByIslandIdValidation
 } = require('./validation');
 const { verifyToken } = require('../../middlewares');
 const { validateMiddleware } = require('../../middlewares/validation');
@@ -21,6 +22,19 @@ router.post(
   validateMiddleware,
   verifyToken,
   handler.getAll
+);
+
+/**
+ * @route   GET /api/quotation/accessory/get-data-by-id-island/:idisland
+ * @desc    Get accessories by island ID
+ * @access  Protected
+ */
+router.get(
+  '/get-data-by-id-island/:idisland',
+  getByIslandIdValidation,
+  validateMiddleware,
+  verifyToken,
+  handler.getByIslandId
 );
 
 /**
@@ -73,6 +87,18 @@ router.delete(
   validateMiddleware,
   verifyToken,
   handler.remove
+);
+
+/**
+ * @route   POST /api/quotation/accessory/import-csv
+ * @desc    Import accessories from CSV file
+ * @access  Protected
+ */
+router.post(
+  '/import-csv',
+  verifyToken,
+  handler.handleCSVUpload,
+  handler.importCSV
 );
 
 module.exports = router;

@@ -212,6 +212,33 @@ const hardDelete = async (id) => {
     .del();
 };
 
+/**
+ * Find accessories by island_id
+ * Join accessories_island_detail with accessories
+ */
+const findByIslandId = async (islandId) => {
+  const results = await db('accessories_island_detail as aid')
+    .select(
+      'a.*',
+      'aid.accessories_island_detail_id',
+      'aid.island_id',
+      'aid.accessories_island_detail_quantity',
+      'aid.accessories_island_detail_description',
+      'aid.created_at as island_detail_created_at',
+      'aid.created_by as island_detail_created_by',
+      'aid.updated_at as island_detail_updated_at',
+      'aid.updated_by as island_detail_updated_by'
+    )
+    .innerJoin('accessories as a', 'aid.accessories_id', 'a.accessory_id')
+    .where({
+      'aid.island_id': islandId,
+      'a.is_delete': false
+    })
+    .orderBy('a.created_at', 'desc');
+  
+  return results || [];
+};
+
 module.exports = {
   findAll,
   findById,
@@ -220,6 +247,7 @@ module.exports = {
   update,
   remove,
   restore,
-  hardDelete
+  hardDelete,
+  findByIslandId
 };
 

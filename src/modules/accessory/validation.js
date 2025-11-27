@@ -155,10 +155,22 @@ const listValidation = [
     .withMessage('Sort order harus asc atau desc')
 ];
 
+/**
+ * Validation rules for getting accessories by island ID
+ */
+const getByIslandIdValidation = [
+  param('idisland')
+    .notEmpty()
+    .withMessage('Island ID wajib diisi')
+    .isUUID()
+    .withMessage('Format Island ID tidak valid')
+];
+
 module.exports = {
   createValidation,
   updateValidation,
   getByIdValidation,
-  listValidation
+  listValidation,
+  getByIslandIdValidation
 };
 
