@@ -1,4 +1,5 @@
 const repository = require('./postgre_repository');
+const accessoriesIslandDetailRepository = require('./accessories_island_detail_repository');
 const { baseResponse, mappingError, mappingSuccess } = require('../../utils');
 const { decodeToken } = require('../../utils/auth');
 
@@ -83,7 +84,19 @@ const create = async (req, res) => {
     };
     
     const data = await repository.create(accessoryData);
-    const response = mappingSuccess('Data accessory berhasil dibuat', data, 201);
+    
+    // Insert accessories_island_detail if provided
+    if (req.body.accessories_island_detail && Array.isArray(req.body.accessories_island_detail) && req.body.accessories_island_detail.length > 0) {
+      await accessoriesIslandDetailRepository.createMultiple(
+        req.body.accessories_island_detail,
+        data.accessory_id,
+        tokenData.created_by
+      );
+    }
+    
+    // Get full data with accessories_island_detail
+    const fullData = await repository.findById(data.accessory_id);
+    const response = mappingSuccess('Data accessory berhasil dibuat', fullData, 201);
     return baseResponse(res, response);
   } catch (error) {
     console.error('Error creating accessory:', error);
@@ -127,7 +140,23 @@ const update = async (req, res) => {
       return baseResponse(res, response);
     }
     
-    const response = mappingSuccess('Data accessory berhasil diupdate', data);
+    // Update accessories_island_detail if provided
+    if (req.body.accessories_island_detail !== undefined) {
+      if (Array.isArray(req.body.accessories_island_detail) && req.body.accessories_island_detail.length > 0) {
+        await accessoriesIslandDetailRepository.updateByAccessoriesId(
+          req.body.accessories_island_detail,
+          id,
+          tokenData.updated_by
+        );
+      } else {
+        // If empty array, delete all existing
+        await accessoriesIslandDetailRepository.deleteByAccessoriesId(id);
+      }
+    }
+    
+    // Get full data with accessories_island_detail
+    const fullData = await repository.findById(id);
+    const response = mappingSuccess('Data accessory berhasil diupdate', fullData);
     return baseResponse(res, response);
   } catch (error) {
     console.error('Error updating accessory:', error);

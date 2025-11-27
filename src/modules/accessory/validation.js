@@ -37,7 +37,23 @@ const createValidation = [
   body('accessory_description')
     .optional()
     .isString()
-    .withMessage('Accessory description harus berupa string')
+    .withMessage('Accessory description harus berupa string'),
+  body('accessories_island_detail')
+    .optional()
+    .isArray()
+    .withMessage('Accessories island detail harus berupa array'),
+  body('accessories_island_detail.*.island_id')
+    .optional()
+    .isUUID()
+    .withMessage('Island ID harus berupa UUID yang valid'),
+  body('accessories_island_detail.*.accessories_island_detail_quantity')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Quantity harus berupa angka integer positif'),
+  body('accessories_island_detail.*.accessories_island_detail_description')
+    .optional()
+    .isString()
+    .withMessage('Description harus berupa string')
 ];
 
 /**
@@ -82,7 +98,23 @@ const updateValidation = [
   body('accessory_description')
     .optional()
     .isString()
-    .withMessage('Accessory description harus berupa string')
+    .withMessage('Accessory description harus berupa string'),
+  body('accessories_island_detail')
+    .optional()
+    .isArray()
+    .withMessage('Accessories island detail harus berupa array'),
+  body('accessories_island_detail.*.island_id')
+    .optional()
+    .isUUID()
+    .withMessage('Island ID harus berupa UUID yang valid'),
+  body('accessories_island_detail.*.accessories_island_detail_quantity')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Quantity harus berupa angka integer positif'),
+  body('accessories_island_detail.*.accessories_island_detail_description')
+    .optional()
+    .isString()
+    .withMessage('Description harus berupa string')
 ];
 
 /**

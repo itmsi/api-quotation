@@ -1,4 +1,5 @@
 const db = require('../../config/database');
+const accessoriesIslandDetailRepository = require('./accessories_island_detail_repository');
 
 const TABLE_NAME = 'accessories';
 
@@ -55,6 +56,14 @@ const findAll = async (params) => {
   
   const data = await query;
   
+  // Get accessories_island_detail for each accessory
+  if (data && data.length > 0) {
+    for (const item of data) {
+      const islandDetails = await accessoriesIslandDetailRepository.findByAccessoriesId(item.accessory_id);
+      item.accessories_island_detail = islandDetails;
+    }
+  }
+  
   // Count total
   let countQuery = db(TABLE_NAME)
     .where('is_delete', false);
@@ -85,6 +94,12 @@ const findById = async (id) => {
   const result = await db(TABLE_NAME)
     .where({ accessory_id: id, is_delete: false })
     .first();
+  
+  if (result) {
+    // Get accessories_island_detail
+    const islandDetails = await accessoriesIslandDetailRepository.findByAccessoriesId(id);
+    result.accessories_island_detail = islandDetails;
+  }
   
   return result || null;
 };

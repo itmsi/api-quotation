@@ -98,6 +98,74 @@ const accessorySchemas = {
         type: 'boolean',
         description: 'Soft delete flag',
         example: false
+      },
+      accessories_island_detail: {
+        type: 'array',
+        description: 'List of accessories island detail',
+        items: {
+          $ref: '#/components/schemas/AccessoriesIslandDetail'
+        }
+      }
+    }
+  },
+  AccessoriesIslandDetail: {
+    type: 'object',
+    properties: {
+      accessories_island_detail_id: {
+        type: 'string',
+        format: 'uuid',
+        description: 'Unique identifier',
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      },
+      island_id: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Island UUID',
+        example: '123e4567-e89b-12d3-a456-426614174006'
+      },
+      accessories_id: {
+        type: 'string',
+        format: 'uuid',
+        description: 'Accessory UUID',
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      },
+      accessories_island_detail_quantity: {
+        type: 'integer',
+        description: 'Quantity',
+        example: 1
+      },
+      accessories_island_detail_description: {
+        type: 'string',
+        nullable: true,
+        description: 'Description',
+        example: 'Description text'
+      },
+      created_at: {
+        type: 'string',
+        format: 'date-time',
+        description: 'Creation timestamp',
+        example: '2025-11-27T00:00:00.000Z'
+      },
+      created_by: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Creator UUID',
+        example: '123e4567-e89b-12d3-a456-426614174000'
+      },
+      updated_at: {
+        type: 'string',
+        format: 'date-time',
+        description: 'Last update timestamp',
+        example: '2025-11-27T00:00:00.000Z'
+      },
+      updated_by: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Updater UUID',
+        example: '123e4567-e89b-12d3-a456-426614174000'
       }
     }
   },
@@ -144,6 +212,37 @@ const accessorySchemas = {
         type: 'string',
         description: 'Accessory description',
         example: 'This is an accessory description'
+      },
+      accessories_island_detail: {
+        type: 'array',
+        description: 'List of accessories island detail',
+        items: {
+          $ref: '#/components/schemas/AccessoriesIslandDetailInput'
+        }
+      }
+    }
+  },
+  AccessoriesIslandDetailInput: {
+    type: 'object',
+    properties: {
+      island_id: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Island UUID',
+        example: '123e4567-e89b-12d3-a456-426614174006'
+      },
+      accessories_island_detail_quantity: {
+        type: 'integer',
+        minimum: 0,
+        description: 'Quantity',
+        example: 1
+      },
+      accessories_island_detail_description: {
+        type: 'string',
+        nullable: true,
+        description: 'Description',
+        example: 'Description text'
       }
     }
   },
