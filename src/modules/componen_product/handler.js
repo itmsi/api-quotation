@@ -583,8 +583,8 @@ const importCSV = async (req, res) => {
       const rowNumber = i + 2; // +2 because CSV has header and 0-indexed
       
       try {
-        // Map truck_type to componen_type
-        const componenType = mapTruckTypeToComponenType(row.truck_type);
+        // Map segment_type to componen_type
+        const componenType = mapTruckTypeToComponenType(row.segment_type);
         
         // Prepare componen product data
         const componenProductData = {
