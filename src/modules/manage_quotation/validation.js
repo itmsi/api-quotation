@@ -275,6 +275,24 @@ const createValidation = [
     .isLength({ max: 255 })
     .withMessage('Value specification maksimal 255 karakter')
     .trim(),
+  // Validation for manage_quotation_item_accessories at root level
+  body('manage_quotation_item_accessories')
+    .optional()
+    .isArray({ min: 0 })
+    .withMessage('Manage quotation item accessories harus berupa array'),
+  body('manage_quotation_item_accessories.*.accessory_id')
+    .optional()
+    .isUUID()
+    .withMessage('Format accessory_id tidak valid'),
+  body('manage_quotation_item_accessories.*.quantity')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Quantity harus berupa angka integer positif'),
+  body('manage_quotation_item_accessories.*.description')
+    .optional()
+    .isString()
+    .withMessage('Description harus berupa string')
+    .trim(),
 ];
 
 /**
@@ -556,6 +574,24 @@ const updateValidation = [
     .optional()
     .isLength({ max: 255 })
     .withMessage('Value specification maksimal 255 karakter')
+    .trim(),
+  // Validation for manage_quotation_item_accessories at root level
+  body('manage_quotation_item_accessories')
+    .optional()
+    .isArray({ min: 0 })
+    .withMessage('Manage quotation item accessories harus berupa array'),
+  body('manage_quotation_item_accessories.*.accessory_id')
+    .optional()
+    .isUUID()
+    .withMessage('Format accessory_id tidak valid'),
+  body('manage_quotation_item_accessories.*.quantity')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Quantity harus berupa angka integer positif'),
+  body('manage_quotation_item_accessories.*.description')
+    .optional()
+    .isString()
+    .withMessage('Description harus berupa string')
     .trim(),
 ];
 

@@ -353,14 +353,7 @@ const manageQuotationPaths = {
                     {
                       accessory_id: '123e4567-e89b-12d3-a456-426614174004',
                       quantity: 1,
-                      description: 'Updated notes about the accessory',
-                      accessory_part_number: 'ACC-001',
-                      accessory_part_name: 'Brake Pad Deluxe',
-                      accessory_specification: 'Ceramic Brake Pad',
-                      accessory_brand: 'Brand X',
-                      accessory_remark: 'High quality',
-                      accessory_region: 'Asia',
-                      accessory_description: 'Accessory description for quotation'
+                      description: 'Updated notes about the accessory'
                     }
                   ],
                   manage_quotation_item_specifications: [
@@ -573,14 +566,7 @@ const manageQuotationPaths = {
                     {
                       accessory_id: '123e4567-e89b-12d3-a456-426614174004',
                       quantity: 1,
-                      description: 'Additional notes about the item',
-                      accessory_part_number: '',
-                      accessory_part_name: '',
-                      accessory_specification: '',
-                      accessory_brand: '',
-                      accessory_remark: '',
-                      accessory_region: '',
-                      accessory_description: ''
+                      description: 'Additional notes about the item'
                     }
                   ],
                   manage_quotation_item_specifications: [

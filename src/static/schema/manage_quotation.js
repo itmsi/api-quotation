@@ -753,6 +753,7 @@ const manageQuotationSchemas = {
   },
   ManageQuotationItemAccessory: {
     type: 'object',
+    description: 'Manage quotation item accessory. Data accessory (part_number, part_name, specification, brand, remark, region, description) diambil dari tabel accessories melalui JOIN, bukan disimpan di tabel manage_quotation_item_accessories.',
     properties: {
       manage_quotation_item_accessory_id: {
         type: 'string',
@@ -770,15 +771,8 @@ const manageQuotationSchemas = {
         type: 'string',
         format: 'uuid',
         nullable: true,
-        description: 'Accessory ID reference',
+        description: 'Accessory ID reference (foreign key to accessories table)',
         example: '123e4567-e89b-12d3-a456-426614174006'
-      },
-      componen_product_id: {
-        type: 'string',
-        format: 'uuid',
-        nullable: true,
-        description: 'Componen product ID yang ingin dikaitkan dengan accessory',
-        example: '123e4567-e89b-12d3-a456-426614174004'
       },
       componen_product_id: {
         type: 'string',
@@ -787,100 +781,59 @@ const manageQuotationSchemas = {
         description: 'Componen product ID yang menjadi referensi accessory dalam quotation',
         example: '123e4567-e89b-12d3-a456-426614174004'
       },
-      accessory_part_number: {
-        type: 'string',
-        nullable: true,
-        description: 'Accessory part number yang tersimpan pada item accessory',
-        example: 'ACC-001'
-      },
-      accessory_part_name: {
-        type: 'string',
-        nullable: true,
-        description: 'Accessory part name yang tersimpan pada item accessory',
-        example: 'Brake Pad'
-      },
-      accessory_specification: {
-        type: 'string',
-        nullable: true,
-        description: 'Accessory specification yang tersimpan pada item accessory',
-        example: 'Ceramic Brake Pad'
-      },
-      accessory_brand: {
-        type: 'string',
-        nullable: true,
-        description: 'Accessory brand yang tersimpan pada item accessory',
-        example: 'Brand X'
-      },
-      accessory_remark: {
-        type: 'string',
-        nullable: true,
-        description: 'Accessory remark yang tersimpan pada item accessory',
-        example: 'High quality'
-      },
-      accessory_region: {
-        type: 'string',
-        nullable: true,
-        description: 'Accessory region yang tersimpan pada item accessory',
-        example: 'Asia'
-      },
-      accessory_description: {
-        type: 'string',
-        nullable: true,
-        description: 'Accessory description yang tersimpan pada item accessory',
-        example: 'Catatan tambahan untuk accessory'
-      },
-      accessory_part_number_source: {
-        type: 'string',
-        nullable: true,
-        description: 'Accessory part number yang berasal dari master accessories',
-        example: 'ACC-001'
-      },
-      accessory_part_name_source: {
-        type: 'string',
-        nullable: true,
-        description: 'Accessory part name yang berasal dari master accessories',
-        example: 'Brake Pad'
-      },
-      accessory_specification_source: {
-        type: 'string',
-        nullable: true,
-        description: 'Accessory specification yang berasal dari master accessories',
-        example: 'Ceramic Brake Pad'
-      },
-      accessory_brand_source: {
-        type: 'string',
-        nullable: true,
-        description: 'Accessory brand yang berasal dari master accessories',
-        example: 'Brand X'
-      },
-      accessory_remark_source: {
-        type: 'string',
-        nullable: true,
-        description: 'Accessory remark yang berasal dari master accessories',
-        example: 'High quality'
-      },
-      accessory_region_source: {
-        type: 'string',
-        nullable: true,
-        description: 'Accessory region yang berasal dari master accessories',
-        example: 'Asia'
-      },
-      accessory_description_source: {
-        type: 'string',
-        nullable: true,
-        description: 'Accessory description yang berasal dari master accessories',
-        example: 'This is an accessory description'
-      },
       quantity: {
         type: 'integer',
-        description: 'Quantity',
+        description: 'Quantity of accessory',
         example: 1
       },
       description: {
         type: 'string',
         nullable: true,
-        description: 'Item accessory description',
+        description: 'Item accessory description (optional notes)',
         example: 'Additional notes about the accessory'
+      },
+      // Data dari tabel accessories (diambil melalui JOIN)
+      accessory_part_number: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory part number (from accessories table via JOIN)',
+        example: 'ACC-001'
+      },
+      accessory_part_name: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory part name (from accessories table via JOIN)',
+        example: 'Brake Pad'
+      },
+      accessory_specification: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory specification (from accessories table via JOIN)',
+        example: 'Ceramic Brake Pad'
+      },
+      accessory_brand: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory brand (from accessories table via JOIN)',
+        example: 'Brand X'
+      },
+      accessory_remark: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory remark (from accessories table via JOIN)',
+        example: 'High quality'
+      },
+      accessory_region: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory region (from accessories table via JOIN)',
+        example: 'Asia'
+      },
+      accessory_description: {
+        type: 'string',
+        nullable: true,
+        description: 'Accessory description (from accessories table via JOIN)',
+        example: 'This is an accessory description'
       },
       created_by: {
         type: 'string',
@@ -931,68 +884,30 @@ const manageQuotationSchemas = {
   },
   ManageQuotationItemAccessoryInput: {
     type: 'object',
+    description: 'Input untuk manage quotation item accessory. Hanya perlu mengirim accessory_id dan quantity. Data accessory lainnya (part_number, part_name, specification, brand, dll) akan otomatis diambil dari tabel accessories melalui JOIN saat get data.',
     properties: {
       accessory_id: {
         type: 'string',
         format: 'uuid',
-        nullable: true,
-        description: 'Accessory ID reference',
+        required: true,
+        description: 'Accessory ID reference (wajib diisi, harus valid UUID dari tabel accessories)',
         example: '123e4567-e89b-12d3-a456-426614174006'
       },
       quantity: {
         type: 'integer',
-        description: 'Quantity',
+        minimum: 0,
+        required: true,
+        description: 'Quantity of accessory (wajib diisi, minimal 0)',
         example: 1
       },
       description: {
         type: 'string',
         nullable: true,
-        description: 'Item accessory description',
+        description: 'Item accessory description (optional notes)',
         example: 'Additional notes about the accessory'
-      },
-      accessory_part_number: {
-        type: 'string',
-        nullable: true,
-        description: 'Accessory part number yang ingin disimpan pada quotation accessory',
-        example: 'ACC-001'
-      },
-      accessory_part_name: {
-        type: 'string',
-        nullable: true,
-        description: 'Accessory part name yang ingin disimpan pada quotation accessory',
-        example: 'Brake Pad'
-      },
-      accessory_specification: {
-        type: 'string',
-        nullable: true,
-        description: 'Accessory specification yang ingin disimpan pada quotation accessory',
-        example: 'Ceramic Brake Pad'
-      },
-      accessory_brand: {
-        type: 'string',
-        nullable: true,
-        description: 'Accessory brand yang ingin disimpan pada quotation accessory',
-        example: 'Brand X'
-      },
-      accessory_remark: {
-        type: 'string',
-        nullable: true,
-        description: 'Accessory remark yang ingin disimpan pada quotation accessory',
-        example: 'High quality'
-      },
-      accessory_region: {
-        type: 'string',
-        nullable: true,
-        description: 'Accessory region yang ingin disimpan pada quotation accessory',
-        example: 'Asia'
-      },
-      accessory_description: {
-        type: 'string',
-        nullable: true,
-        description: 'Accessory description yang ingin disimpan pada quotation accessory',
-        example: 'Catatan tambahan'
       }
-    }
+    },
+    required: ['accessory_id', 'quantity']
   },
   ManageQuotationItemSpecification: {
     type: 'object',

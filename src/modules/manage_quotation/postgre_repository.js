@@ -649,17 +649,11 @@ const createAccessories = async (manage_quotation_id, accessories, created_by, t
   const results = [];
   
   for (const accessory of accessories) {
+    // Only store accessory_id and quantity, data will be fetched from accessories table via join
     const fields = {
       manage_quotation_id: manage_quotation_id || null,
       accessory_id: accessory.accessory_id || null,
       componen_product_id: accessory.componen_product_id || null,
-      accessory_part_number: accessory.accessory_part_number ?? null,
-      accessory_part_name: accessory.accessory_part_name ?? null,
-      accessory_specification: accessory.accessory_specification ?? null,
-      accessory_brand: accessory.accessory_brand ?? null,
-      accessory_remark: accessory.accessory_remark ?? null,
-      accessory_region: accessory.accessory_region ?? null,
-      accessory_description: accessory.accessory_description ?? null,
       quantity: accessory.quantity ?? 1,
       description: accessory.description ?? null,
       created_by: created_by || null
@@ -689,13 +683,6 @@ const getAccessoriesByQuotationId = async (manage_quotation_id) => {
       'mqia.manage_quotation_id',
       'mqia.accessory_id',
       'mqia.componen_product_id',
-      'mqia.accessory_part_number',
-      'mqia.accessory_part_name',
-      'mqia.accessory_specification',
-      'mqia.accessory_brand',
-      'mqia.accessory_remark',
-      'mqia.accessory_region',
-      'mqia.accessory_description',
       'mqia.quantity',
       'mqia.description',
       'mqia.created_by',
@@ -705,14 +692,14 @@ const getAccessoriesByQuotationId = async (manage_quotation_id) => {
       'mqia.updated_at',
       'mqia.deleted_at',
       'mqia.is_delete',
-      // Data from accessories
-      db.raw('a.accessory_part_number as accessory_part_number_source'),
-      db.raw('a.accessory_part_name as accessory_part_name_source'),
-      db.raw('a.accessory_specification as accessory_specification_source'),
-      db.raw('a.accessory_brand as accessory_brand_source'),
-      db.raw('a.accessory_remark as accessory_remark_source'),
-      db.raw('a.accessory_region as accessory_region_source'),
-      db.raw('a.accessory_description as accessory_description_source')
+      // Data from accessories table (use these as primary data)
+      'a.accessory_part_number',
+      'a.accessory_part_name',
+      'a.accessory_specification',
+      'a.accessory_brand',
+      'a.accessory_remark',
+      'a.accessory_region',
+      'a.accessory_description'
     )
     .leftJoin('accessories as a', function() {
       this.on('mqia.accessory_id', '=', 'a.accessory_id')
