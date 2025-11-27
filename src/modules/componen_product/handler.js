@@ -498,6 +498,25 @@ const mapTruckTypeToComponenType = (truckType) => {
 };
 
 /**
+ * Clean market_price by removing commas and dots, returning only numeric value
+ */
+const cleanMarketPrice = (marketPrice) => {
+  if (!marketPrice) return null;
+  
+  // Convert to string and remove all commas and dots
+  const cleaned = String(marketPrice).replace(/,/g, '').replace(/\./g, '').trim();
+  
+  // If empty after cleaning, return null
+  if (cleaned === '') return null;
+  
+  // Convert to number
+  const numericValue = parseFloat(cleaned);
+  
+  // Return null if not a valid number, otherwise return the numeric value as string
+  return isNaN(numericValue) ? null : String(numericValue);
+};
+
+/**
  * Parse CSV file and return array of objects
  */
 const parseCSV = (buffer) => {
@@ -586,6 +605,9 @@ const importCSV = async (req, res) => {
         // Map segment_type to componen_type
         const componenType = mapTruckTypeToComponenType(row.segment_type);
         
+        // Clean market_price (remove commas and dots)
+        const cleanedMarketPrice = cleanMarketPrice(row.market_price);
+        
         // Prepare componen product data
         const componenProductData = {
           code_unique: row.msi_code || null,
@@ -598,7 +620,7 @@ const importCSV = async (req, res) => {
           horse_power: row.horse_power || null,
           wheel_no: row.wheel_number || null,
           volume: row.volume_cbm || null,
-          market_price: row.market_price || null,
+          market_price: cleanedMarketPrice,
           selling_price_star_1: '0',
           selling_price_star_2: '0',
           selling_price_star_3: '0',
