@@ -1,6 +1,59 @@
 const db = require('../../config/database');
+const customerRepository = require('../cutomer/postgre_repository');
 
 const TABLE_NAME = 'accessories_island_detail';
+const DBLINK_NAME = 'gate_sso_dblink';
+
+/**
+ * Get islands by IDs from gate_sso using dblink
+ */
+const getIslandsByIds = async (ids = []) => {
+  if (!ids || ids.length === 0) {
+    return [];
+  }
+
+  try {
+    await customerRepository.ensureConnection();
+
+    const uniqueIds = [...new Set(ids.filter(Boolean))];
+    if (uniqueIds.length === 0) {
+      return [];
+    }
+
+    // Escape IDs using PostgreSQL quote_literal
+    const escapedIds = [];
+    for (const id of uniqueIds) {
+      const escapedIdResult = await db.raw(`SELECT quote_literal(?) as escaped`, [id]);
+      const escapedId = escapedIdResult.rows[0]?.escaped;
+      escapedIds.push(escapedId);
+    }
+
+    const idsList = escapedIds.join(', ');
+    const innerQuery = `SELECT island_id, island_name FROM islands WHERE island_id IN (${idsList})`;
+
+    // Escape the entire inner query
+    const escapedQueryResult = await db.raw(`SELECT quote_literal(?) as escaped`, [innerQuery]);
+    const escapedInnerQuery = escapedQueryResult.rows[0]?.escaped;
+
+    const query = `
+      SELECT * FROM dblink('${DBLINK_NAME}', 
+        ${escapedInnerQuery}
+      ) AS islands (
+        island_id uuid,
+        island_name varchar
+      )
+    `;
+
+    const result = await db.raw(query);
+    return result.rows || [];
+  } catch (error) {
+    console.error('[accessories_island_detail:getIslandsByIds] gagal memuat islands', {
+      island_ids: ids,
+      message: error?.message
+    });
+    return [];
+  }
+};
 
 /**
  * Find all accessories_island_detail by accessories_id
@@ -10,7 +63,31 @@ const findByAccessoriesId = async (accessoriesId) => {
     .where({ accessories_id: accessoriesId })
     .orderBy('created_at', 'asc');
   
-  return results || [];
+  if (!results || results.length === 0) {
+    return [];
+  }
+
+  // Get all unique island_ids
+  const islandIds = results
+    .map(item => item.island_id)
+    .filter(Boolean);
+  
+  // Get island names from gate_sso
+  const islands = await getIslandsByIds(islandIds);
+  
+  // Create a map for quick lookup
+  const islandMap = new Map();
+  islands.forEach(island => {
+    islandMap.set(island.island_id, island.island_name);
+  });
+  
+  // Add island_name to each result
+  const resultsWithIslandName = results.map(item => ({
+    ...item,
+    island_name: islandMap.get(item.island_id) || null
+  }));
+  
+  return resultsWithIslandName;
 };
 
 /**
