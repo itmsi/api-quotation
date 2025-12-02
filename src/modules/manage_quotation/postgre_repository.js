@@ -185,21 +185,33 @@ const findOne = async (conditions) => {
 };
 
 /**
- * Generate quotation number with format: 001/IEC-MSI/2025
- * Format: {sequence}/IEC-MSI/{year}
+ * Convert month number (1-12) to Roman numeral
+ */
+const monthToRoman = (month) => {
+  const romans = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+  return romans[month] || '';
+};
+
+/**
+ * Generate quotation number with format: 001/IEC-MSI/IX/2025
+ * Format: {sequence}/IEC-MSI/{month-roman}/{year}
  * Sequence increments per year, resets to 001 when year changes
+ * Month is displayed but does not affect sequence reset
  */
 const generateQuotationNumber = async (trx = db) => {
   const currentYear = moment().format('YYYY');
+  const currentMonth = moment().month() + 1; // moment().month() returns 0-11, we need 1-12
+  const monthRoman = monthToRoman(currentMonth);
   const prefix = 'IEC-MSI';
   
   // Find the last quotation number for current year
   // Extract sequence number (first 3 digits before '/') and sort numerically
+  // Query based on year only, sequence reset only when year changes
   const lastQuotation = await trx(TABLE_NAME)
     .select('manage_quotation_no')
     .where('is_delete', false)
     .whereNotNull('manage_quotation_no')
-    .whereRaw(`manage_quotation_no LIKE '%/${prefix}/${currentYear}'`)
+    .whereRaw(`manage_quotation_no LIKE '%/${prefix}/%/${currentYear}'`)
     .orderByRaw(`CAST(SPLIT_PART(manage_quotation_no, '/', 1) AS INTEGER) DESC`)
     .first();
   
@@ -207,9 +219,12 @@ const generateQuotationNumber = async (trx = db) => {
   
   if (lastQuotation && lastQuotation.manage_quotation_no) {
     // Extract sequence number from last quotation number
-    // Format: 001/IEC-MSI/2025
+    // Format: 001/IEC-MSI/IX/2025 (4 parts) or 001/IEC-MSI/2025 (3 parts - old format)
     const parts = lastQuotation.manage_quotation_no.split('/');
-    if (parts.length === 3 && parts[1] === prefix && parts[2] === currentYear) {
+    
+    // Handle both old format (3 parts) and new format (4 parts)
+    if ((parts.length === 4 && parts[1] === prefix && parts[3] === currentYear) ||
+        (parts.length === 3 && parts[1] === prefix && parts[2] === currentYear)) {
       const lastSequence = parseInt(parts[0], 10);
       if (!isNaN(lastSequence) && lastSequence > 0) {
         sequence = lastSequence + 1;
@@ -220,7 +235,7 @@ const generateQuotationNumber = async (trx = db) => {
   // Format sequence with leading zeros (001, 002, etc.)
   const sequenceStr = String(sequence).padStart(3, '0');
   
-  return `${sequenceStr}/${prefix}/${currentYear}`;
+  return `${sequenceStr}/${prefix}/${monthRoman}/${currentYear}`;
 };
 
 /**
