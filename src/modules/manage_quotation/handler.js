@@ -338,8 +338,17 @@ const getAll = async (req, res) => {
       );
 
       let customerMap = {};
+      let contactPersonMap = {};
       let employeeMap = {};
       let islandMap = {};
+
+      // Get all unique customer IDs from all items (not just those needing customer)
+      const allCustomerIds = [
+        ...new Set(data.items
+          .filter((item) => item && item.customer_id)
+          .map((item) => item.customer_id)
+          .filter(Boolean))
+      ];
 
       // Debug: Log items to see what data we're getting
       if (itemsNeedingIsland.length > 0) {
@@ -364,7 +373,12 @@ const getAll = async (req, res) => {
             if (Array.isArray(customers)) {
               customerMap = customers.reduce((acc, customer) => {
                 if (customer?.customer_id) {
-                  acc[customer.customer_id] = customer.customer_name || null;
+                  const customerName = customer.customer_name || '';
+                  const contactPerson = customer.contact_person || '';
+                  const combinedName = contactPerson 
+                    ? `${customerName} - ${contactPerson}` 
+                    : customerName;
+                  acc[customer.customer_id] = combinedName || null;
                 }
                 return acc;
               }, {});
@@ -375,6 +389,26 @@ const getAll = async (req, res) => {
               message: error?.message
             });
           }
+        }
+      }
+
+      // Get contact_person for all items with customer_id (even if customer_name already exists)
+      if (allCustomerIds.length > 0) {
+        try {
+          const customers = await customerRepository.findByIds(allCustomerIds);
+          if (Array.isArray(customers)) {
+            contactPersonMap = customers.reduce((acc, customer) => {
+              if (customer?.customer_id) {
+                acc[customer.customer_id] = customer.contact_person || null;
+              }
+              return acc;
+            }, {});
+          }
+        } catch (error) {
+          Logger.error('[manage-quotation:getAll] gagal memuat contact_person', {
+            customer_ids: allCustomerIds,
+            message: error?.message
+          });
         }
       }
 
@@ -433,9 +467,19 @@ const getAll = async (req, res) => {
           return item;
         }
 
-        const customerName = Object.prototype.hasOwnProperty.call(item, 'customer_name')
+        let customerName = Object.prototype.hasOwnProperty.call(item, 'customer_name')
           ? item.customer_name
           : (item.customer_id ? customerMap[item.customer_id] ?? null : null);
+        
+        // Get contact_person from item or from contactPersonMap
+        const contactPerson = item.contact_person || (item.customer_id ? contactPersonMap[item.customer_id] ?? null : null);
+        
+        // Combine customer_name with contact_person if contact_person exists
+        if (customerName && contactPerson) {
+          customerName = `${customerName} - ${contactPerson}`;
+        } else if (!customerName && contactPerson) {
+          customerName = contactPerson;
+        }
 
         const employeeName = Object.prototype.hasOwnProperty.call(item, 'employee_name')
           ? item.employee_name
@@ -481,16 +525,30 @@ const getById = async (req, res) => {
       return baseResponse(res, response);
     }
     
-    if (data.customer_id && (data.customer_name === undefined || data.customer_name === null)) {
+    if (data.customer_id) {
       try {
         const customer = await customerRepository.findById(data.customer_id);
-        data.customer_name = customer?.customer_name || null;
+        if (customer) {
+          const customerName = data.customer_name || customer?.customer_name || '';
+          const contactPerson = data.contact_person || customer?.contact_person || '';
+          data.customer_name = contactPerson 
+            ? `${customerName} - ${contactPerson}` 
+            : customerName || null;
+        } else if (data.customer_name) {
+          // If customer not found but customer_name exists, keep it as is
+          data.customer_name = data.customer_name;
+        } else {
+          data.customer_name = null;
+        }
       } catch (error) {
         Logger.error('[manage-quotation:getById] gagal memuat customer', {
           customer_id: data.customer_id,
           message: error?.message
         });
-        data.customer_name = null;
+        // If error but customer_name exists, keep it as is
+        if (!data.customer_name) {
+          data.customer_name = null;
+        }
       }
     }
     

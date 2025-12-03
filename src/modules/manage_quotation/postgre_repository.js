@@ -16,7 +16,7 @@ const findAll = async (params) => {
   await customerRepository.ensureConnection();
 
   const customerJoin = db.raw(
-    `dblink('${DBLINK_NAME}', 'SELECT customer_id, customer_name FROM customers WHERE customer_id IS NOT NULL') AS customer_data(customer_id uuid, customer_name varchar)`
+    `dblink('${DBLINK_NAME}', 'SELECT customer_id, customer_name, contact_person FROM customers WHERE customer_id IS NOT NULL') AS customer_data(customer_id uuid, customer_name varchar, contact_person varchar)`
   );
 
   const employeeJoin = db.raw(
@@ -34,6 +34,7 @@ const findAll = async (params) => {
       'mq.manage_quotation_no',
       'mq.customer_id',
       db.raw('customer_data.customer_name as customer_name'),
+      db.raw('customer_data.contact_person as contact_person'),
       'mq.employee_id',
       db.raw('employee_data.employee_name as employee_name'),
       'mq.island_id',
