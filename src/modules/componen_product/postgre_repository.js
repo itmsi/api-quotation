@@ -171,10 +171,46 @@ const findOne = async (conditions) => {
 };
 
 /**
+ * Check if code_unique already exists (excluding soft deleted records)
+ * @param {string} codeUnique - The code_unique to check
+ * @param {string} excludeId - Optional ID to exclude from check (for update operations)
+ * @param {object} trx - Optional transaction object
+ * @returns {Promise<boolean>} - Returns true if duplicate exists
+ */
+const checkCodeUniqueDuplicate = async (codeUnique, excludeId = null, trx = db) => {
+  if (!codeUnique || codeUnique.trim() === '') {
+    return false; // Empty code_unique is allowed
+  }
+
+  let query = trx(TABLE_NAME)
+    .where('code_unique', codeUnique.trim())
+    .where('is_delete', false);
+
+  // Exclude current record when updating
+  if (excludeId) {
+    query = query.where('componen_product_id', '!=', excludeId);
+  }
+
+  const existing = await query.first();
+  return !!existing;
+};
+
+/**
  * Create new componen product
  */
 const create = async (data, specifications = []) => {
   return db.transaction(async (trx) => {
+    // Validate code_unique duplicate before insert
+    if (data.code_unique) {
+      const isDuplicate = await checkCodeUniqueDuplicate(data.code_unique, null, trx);
+      if (isDuplicate) {
+        const error = new Error(`Code unique '${data.code_unique}' sudah digunakan`);
+        error.statusCode = 400;
+        error.code = 'DUPLICATE_CODE_UNIQUE';
+        throw error;
+      }
+    }
+
     const insertData = {
       componen_product_name: data.componen_product_name || null,
       componen_type: data.componen_type || null,
@@ -249,6 +285,17 @@ const update = async (id, data, options = {}) => {
   } = options;
 
   return db.transaction(async (trx) => {
+    // Validate code_unique duplicate before update (if code_unique is being updated)
+    if (data.code_unique !== undefined) {
+      const isDuplicate = await checkCodeUniqueDuplicate(data.code_unique, id, trx);
+      if (isDuplicate) {
+        const error = new Error(`Code unique '${data.code_unique}' sudah digunakan`);
+        error.statusCode = 400;
+        error.code = 'DUPLICATE_CODE_UNIQUE';
+        throw error;
+      }
+    }
+
     const updateFields = {};
     
     if (data.componen_product_name !== undefined) updateFields.componen_product_name = data.componen_product_name;
