@@ -114,55 +114,106 @@ const findOne = async (conditions) => {
 };
 
 /**
+ * Check if accessory_part_number already exists (excluding soft deleted records)
+ * @param {string} accessoryPartNumber - The accessory_part_number to check
+ * @param {string} excludeId - Optional ID to exclude from check (for update operations)
+ * @param {object} trx - Optional transaction object
+ * @returns {Promise<boolean>} - Returns true if duplicate exists
+ */
+const checkAccessoryPartNumberDuplicate = async (accessoryPartNumber, excludeId = null, trx = db) => {
+  if (!accessoryPartNumber || accessoryPartNumber.trim() === '') {
+    return false; // Empty accessory_part_number is allowed
+  }
+
+  let query = trx(TABLE_NAME)
+    .where('accessory_part_number', accessoryPartNumber.trim())
+    .where('is_delete', false);
+
+  // Exclude current record when updating
+  if (excludeId) {
+    query = query.where('accessory_id', '!=', excludeId);
+  }
+
+  const existing = await query.first();
+  return !!existing;
+};
+
+/**
  * Create new accessory
  */
 const create = async (data) => {
-  const insertData = {
-    accessory_part_number: data.accessory_part_number || null,
-    accessory_part_name: data.accessory_part_name || null,
-    accessory_specification: data.accessory_specification || null,
-    accessory_brand: data.accessory_brand || null,
-    accessory_remark: data.accessory_remark || null,
-    accessory_region: data.accessory_region || null,
-    accessory_description: data.accessory_description || null,
-    created_by: data.created_by || null
-  };
-  
-  const [result] = await db(TABLE_NAME)
-    .insert(insertData)
-    .returning('*');
-  
-  return result;
+  return db.transaction(async (trx) => {
+    // Validate accessory_part_number duplicate before insert
+    if (data.accessory_part_number) {
+      const isDuplicate = await checkAccessoryPartNumberDuplicate(data.accessory_part_number, null, trx);
+      if (isDuplicate) {
+        const error = new Error(`Accessory part number '${data.accessory_part_number}' sudah digunakan`);
+        error.statusCode = 400;
+        error.code = 'DUPLICATE_ACCESSORY_PART_NUMBER';
+        throw error;
+      }
+    }
+
+    const insertData = {
+      accessory_part_number: data.accessory_part_number || null,
+      accessory_part_name: data.accessory_part_name || null,
+      accessory_specification: data.accessory_specification || null,
+      accessory_brand: data.accessory_brand || null,
+      accessory_remark: data.accessory_remark || null,
+      accessory_region: data.accessory_region || null,
+      accessory_description: data.accessory_description || null,
+      created_by: data.created_by || null
+    };
+    
+    const [result] = await trx(TABLE_NAME)
+      .insert(insertData)
+      .returning('*');
+    
+    return result;
+  });
 };
 
 /**
  * Update existing accessory
  */
 const update = async (id, data) => {
-  const updateFields = {};
-  
-  if (data.accessory_part_number !== undefined) updateFields.accessory_part_number = data.accessory_part_number;
-  if (data.accessory_part_name !== undefined) updateFields.accessory_part_name = data.accessory_part_name;
-  if (data.accessory_specification !== undefined) updateFields.accessory_specification = data.accessory_specification;
-  if (data.accessory_brand !== undefined) updateFields.accessory_brand = data.accessory_brand;
-  if (data.accessory_remark !== undefined) updateFields.accessory_remark = data.accessory_remark;
-  if (data.accessory_region !== undefined) updateFields.accessory_region = data.accessory_region;
-  if (data.accessory_description !== undefined) updateFields.accessory_description = data.accessory_description;
-  if (data.updated_by !== undefined) updateFields.updated_by = data.updated_by;
-  
-  if (Object.keys(updateFields).length === 0) {
-    return null;
-  }
-  
-  const [result] = await db(TABLE_NAME)
-    .where({ accessory_id: id, is_delete: false })
-    .update({
-      ...updateFields,
-      updated_at: db.fn.now()
-    })
-    .returning('*');
-  
-  return result || null;
+  return db.transaction(async (trx) => {
+    // Validate accessory_part_number duplicate before update (if accessory_part_number is being updated)
+    if (data.accessory_part_number !== undefined) {
+      const isDuplicate = await checkAccessoryPartNumberDuplicate(data.accessory_part_number, id, trx);
+      if (isDuplicate) {
+        const error = new Error(`Accessory part number '${data.accessory_part_number}' sudah digunakan`);
+        error.statusCode = 400;
+        error.code = 'DUPLICATE_ACCESSORY_PART_NUMBER';
+        throw error;
+      }
+    }
+
+    const updateFields = {};
+    
+    if (data.accessory_part_number !== undefined) updateFields.accessory_part_number = data.accessory_part_number;
+    if (data.accessory_part_name !== undefined) updateFields.accessory_part_name = data.accessory_part_name;
+    if (data.accessory_specification !== undefined) updateFields.accessory_specification = data.accessory_specification;
+    if (data.accessory_brand !== undefined) updateFields.accessory_brand = data.accessory_brand;
+    if (data.accessory_remark !== undefined) updateFields.accessory_remark = data.accessory_remark;
+    if (data.accessory_region !== undefined) updateFields.accessory_region = data.accessory_region;
+    if (data.accessory_description !== undefined) updateFields.accessory_description = data.accessory_description;
+    if (data.updated_by !== undefined) updateFields.updated_by = data.updated_by;
+    
+    if (Object.keys(updateFields).length === 0) {
+      return null;
+    }
+    
+    const [result] = await trx(TABLE_NAME)
+      .where({ accessory_id: id, is_delete: false })
+      .update({
+        ...updateFields,
+        updated_at: db.fn.now()
+      })
+      .returning('*');
+    
+    return result || null;
+  });
 };
 
 /**
