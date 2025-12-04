@@ -82,6 +82,7 @@ const sanitizeFileName = (fileName) => {
 /**
  * Remove "MSI[number] - " prefix from componen_product_name
  * Handles patterns like: MSI001 - , MSI002 - , MSI003 - , MSI025 - , etc.
+ * Also removes suffix: COAL, NICKEL, ALL SEGMENT, ON THE ROAD
  */
 const cleanComponenProductName = (productName) => {
   if (!productName || typeof productName !== 'string') {
@@ -99,6 +100,25 @@ const cleanComponenProductName = (productName) => {
   if (prefixPattern.test(cleaned)) {
     cleaned = cleaned.replace(prefixPattern, '');
     cleaned = cleaned.trim(); // Trim again after removal
+  }
+  
+  // Remove suffix if found at the end (case-insensitive)
+  // Suffixes to remove: COAL, NICKEL, ALL SEGMENT, ON THE ROAD
+  const suffixesToRemove = [
+    'COAL',
+    'NICKEL',
+    'ALL SEGMENT',
+    'ON THE ROAD'
+  ];
+  
+  for (const suffix of suffixesToRemove) {
+    // Create pattern that matches suffix at the end, with optional spaces/dashes before it
+    // Pattern: optional spaces/dashes, then the suffix, then end of string
+    const suffixPattern = new RegExp(`[\\s-]*${suffix.replace(/\s+/g, '\\s+')}\\s*$`, 'i');
+    
+    if (suffixPattern.test(cleaned)) {
+      cleaned = cleaned.replace(suffixPattern, '').trim();
+    }
   }
   
   return cleaned;
@@ -745,20 +765,14 @@ const getPdfById = async (req, res) => {
 
       const productType = mapProductType(item.cp_componen_type);
 
-      // Clean componen_product_name by removing "MSI[number] - " prefix
+      // Clean componen_product_name by removing "MSI[number] - " prefix and suffix
       // Get original value from item
       let cleanedProductName = item.componen_product_name;
       
       // Clean the product name if it exists
       if (cleanedProductName && typeof cleanedProductName === 'string') {
-        // Remove "MSI[number] - " prefix using helper function (handles MSI001, MSI002, MSI003, MSI025, etc.)
+        // Remove "MSI[number] - " prefix and suffix using helper function
         cleanedProductName = cleanComponenProductName(cleanedProductName);
-        
-        // Additional safety check: if still contains MSI prefix with numbers, remove it directly
-        cleanedProductName = String(cleanedProductName).trim();
-        if (/^MSI\d+/i.test(cleanedProductName)) {
-          cleanedProductName = cleanedProductName.replace(/^MSI\d+\s*-\s*/i, '').trim();
-        }
       }
 
       // Create new object, explicitly setting componen_product_name to cleaned value
@@ -783,29 +797,8 @@ const getPdfById = async (req, res) => {
       
       // Clean if it's a string and not null/undefined
       if (productName && typeof productName === 'string') {
-        productName = String(productName).trim();
-        
-        // Remove "MSI[number] - " prefix if present (case-insensitive)
-        // Handles MSI001, MSI002, MSI003, MSI025, etc.
-        // Try multiple patterns to catch all variations
-        const patterns = [
-          /^MSI\d+\s*-\s*/i,      // "MSI001 - " or "MSI025- " or "MSI003 -"
-          /^MSI\d+\s+-/i,          // "MSI001  -" (multiple spaces)
-          /^MSI\d+-/i              // "MSI001-" (no space)
-        ];
-        
-        // Try each pattern
-        for (const pattern of patterns) {
-          if (pattern.test(productName)) {
-            productName = productName.replace(pattern, '').trim();
-            break;
-          }
-        }
-        
-        // Final check: if still starts with MSI followed by numbers (any case), remove it
-        if (/^MSI\d+/i.test(productName)) {
-          productName = productName.replace(/^MSI\d+\s*-\s*/i, '').trim();
-        }
+        // Use helper function to clean prefix and suffix
+        productName = cleanComponenProductName(productName);
         
         // Debug log (can be removed later)
         if (originalProductName !== productName) {
@@ -831,18 +824,8 @@ const getPdfById = async (req, res) => {
     if (data.manage_quotation_items && Array.isArray(data.manage_quotation_items)) {
       data.manage_quotation_items = data.manage_quotation_items.map((item) => {
         if (item && item.componen_product_name && typeof item.componen_product_name === 'string') {
-          let productName = String(item.componen_product_name).trim();
-          
-          // Remove "MSI[number] - " prefix - be very aggressive about this
-          // Handles MSI001, MSI002, MSI003, MSI025, etc.
-          // Keep cleaning until it's gone
-          let previousName = '';
-          while (/^MSI\d+/i.test(productName) && productName !== previousName) {
-            previousName = productName;
-            productName = productName.replace(/^MSI\d+\s*-\s*/i, '').trim();
-            productName = productName.replace(/^MSI\d+\s+-/i, '').trim();
-            productName = productName.replace(/^MSI\d+-/i, '').trim();
-          }
+          // Use helper function to clean prefix and suffix
+          const productName = cleanComponenProductName(item.componen_product_name);
           
           return {
             ...item,
