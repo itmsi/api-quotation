@@ -93,7 +93,26 @@ const createValidation = [
     .trim(),
   body('term_content_id')
     .optional()
-    .isUUID()
+    .custom((value) => {
+      // Allow null, undefined, empty string, NaN, or valid UUID
+      if (value === null || value === undefined || value === '') {
+        return true;
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
+          return true;
+        }
+        // If not empty, must be valid UUID
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        return uuidRegex.test(trimmed);
+      }
+      // Allow NaN
+      if (typeof value === 'number' && isNaN(value)) {
+        return true;
+      }
+      return false;
+    })
     .withMessage('Format term_content_id tidak valid'),
   body('term_content_directory')
     .optional()
@@ -393,7 +412,26 @@ const updateValidation = [
     .trim(),
   body('term_content_id')
     .optional()
-    .isUUID()
+    .custom((value) => {
+      // Allow null, undefined, empty string, NaN, or valid UUID
+      if (value === null || value === undefined || value === '') {
+        return true;
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
+          return true;
+        }
+        // If not empty, must be valid UUID
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        return uuidRegex.test(trimmed);
+      }
+      // Allow NaN
+      if (typeof value === 'number' && isNaN(value)) {
+        return true;
+      }
+      return false;
+    })
     .withMessage('Format term_content_id tidak valid'),
   body('term_content_directory')
     .optional()

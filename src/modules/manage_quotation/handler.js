@@ -1038,7 +1038,12 @@ const create = async (req, res) => {
     
     quotationData.created_by = tokenData.created_by;
     if (term_content_id !== undefined) {
-      quotationData.term_content_id = term_content_id || null;
+      // Normalize term_content_id: convert empty string, "NaN", or null to null
+      if (term_content_id === null || term_content_id === '' || term_content_id === 'NaN' || (typeof term_content_id === 'string' && term_content_id.trim() === '')) {
+        quotationData.term_content_id = null;
+      } else {
+        quotationData.term_content_id = term_content_id;
+      }
     }
 
     await db.transaction(async (trx) => {
@@ -1264,7 +1269,12 @@ const update = async (req, res) => {
     
     // Handle term_content_id
     if (term_content_id !== undefined) {
-      quotationData.term_content_id = term_content_id || null;
+      // Normalize term_content_id: convert empty string, "NaN", or null to null
+      if (term_content_id === null || term_content_id === '' || term_content_id === 'NaN' || (typeof term_content_id === 'string' && term_content_id.trim() === '')) {
+        quotationData.term_content_id = null;
+      } else {
+        quotationData.term_content_id = term_content_id;
+      }
     }
     
     // Handle term_content_directory - save as JSON file if provided
