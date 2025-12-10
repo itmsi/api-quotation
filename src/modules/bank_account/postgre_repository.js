@@ -6,24 +6,31 @@ const DB_LINK_NAME = 'gate_sso_dblink';
 const TABLE_NAME = 'bank_accounts';
 
 /**
- * Ensure dblink connection is established
+ * Ensure dblink connection with retry mechanism
  */
-const ensureConnection = async () => {
-  try {
-    // Try to disconnect first if connection exists
+const ensureConnection = async (maxRetries = 3) => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      await db.raw(`SELECT dblink_disconnect('${DB_LINK_NAME}')`);
+      // Try to disconnect first if connection exists
+      try {
+        await db.raw(`SELECT dblink_disconnect('${DB_LINK_NAME}')`);
+      } catch (error) {
+        // Ignore if connection doesn't exist
+      }
+      
+      // Create new connection
+      await db.raw(`SELECT dblink_connect('${DB_LINK_NAME}', '${DB_LINK_CONNECTION}')`);
+      return true; // Connection successful
     } catch (error) {
-      // Ignore if connection doesn't exist
+      if (attempt === maxRetries) {
+        console.error(`[bank_account:ensureConnection] Failed after ${maxRetries} attempts:`, error.message);
+        return false; // Connection failed after all retries
+      }
+      // Wait a bit before retrying (exponential backoff)
+      await new Promise(resolve => setTimeout(resolve, 100 * attempt));
     }
-    
-    // Create new connection
-    await db.raw(`SELECT dblink_connect('${DB_LINK_NAME}', '${DB_LINK_CONNECTION}')`);
-  } catch (error) {
-    console.error('dblink connection error:', error.message);
-    console.error('Connection string:', DB_LINK_CONNECTION);
-    throw new Error(`Failed to establish dblink connection: ${error.message}`);
   }
+  return false;
 };
 
 /**
@@ -47,7 +54,22 @@ const validateSortOrder = (sortOrder) => {
 const findAll = async (params) => {
   const { page, limit, offset, search, sortBy, sortOrder } = params;
   
-  await ensureConnection();
+  // Try to ensure dblink connection, but don't fail if it doesn't work
+  const dblinkConnected = await ensureConnection();
+  
+  if (!dblinkConnected) {
+    // Return empty result if dblink connection fails
+    console.error('[bank_account:findAll] Dblink connection failed, returning empty result');
+    return {
+      items: [],
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: 0,
+        totalPages: 0
+      }
+    };
+  }
   
   // Validate and sanitize sort parameters
   const safeSortBy = validateSortBy(sortBy);
@@ -99,7 +121,49 @@ const findAll = async (params) => {
     updated_at timestamp
   )`;
   
-  const data = await db.raw(finalQuery);
+  let data;
+  try {
+    data = await db.raw(finalQuery);
+  } catch (error) {
+    // If query fails due to dblink connection issue, retry with fresh connection
+    if (error.message && (error.message.includes('could not establish connection') || error.message.includes('dblink'))) {
+      console.error('[bank_account:findAll] Query failed due to dblink error, retrying...', error.message);
+      
+      // Try to reconnect
+      const reconnected = await ensureConnection();
+      
+      if (reconnected) {
+        try {
+          data = await db.raw(finalQuery);
+        } catch (retryError) {
+          console.error('[bank_account:findAll] Retry failed, returning empty result', retryError.message);
+          return {
+            items: [],
+            pagination: {
+              page: parseInt(page),
+              limit: parseInt(limit),
+              total: 0,
+              totalPages: 0
+            }
+          };
+        }
+      } else {
+        console.error('[bank_account:findAll] Could not reconnect dblink, returning empty result');
+        return {
+          items: [],
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            totalPages: 0
+          }
+        };
+      }
+    } else {
+      // Re-throw if it's not a dblink error
+      throw error;
+    }
+  }
   
   // Query total count
   let countQueryArray = [
@@ -129,7 +193,20 @@ const findAll = async (params) => {
     count bigint
   )`;
   
-  const totalResult = await db.raw(countFinalQuery);
+  let totalResult;
+  try {
+    totalResult = await db.raw(countFinalQuery);
+  } catch (error) {
+    // If count query fails due to dblink, return 0
+    if (error.message && (error.message.includes('could not establish connection') || error.message.includes('dblink'))) {
+      console.error('[bank_account:findAll] Count query failed due to dblink error', error.message);
+      totalResult = { rows: [{ count: 0 }] };
+    } else {
+      // Re-throw if it's not a dblink error
+      throw error;
+    }
+  }
+  
   const total = totalResult.rows[0]?.count || 0;
   
   return {
@@ -151,7 +228,11 @@ const findById = async (id) => {
     return null;
   }
   
-  await ensureConnection();
+  const dblinkConnected = await ensureConnection();
+  if (!dblinkConnected) {
+    console.error('[bank_account:findById] Dblink connection failed');
+    return null;
+  }
   
   // Escape ID using PostgreSQL quote_literal
   const escapedIdResult = await db.raw(`SELECT quote_literal(?) as escaped`, [id]);
@@ -178,8 +259,27 @@ const findById = async (id) => {
     )
   `;
   
-  const result = await db.raw(query);
-  return result.rows[0] || null;
+  try {
+    const result = await db.raw(query);
+    return result.rows[0] || null;
+  } catch (error) {
+    if (error.message && (error.message.includes('could not establish connection') || error.message.includes('dblink'))) {
+      console.error('[bank_account:findById] Query failed due to dblink error', error.message);
+      // Try to reconnect and retry once
+      const reconnected = await ensureConnection();
+      if (reconnected) {
+        try {
+          const result = await db.raw(query);
+          return result.rows[0] || null;
+        } catch (retryError) {
+          console.error('[bank_account:findById] Retry failed', retryError.message);
+          return null;
+        }
+      }
+      return null;
+    }
+    throw error;
+  }
 };
 
 /**
@@ -190,7 +290,11 @@ const findOne = async (conditions) => {
     return null;
   }
   
-  await ensureConnection();
+  const dblinkConnected = await ensureConnection();
+  if (!dblinkConnected) {
+    console.error('[bank_account:findOne] Dblink connection failed');
+    return null;
+  }
   
   // Build where clause with escaped values
   const whereParts = [];
@@ -228,15 +332,26 @@ const findOne = async (conditions) => {
     )
   `;
   
-  const result = await db.raw(query);
-  return result.rows[0] || null;
+  try {
+    const result = await db.raw(query);
+    return result.rows[0] || null;
+  } catch (error) {
+    if (error.message && (error.message.includes('could not establish connection') || error.message.includes('dblink'))) {
+      console.error('[bank_account:findOne] Query failed due to dblink error', error.message);
+      return null;
+    }
+    throw error;
+  }
 };
 
 /**
  * Create new bank account
  */
 const create = async (data) => {
-  await ensureConnection();
+  const dblinkConnected = await ensureConnection();
+  if (!dblinkConnected) {
+    throw new Error('Failed to establish dblink connection');
+  }
   
   const fields = {
     bank_account_name: data.bank_account_name || null,
@@ -276,7 +391,10 @@ const create = async (data) => {
  * Update existing bank account
  */
 const update = async (id, data) => {
-  await ensureConnection();
+  const dblinkConnected = await ensureConnection();
+  if (!dblinkConnected) {
+    throw new Error('Failed to establish dblink connection');
+  }
   
   const updateFields = {};
   if (data.bank_account_name !== undefined) updateFields.bank_account_name = data.bank_account_name;
@@ -322,7 +440,10 @@ const update = async (id, data) => {
  * Soft delete bank account
  */
 const remove = async (id) => {
-  await ensureConnection();
+  const dblinkConnected = await ensureConnection();
+  if (!dblinkConnected) {
+    throw new Error('Failed to establish dblink connection');
+  }
   
   const query = `
     SELECT * FROM dblink('${DB_LINK_NAME}', 
@@ -351,7 +472,10 @@ const remove = async (id) => {
  * Restore soft deleted bank account
  */
 const restore = async (id) => {
-  await ensureConnection();
+  const dblinkConnected = await ensureConnection();
+  if (!dblinkConnected) {
+    throw new Error('Failed to establish dblink connection');
+  }
   
   const query = `
     SELECT * FROM dblink('${DB_LINK_NAME}', 
@@ -380,7 +504,10 @@ const restore = async (id) => {
  * Hard delete bank account (permanent)
  */
 const hardDelete = async (id) => {
-  await ensureConnection();
+  const dblinkConnected = await ensureConnection();
+  if (!dblinkConnected) {
+    throw new Error('Failed to establish dblink connection');
+  }
   
   const query = `
     SELECT * FROM dblink('${DB_LINK_NAME}', 

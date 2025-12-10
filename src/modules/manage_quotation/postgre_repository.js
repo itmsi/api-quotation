@@ -1,5 +1,6 @@
 const customerRepository = require('../cutomer/postgre_repository');
 const DBLINK_NAME = 'gate_sso_dblink';
+const DB_LINK_CONNECTION = `dbname=${process.env.DB_GATE_SSO_NAME} user=${process.env.DB_GATE_SSO_USER} password=${process.env.DB_GATE_SSO_PASSWORD} host=${process.env.DB_GATE_SSO_HOST} port=${process.env.DB_GATE_SSO_PORT}`;
 const db = require('../../config/database');
 const moment = require('moment');
 const componenProductRepository = require('../componen_product/postgre_repository');
@@ -8,24 +9,63 @@ const accessoryRepository = require('../accessory/postgre_repository');
 const TABLE_NAME = 'manage_quotations';
 
 /**
+ * Ensure dblink connection with retry mechanism
+ */
+const ensureDblinkConnection = async (maxRetries = 3) => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Try to disconnect first if connection exists
+      try {
+        await db.raw(`SELECT dblink_disconnect('${DBLINK_NAME}')`);
+      } catch (error) {
+        // Ignore if connection doesn't exist
+      }
+      
+      // Create new connection
+      await db.raw(`SELECT dblink_connect('${DBLINK_NAME}', '${DB_LINK_CONNECTION}')`);
+      return true; // Connection successful
+    } catch (error) {
+      if (attempt === maxRetries) {
+        console.error(`[manage-quotation:ensureDblinkConnection] Failed after ${maxRetries} attempts:`, error.message);
+        return false; // Connection failed after all retries
+      }
+      // Wait a bit before retrying (exponential backoff)
+      await new Promise(resolve => setTimeout(resolve, 100 * attempt));
+    }
+  }
+  return false;
+};
+
+/**
  * Find all manage quotations with pagination, search, and sort
  */
 const findAll = async (params) => {
   const { page, limit, offset, search, sortBy, sortOrder, status, islandId } = params;
   
-  await customerRepository.ensureConnection();
-
-  const customerJoin = db.raw(
+  // Try to ensure dblink connection, but don't fail if it doesn't work
+  const dblinkConnected = await ensureDblinkConnection();
+  
+  // If dblink connection fails, we'll query without joins and handle data enrichment later
+  let customerJoin, employeeJoin, islandJoin;
+  
+  if (dblinkConnected) {
+    customerJoin = db.raw(
     `dblink('${DBLINK_NAME}', 'SELECT customer_id, customer_name, contact_person FROM customers WHERE customer_id IS NOT NULL') AS customer_data(customer_id uuid, customer_name varchar, contact_person varchar)`
   );
 
-  const employeeJoin = db.raw(
+    employeeJoin = db.raw(
     `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS employee_data(employee_id uuid, employee_name varchar)`
   );
 
-  const islandJoin = db.raw(
+    islandJoin = db.raw(
     `dblink('${DBLINK_NAME}', 'SELECT island_id, island_name FROM islands WHERE island_id IS NOT NULL') AS island_data(island_id uuid, island_name varchar)`
   );
+  } else {
+    // Create dummy joins that return empty results if dblink is not available
+    customerJoin = db.raw(`(SELECT NULL::uuid as customer_id, NULL::varchar as customer_name, NULL::varchar as contact_person WHERE false) AS customer_data(customer_id uuid, customer_name varchar, contact_person varchar)`);
+    employeeJoin = db.raw(`(SELECT NULL::uuid as employee_id, NULL::varchar as employee_name WHERE false) AS employee_data(employee_id uuid, employee_name varchar)`);
+    islandJoin = db.raw(`(SELECT NULL::uuid as island_id, NULL::varchar as island_name WHERE false) AS island_data(island_id uuid, island_name varchar)`);
+  }
 
   // Query data - use parameterized query with knex
   let query = db({ mq: TABLE_NAME })
@@ -108,7 +148,165 @@ const findAll = async (params) => {
   
   query = query.orderBy(sortBySafe, sortOrderSafe).limit(parseInt(limit)).offset(parseInt(offset));
   
-  const data = await query;
+  let data;
+  try {
+    data = await query;
+  } catch (error) {
+    // If query fails due to dblink connection issue, retry with fresh connection
+    if (error.message && (error.message.includes('could not establish connection') || error.message.includes('dblink'))) {
+      console.error('[manage-quotation:findAll] Query failed due to dblink error, retrying...', error.message);
+      
+      // Try to reconnect
+      const reconnected = await ensureDblinkConnection();
+      
+      if (reconnected) {
+        // Rebuild joins with fresh connection
+        customerJoin = db.raw(
+          `dblink('${DBLINK_NAME}', 'SELECT customer_id, customer_name, contact_person FROM customers WHERE customer_id IS NOT NULL') AS customer_data(customer_id uuid, customer_name varchar, contact_person varchar)`
+        );
+        employeeJoin = db.raw(
+          `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS employee_data(employee_id uuid, employee_name varchar)`
+        );
+        islandJoin = db.raw(
+          `dblink('${DBLINK_NAME}', 'SELECT island_id, island_name FROM islands WHERE island_id IS NOT NULL') AS island_data(island_id uuid, island_name varchar)`
+        );
+        
+        // Retry query without joins if still fails
+        try {
+          query = db({ mq: TABLE_NAME })
+            .select(
+              'mq.manage_quotation_id',
+              'mq.manage_quotation_no',
+              'mq.customer_id',
+              db.raw('customer_data.customer_name as customer_name'),
+              db.raw('customer_data.contact_person as contact_person'),
+              'mq.employee_id',
+              db.raw('employee_data.employee_name as employee_name'),
+              'mq.island_id',
+              db.raw('island_data.island_name as island_name'),
+              'mq.manage_quotation_date',
+              'mq.manage_quotation_valid_date',
+              'mq.manage_quotation_grand_total',
+              'mq.manage_quotation_ppn',
+              'mq.manage_quotation_delivery_fee',
+              'mq.manage_quotation_other',
+              'mq.manage_quotation_payment_presentase',
+              'mq.manage_quotation_payment_nominal',
+              'mq.manage_quotation_description',
+              'mq.manage_quotation_shipping_term',
+              'mq.manage_quotation_franco',
+              'mq.manage_quotation_lead_time',
+              'mq.bank_account_name',
+              'mq.bank_account_number',
+              'mq.bank_account_bank_name',
+              'mq.term_content_id',
+              'mq.term_content_directory',
+              'mq.include_aftersales_page',
+              'mq.include_msf_page',
+              'mq.status',
+              'mq.created_by',
+              'mq.updated_by',
+              'mq.deleted_by',
+              'mq.created_at',
+              'mq.updated_at',
+              'mq.deleted_at',
+              'mq.is_delete'
+            )
+            .leftJoin(customerJoin, 'mq.customer_id', 'customer_data.customer_id')
+            .leftJoin(employeeJoin, 'mq.employee_id', 'employee_data.employee_id')
+            .leftJoin(islandJoin, 'mq.island_id', 'island_data.island_id')
+            .where('mq.is_delete', false);
+          
+          // Reapply filters
+          if (search && search.trim() !== '') {
+            const searchLower = `%${search.toLowerCase()}%`;
+            query = query.where(function() {
+              this.where('mq.manage_quotation_no', 'ILIKE', searchLower)
+                .orWhere(db.raw('LOWER(CAST(mq.customer_id AS TEXT))'), 'LIKE', searchLower)
+                .orWhere(db.raw('LOWER(CAST(mq.employee_id AS TEXT))'), 'LIKE', searchLower)
+                .orWhere(db.raw('LOWER(CAST(mq.island_id AS TEXT))'), 'LIKE', searchLower);
+            });
+          }
+          
+          if (status && status.trim() !== '') {
+            query = query.where('mq.status', status.trim().toLowerCase());
+          }
+          
+          if (islandId && islandId.trim() !== '') {
+            query = query.where('mq.island_id', islandId.trim());
+          }
+          
+          query = query.orderBy(sortBySafe, sortOrderSafe).limit(parseInt(limit)).offset(parseInt(offset));
+          data = await query;
+        } catch (retryError) {
+          // If retry also fails, query without dblink joins
+          console.error('[manage-quotation:findAll] Retry failed, querying without dblink joins', retryError.message);
+          query = db({ mq: TABLE_NAME })
+            .select('mq.*')
+            .where('mq.is_delete', false);
+          
+          if (search && search.trim() !== '') {
+            const searchLower = `%${search.toLowerCase()}%`;
+            query = query.where('mq.manage_quotation_no', 'ILIKE', searchLower);
+          }
+          
+          if (status && status.trim() !== '') {
+            query = query.where('mq.status', status.trim().toLowerCase());
+          }
+          
+          if (islandId && islandId.trim() !== '') {
+            query = query.where('mq.island_id', islandId.trim());
+          }
+          
+          query = query.orderBy(sortBySafe, sortOrderSafe).limit(parseInt(limit)).offset(parseInt(offset));
+          data = await query;
+          
+          // Set null values for joined fields
+          data = data.map(item => ({
+            ...item,
+            customer_name: null,
+            contact_person: null,
+            employee_name: null,
+            island_name: null
+          }));
+        }
+      } else {
+        // If reconnection fails, query without joins
+        console.error('[manage-quotation:findAll] Could not reconnect dblink, querying without joins');
+        query = db({ mq: TABLE_NAME })
+          .select('mq.*')
+          .where('mq.is_delete', false);
+        
+        if (search && search.trim() !== '') {
+          const searchLower = `%${search.toLowerCase()}%`;
+          query = query.where('mq.manage_quotation_no', 'ILIKE', searchLower);
+        }
+        
+        if (status && status.trim() !== '') {
+          query = query.where('mq.status', status.trim().toLowerCase());
+        }
+        
+        if (islandId && islandId.trim() !== '') {
+          query = query.where('mq.island_id', islandId.trim());
+        }
+        
+        query = query.orderBy(sortBySafe, sortOrderSafe).limit(parseInt(limit)).offset(parseInt(offset));
+        data = await query;
+        
+        // Set null values for joined fields
+        data = data.map(item => ({
+          ...item,
+          customer_name: null,
+          contact_person: null,
+          employee_name: null,
+          island_name: null
+        }));
+      }
+    } else {
+      // Re-throw if it's not a dblink error
+      throw error;
+    }
+  }
   
   // Query total count
   let countQuery = db({ mq: TABLE_NAME })
@@ -141,7 +339,37 @@ const findAll = async (params) => {
     countQuery = countQuery.where('mq.island_id', islandId.trim());
   }
   
-  const totalResult = await countQuery;
+  let totalResult;
+  try {
+    totalResult = await countQuery;
+  } catch (error) {
+    // If count query fails due to dblink, query without joins
+    if (error.message && (error.message.includes('could not establish connection') || error.message.includes('dblink'))) {
+      console.error('[manage-quotation:findAll] Count query failed due to dblink error, querying without joins', error.message);
+      countQuery = db({ mq: TABLE_NAME })
+        .count('* as count')
+        .where('mq.is_delete', false);
+      
+      if (search && search.trim() !== '') {
+        const searchLower = `%${search.toLowerCase()}%`;
+        countQuery = countQuery.where('mq.manage_quotation_no', 'ILIKE', searchLower);
+      }
+      
+      if (status && status.trim() !== '') {
+        countQuery = countQuery.where('mq.status', status.trim().toLowerCase());
+      }
+      
+      if (islandId && islandId.trim() !== '') {
+        countQuery = countQuery.where('mq.island_id', islandId.trim());
+      }
+      
+      totalResult = await countQuery;
+    } else {
+      // Re-throw if it's not a dblink error
+      throw error;
+    }
+  }
+  
   const total = totalResult[0]?.count || 0;
   
   return {

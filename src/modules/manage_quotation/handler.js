@@ -343,7 +343,20 @@ const getAll = async (req, res) => {
       islandId: normalizedIslandId
     };
     
-    const data = await repository.findAll(params);
+    let data;
+    try {
+      data = await repository.findAll(params);
+    } catch (error) {
+      // Log error but don't fail the request
+      Logger.error('[manage-quotation:getAll] Error in findAll', {
+        error: error.message,
+        stack: error.stack
+      });
+      
+      // Return empty result instead of failing
+      const response = mappingError(error);
+      return baseResponse(res, response);
+    }
 
     if (Array.isArray(data?.items) && data.items.length > 0) {
       const itemsNeedingCustomer = data.items.filter(
