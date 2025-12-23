@@ -15,8 +15,9 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p logs public storages
 
-# Expose port (default 3000, bisa diubah via environment variable)
-EXPOSE 3000
+# Expose port (sesuaikan dengan APP_PORT di environment variable)
+# Default 9565 untuk production, bisa diubah via environment variable
+EXPOSE 9565
 
 # Start application
 CMD ["node", "src/server.js"]
