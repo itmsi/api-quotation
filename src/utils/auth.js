@@ -199,7 +199,7 @@ const fetchUserInfoByToken = async (token, options = {}) => {
   const bearerToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`
   const url = options?.url
     || process.env.SSO_USERINFO_URL
-    || 'https://services.motorsights.com/api/auth/sso/userinfo'
+    || 'https://gateway.motorsights.com/api/auth/sso/userinfo'
 
   const timeout = Number(options?.timeout || process.env.SSO_USERINFO_TIMEOUT || 10000)
 
