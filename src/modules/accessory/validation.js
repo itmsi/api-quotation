@@ -51,9 +51,14 @@ const createValidation = [
     .isInt({ min: 0 })
     .withMessage('Quantity harus berupa angka integer positif'),
   body('accessories_island_detail.*.accessories_island_detail_description')
-    .optional()
-    .isString()
-    .withMessage('Description harus berupa string')
+    .optional({ nullable: true })
+    .custom((value) => {
+      if (value === null || value === undefined) {
+        return true;
+      }
+      return typeof value === 'string';
+    })
+    .withMessage('Description harus berupa string atau null')
 ];
 
 /**
@@ -112,9 +117,14 @@ const updateValidation = [
     .isInt({ min: 0 })
     .withMessage('Quantity harus berupa angka integer positif'),
   body('accessories_island_detail.*.accessories_island_detail_description')
-    .optional()
-    .isString()
-    .withMessage('Description harus berupa string')
+    .optional({ nullable: true })
+    .custom((value) => {
+      if (value === null || value === undefined) {
+        return true;
+      }
+      return typeof value === 'string';
+    })
+    .withMessage('Description harus berupa string atau null')
 ];
 
 /**
