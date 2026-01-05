@@ -359,153 +359,29 @@ const getAll = async (req, res) => {
     }
 
     if (Array.isArray(data?.items) && data.items.length > 0) {
-      const itemsNeedingCustomer = data.items.filter(
-        (item) => item && item.customer_id && (item.customer_name === undefined || item.customer_name === null)
-      );
-      const itemsNeedingEmployee = data.items.filter(
-        (item) => item && item.employee_id && (item.employee_name === undefined || item.employee_name === null)
-      );
-      // Always process items with island_id to ensure island_name is populated
-      const itemsNeedingIsland = data.items.filter(
-        (item) => item && item.island_id
-      );
-
-      let customerMap = {};
-      let contactPersonMap = {};
-      let employeeMap = {};
-      let islandMap = {};
-
-      // Get all unique customer IDs from all items (not just those needing customer)
-      const allCustomerIds = [
-        ...new Set(data.items
-          .filter((item) => item && item.customer_id)
-          .map((item) => item.customer_id)
-          .filter(Boolean))
-      ];
-
-      // Debug: Log items to see what data we're getting
-      if (itemsNeedingIsland.length > 0) {
-        Logger.info('[manage-quotation:getAll] items dengan island_id', {
-          count: itemsNeedingIsland.length,
-          sample: itemsNeedingIsland[0] ? {
-            island_id: itemsNeedingIsland[0].island_id,
-            has_island_name: Object.prototype.hasOwnProperty.call(itemsNeedingIsland[0], 'island_name'),
-            island_name: itemsNeedingIsland[0].island_name
-          } : null
-        });
-      }
-
-      if (itemsNeedingCustomer.length > 0) {
-        const uniqueCustomerIds = [
-          ...new Set(itemsNeedingCustomer.map((item) => item.customer_id).filter(Boolean))
-        ];
-
-        if (uniqueCustomerIds.length > 0) {
-          try {
-            const customers = await customerRepository.findByIds(uniqueCustomerIds);
-            if (Array.isArray(customers)) {
-              customerMap = customers.reduce((acc, customer) => {
-                if (customer?.customer_id) {
-                  const customerName = customer.customer_name || '';
-                  const contactPerson = customer.contact_person || '';
-                  const combinedName = contactPerson 
-                    ? `${customerName} - ${contactPerson}` 
-                    : customerName;
-                  acc[customer.customer_id] = combinedName || null;
-                }
-                return acc;
-              }, {});
-            }
-          } catch (error) {
-            Logger.error('[manage-quotation:getAll] gagal memuat customer fallback', {
-              customer_ids: uniqueCustomerIds,
-              message: error?.message
-            });
-          }
-        }
-      }
-
-      // Get contact_person for all items with customer_id (even if customer_name already exists)
-      if (allCustomerIds.length > 0) {
-        try {
-          const customers = await customerRepository.findByIds(allCustomerIds);
-          if (Array.isArray(customers)) {
-            contactPersonMap = customers.reduce((acc, customer) => {
-              if (customer?.customer_id) {
-                acc[customer.customer_id] = customer.contact_person || null;
-              }
-              return acc;
-            }, {});
-          }
-        } catch (error) {
-          Logger.error('[manage-quotation:getAll] gagal memuat contact_person', {
-            customer_ids: allCustomerIds,
-            message: error?.message
-          });
-        }
-      }
-
-      if (itemsNeedingEmployee.length > 0) {
-        const uniqueEmployeeIds = [
-          ...new Set(itemsNeedingEmployee.map((item) => item.employee_id).filter(Boolean))
-        ];
-
-        if (uniqueEmployeeIds.length > 0) {
-          try {
-            const employees = await employeeRepository.findByIds(uniqueEmployeeIds);
-            if (Array.isArray(employees)) {
-              employeeMap = employees.reduce((acc, employee) => {
-                if (employee?.employee_id) {
-                  acc[employee.employee_id] = employee.employee_name || null;
-                }
-                return acc;
-              }, {});
-            }
-          } catch (error) {
-            Logger.error('[manage-quotation:getAll] gagal memuat employee fallback', {
-              employee_ids: uniqueEmployeeIds,
-              message: error?.message
-            });
-          }
-        }
-      }
-
-      if (itemsNeedingIsland.length > 0) {
-        const uniqueIslandIds = [
-          ...new Set(itemsNeedingIsland.map((item) => item.island_id).filter(Boolean))
-        ];
-
-        if (uniqueIslandIds.length > 0) {
-          try {
-            const islands = await getIslandsByIds(uniqueIslandIds);
-            if (Array.isArray(islands)) {
-              islandMap = islands.reduce((acc, island) => {
-                if (island?.island_id) {
-                  acc[island.island_id] = island.island_name || null;
-                }
-                return acc;
-              }, {});
-            }
-          } catch (error) {
-            Logger.error('[manage-quotation:getAll] gagal memuat island fallback', {
-              island_ids: uniqueIslandIds,
-              message: error?.message
-            });
-          }
-        }
-      }
-
+      // Extract data from jsonb columns instead of using dblink
       data.items = data.items.map((item) => {
         if (!item) {
           return item;
         }
 
-        let customerName = Object.prototype.hasOwnProperty.call(item, 'customer_name')
-          ? item.customer_name
-          : (item.customer_id ? customerMap[item.customer_id] ?? null : null);
-        
-        // Get contact_person from item or from contactPersonMap
-        const contactPerson = item.contact_person || (item.customer_id ? contactPersonMap[item.customer_id] ?? null : null);
+        // Get customer data from customer_datas jsonb column
+        let customerName = null;
+        let contactPerson = null;
+        if (item.customer_datas) {
+          try {
+            const customerData = typeof item.customer_datas === 'string' 
+              ? JSON.parse(item.customer_datas) 
+              : item.customer_datas;
+            customerName = customerData?.customer_name || null;
+            contactPerson = customerData?.contact_person || null;
+          } catch (error) {
+            Logger.error('[manage-quotation:getAll] Error parsing customer_datas', {
+              error: error.message,
+              customer_datas: item.customer_datas
+            });
+          }
+        }
         
         // Combine customer_name with contact_person if contact_person exists
         if (customerName && contactPerson) {
@@ -514,19 +390,35 @@ const getAll = async (req, res) => {
           customerName = contactPerson;
         }
 
-        const employeeName = Object.prototype.hasOwnProperty.call(item, 'employee_name')
-          ? item.employee_name
-          : (item.employee_id ? employeeMap[item.employee_id] ?? null : null);
+        // Get employee data from employee_datas jsonb column
+        let employeeName = null;
+        if (item.employee_datas) {
+          try {
+            const employeeData = typeof item.employee_datas === 'string' 
+              ? JSON.parse(item.employee_datas) 
+              : item.employee_datas;
+            employeeName = employeeData?.employee_name || null;
+          } catch (error) {
+            Logger.error('[manage-quotation:getAll] Error parsing employee_datas', {
+              error: error.message,
+              employee_datas: item.employee_datas
+            });
+          }
+        }
 
-        // Always try to get island_name from item first, then from map
+        // Get island data from island_datas jsonb column
         let islandName = null;
-        if (item.island_id) {
-          // First check if island_name exists in the item (from dblink join)
-          if (item.island_name !== undefined && item.island_name !== null) {
-            islandName = item.island_name;
-          } else {
-            // Fallback to map if not in item
-            islandName = islandMap[item.island_id] ?? null;
+        if (item.island_datas) {
+          try {
+            const islandData = typeof item.island_datas === 'string' 
+              ? JSON.parse(item.island_datas) 
+              : item.island_datas;
+            islandName = islandData?.island_name || null;
+          } catch (error) {
+            Logger.error('[manage-quotation:getAll] Error parsing island_datas', {
+              error: error.message,
+              island_datas: item.island_datas
+            });
           }
         }
 
@@ -558,56 +450,68 @@ const getById = async (req, res) => {
       return baseResponse(res, response);
     }
     
-    if (data.customer_id) {
+    // Get customer data from customer_datas jsonb column
+    if (data.customer_datas) {
       try {
-        const customer = await customerRepository.findById(data.customer_id);
-        if (customer) {
-          const customerName = data.customer_name || customer?.customer_name || '';
-          const contactPerson = data.contact_person || customer?.contact_person || '';
-          data.customer_name = contactPerson 
-            ? `${customerName} - ${contactPerson}` 
-            : customerName || null;
-        } else if (data.customer_name) {
-          // If customer not found but customer_name exists, keep it as is
-          data.customer_name = data.customer_name;
-        } else {
-          data.customer_name = null;
-        }
+        const customerData = typeof data.customer_datas === 'string' 
+          ? JSON.parse(data.customer_datas) 
+          : data.customer_datas;
+        const customerName = customerData?.customer_name || '';
+        const contactPerson = customerData?.contact_person || '';
+        data.customer_name = contactPerson 
+          ? `${customerName} - ${contactPerson}` 
+          : customerName || null;
+        data.contact_person = contactPerson || null;
+        data.customer_email = customerData?.customer_email || null;
+        data.customer_phone = customerData?.customer_phone || null;
+        data.customer_address = customerData?.customer_address || null;
+        data.customer_city = customerData?.customer_city || null;
+        data.customer_state = customerData?.customer_state || null;
+        data.customer_zip = customerData?.customer_zip || null;
+        data.customer_country = customerData?.customer_country || null;
+        data.job_title = customerData?.job_title || null;
+        data.customer_code = customerData?.customer_code || null;
       } catch (error) {
-        Logger.error('[manage-quotation:getById] gagal memuat customer', {
-          customer_id: data.customer_id,
-          message: error?.message
+        Logger.error('[manage-quotation:getById] Error parsing customer_datas', {
+          error: error.message,
+          customer_datas: data.customer_datas
         });
-        // If error but customer_name exists, keep it as is
-        if (!data.customer_name) {
-          data.customer_name = null;
-        }
       }
     }
     
-    if (data.employee_id && (data.employee_name === undefined || data.employee_name === null)) {
+    // Get employee data from employee_datas jsonb column
+    if (data.employee_datas) {
       try {
-        const employee = await employeeRepository.findById(data.employee_id);
-        data.employee_name = employee?.employee_name || null;
+        const employeeData = typeof data.employee_datas === 'string' 
+          ? JSON.parse(data.employee_datas) 
+          : data.employee_datas;
+        data.employee_name = employeeData?.employee_name || null;
+        data.employee_email = employeeData?.employee_email || null;
+        data.employee_phone = employeeData?.employee_phone || null;
+        data.employee_address = employeeData?.employee_address || null;
+        data.title_name = employeeData?.title_name || null;
+        data.department_name = employeeData?.department_name || null;
+        data.company_name = employeeData?.company_name || null;
       } catch (error) {
-        Logger.error('[manage-quotation:getById] gagal memuat employee', {
-          employee_id: data.employee_id,
-          message: error?.message
+        Logger.error('[manage-quotation:getById] Error parsing employee_datas', {
+          error: error.message,
+          employee_datas: data.employee_datas
         });
-        data.employee_name = null;
       }
     }
     
-    if (data.island_id && (data.island_name === undefined || data.island_name === null)) {
+    // Get island data from island_datas jsonb column
+    if (data.island_datas) {
       try {
-        const islands = await getIslandsByIds([data.island_id]);
-        data.island_name = islands?.[0]?.island_name || null;
+        const islandData = typeof data.island_datas === 'string' 
+          ? JSON.parse(data.island_datas) 
+          : data.island_datas;
+        data.island_name = islandData?.island_name || null;
       } catch (error) {
-        Logger.error('[manage-quotation:getById] gagal memuat island', {
-          island_id: data.island_id,
-          message: error?.message
+        Logger.error('[manage-quotation:getById] Error parsing island_datas', {
+          error: error.message,
+          island_datas: data.island_datas
         });
-        data.island_name = null;
       }
     }
     
@@ -691,68 +595,64 @@ const getPdfById = async (req, res) => {
       return baseResponse(res, response);
     }
     
-    if (data.customer_id) {
+    // Get customer data from customer_datas jsonb column
+    if (data.customer_datas) {
       try {
-        const customer = await customerRepository.findById(data.customer_id);
-        if (customer) {
-          if (data.customer_name === undefined || data.customer_name === null) {
-            data.customer_name = customer?.customer_name || null;
-          }
-          data.contact_person = customer?.contact_person || null;
-          data.customer_phone = customer?.customer_phone || null;
-          data.customer_address = customer?.customer_address || null;
-        }
+        const customerData = typeof data.customer_datas === 'string' 
+          ? JSON.parse(data.customer_datas) 
+          : data.customer_datas;
+        data.customer_name = customerData?.customer_name || null;
+        data.contact_person = customerData?.contact_person || null;
+        data.customer_email = customerData?.customer_email || null;
+        data.customer_phone = customerData?.customer_phone || null;
+        data.customer_address = customerData?.customer_address || null;
+        data.customer_city = customerData?.customer_city || null;
+        data.customer_state = customerData?.customer_state || null;
+        data.customer_zip = customerData?.customer_zip || null;
+        data.customer_country = customerData?.customer_country || null;
+        data.job_title = customerData?.job_title || null;
+        data.customer_code = customerData?.customer_code || null;
       } catch (error) {
-        Logger.error('[manage-quotation:getPdfById] gagal memuat customer', {
-          customer_id: data.customer_id,
-          message: error?.message
+        Logger.error('[manage-quotation:getPdfById] Error parsing customer_datas', {
+          error: error.message,
+          customer_datas: data.customer_datas
         });
-        if (data.customer_name === undefined || data.customer_name === null) {
-          data.customer_name = null;
-        }
-        data.contact_person = null;
-        data.customer_phone = null;
-        data.customer_address = null;
       }
     }
     
-    if (data.employee_id) {
+    // Get employee data from employee_datas jsonb column
+    if (data.employee_datas) {
       try {
-        const employee = await employeeRepository.findById(data.employee_id);
-        if (employee) {
-          if (data.employee_name === undefined || data.employee_name === null) {
-            data.employee_name = employee?.employee_name || null;
-          }
-          data.employee_phone = employee?.employee_phone || null;
-        }
+        const employeeData = typeof data.employee_datas === 'string' 
+          ? JSON.parse(data.employee_datas) 
+          : data.employee_datas;
+        data.employee_name = employeeData?.employee_name || null;
+        data.employee_email = employeeData?.employee_email || null;
+        data.employee_phone = employeeData?.employee_phone || null;
+        data.employee_address = employeeData?.employee_address || null;
+        data.title_name = employeeData?.title_name || null;
+        data.department_name = employeeData?.department_name || null;
+        data.company_name = employeeData?.company_name || null;
       } catch (error) {
-        Logger.error('[manage-quotation:getPdfById] gagal memuat employee', {
-          employee_id: data.employee_id,
-          message: error?.message
+        Logger.error('[manage-quotation:getPdfById] Error parsing employee_datas', {
+          error: error.message,
+          employee_datas: data.employee_datas
         });
-        if (data.employee_name === undefined || data.employee_name === null) {
-          data.employee_name = null;
-        }
-        data.employee_phone = null;
       }
     }
     
-    if (data.island_id) {
+    // Get island data from island_datas jsonb column
+    if (data.island_datas) {
       try {
-        const islands = await getIslandsByIds([data.island_id]);
-        if (islands && islands.length > 0) {
-          if (data.island_name === undefined || data.island_name === null) {
-            data.island_name = islands[0]?.island_name || null;
-          }
-        }
+        const islandData = typeof data.island_datas === 'string' 
+          ? JSON.parse(data.island_datas) 
+          : data.island_datas;
+        data.island_name = islandData?.island_name || null;
       } catch (error) {
-        Logger.error('[manage-quotation:getPdfById] gagal memuat island', {
-          island_id: data.island_id,
-          message: error?.message
+        Logger.error('[manage-quotation:getPdfById] Error parsing island_datas', {
+          error: error.message,
+          island_datas: data.island_datas
         });
-        if (data.island_name === undefined || data.island_name === null) {
-          data.island_name = null;
-        }
       }
     }
     

@@ -37,6 +37,169 @@ const ensureDblinkConnection = async (maxRetries = 3) => {
 };
 
 /**
+ * Get customer data from dblink by customer_id
+ * Returns customer data with all required fields for customer_datas
+ */
+const getCustomerDataFromDblink = async (customerId) => {
+  if (!customerId) {
+    return null;
+  }
+
+  try {
+    const dblinkConnected = await ensureDblinkConnection();
+    if (!dblinkConnected) {
+      console.error('[manage-quotation:getCustomerDataFromDblink] Dblink connection failed');
+      return null;
+    }
+
+    // Escape ID using PostgreSQL quote_literal
+    const escapedIdResult = await db.raw(`SELECT quote_literal(?) as escaped`, [customerId]);
+    const escapedId = escapedIdResult.rows[0]?.escaped;
+
+    // Build inner query to get all required customer fields
+    const innerQuery = `SELECT customer_id, customer_name, customer_email, customer_phone, customer_address, customer_city, customer_state, customer_zip, customer_country, job_title, contact_person, customer_code FROM customers WHERE customer_id = ${escapedId}`;
+
+    // Escape the entire inner query
+    const escapedQueryResult = await db.raw(`SELECT quote_literal(?) as escaped`, [innerQuery]);
+    const escapedInnerQuery = escapedQueryResult.rows[0]?.escaped;
+
+    const query = `
+      SELECT * FROM dblink('${DBLINK_NAME}', 
+        ${escapedInnerQuery}
+      ) AS customers (
+        customer_id uuid,
+        customer_name varchar,
+        customer_email varchar,
+        customer_phone varchar,
+        customer_address varchar,
+        customer_city varchar,
+        customer_state varchar,
+        customer_zip varchar,
+        customer_country varchar,
+        job_title varchar,
+        contact_person varchar,
+        customer_code varchar
+      )
+    `;
+
+    const result = await db.raw(query);
+    return result.rows[0] || null;
+  } catch (error) {
+    console.error('[manage-quotation:getCustomerDataFromDblink] Error:', error.message);
+    return null;
+  }
+};
+
+/**
+ * Get employee data from dblink by employee_id
+ * Returns employee data with joins to titles, departments, and companies
+ */
+const getEmployeeDataFromDblink = async (employeeId) => {
+  if (!employeeId) {
+    return null;
+  }
+
+  try {
+    const dblinkConnected = await ensureDblinkConnection();
+    if (!dblinkConnected) {
+      console.error('[manage-quotation:getEmployeeDataFromDblink] Dblink connection failed');
+      return null;
+    }
+
+    // Escape ID using PostgreSQL quote_literal
+    const escapedIdResult = await db.raw(`SELECT quote_literal(?) as escaped`, [employeeId]);
+    const escapedId = escapedIdResult.rows[0]?.escaped;
+
+    // Build inner query with LEFT JOIN to titles, departments, and companies
+    const innerQuery = `
+      SELECT 
+        e.employee_id,
+        e.employee_name,
+        e.employee_email,
+        e.employee_phone,
+        e.employee_address,
+        t.title_name,
+        d.department_name,
+        c.company_name
+      FROM employees e
+      LEFT JOIN titles t ON e.title_id = t.title_id
+      LEFT JOIN departments d ON e.department_id = d.department_id
+      LEFT JOIN companies c ON d.company_id = c.company_id
+      WHERE e.employee_id = ${escapedId} AND e.is_delete = false
+    `;
+
+    // Escape the entire inner query
+    const escapedQueryResult = await db.raw(`SELECT quote_literal(?) as escaped`, [innerQuery]);
+    const escapedInnerQuery = escapedQueryResult.rows[0]?.escaped;
+
+    const query = `
+      SELECT * FROM dblink('${DBLINK_NAME}', 
+        ${escapedInnerQuery}
+      ) AS employees (
+        employee_id uuid,
+        employee_name varchar,
+        employee_email varchar,
+        employee_phone varchar,
+        employee_address varchar,
+        title_name varchar,
+        department_name varchar,
+        company_name varchar
+      )
+    `;
+
+    const result = await db.raw(query);
+    return result.rows[0] || null;
+  } catch (error) {
+    console.error('[manage-quotation:getEmployeeDataFromDblink] Error:', error.message);
+    return null;
+  }
+};
+
+/**
+ * Get island data from dblink by island_id
+ * Returns island data with all required fields for island_datas
+ */
+const getIslandDataFromDblink = async (islandId) => {
+  if (!islandId) {
+    return null;
+  }
+
+  try {
+    const dblinkConnected = await ensureDblinkConnection();
+    if (!dblinkConnected) {
+      console.error('[manage-quotation:getIslandDataFromDblink] Dblink connection failed');
+      return null;
+    }
+
+    // Escape ID using PostgreSQL quote_literal
+    const escapedIdResult = await db.raw(`SELECT quote_literal(?) as escaped`, [islandId]);
+    const escapedId = escapedIdResult.rows[0]?.escaped;
+
+    // Build inner query to get island data
+    const innerQuery = `SELECT island_id, island_name FROM islands WHERE island_id = ${escapedId}`;
+
+    // Escape the entire inner query
+    const escapedQueryResult = await db.raw(`SELECT quote_literal(?) as escaped`, [innerQuery]);
+    const escapedInnerQuery = escapedQueryResult.rows[0]?.escaped;
+
+    const query = `
+      SELECT * FROM dblink('${DBLINK_NAME}', 
+        ${escapedInnerQuery}
+      ) AS islands (
+        island_id uuid,
+        island_name varchar
+      )
+    `;
+
+    const result = await db.raw(query);
+    return result.rows[0] || null;
+  } catch (error) {
+    console.error('[manage-quotation:getIslandDataFromDblink] Error:', error.message);
+    return null;
+  }
+};
+
+/**
  * Find all manage quotations with pagination, search, and sort
  */
 const findAll = async (params) => {
@@ -68,16 +231,20 @@ const findAll = async (params) => {
   }
 
   // Query data - use parameterized query with knex
+  // Note: We still include dblink joins for backward compatibility, but data will be taken from jsonb columns
   let query = db({ mq: TABLE_NAME })
     .select(
       'mq.manage_quotation_id',
       'mq.manage_quotation_no',
       'mq.customer_id',
+      'mq.customer_datas',
       db.raw('customer_data.customer_name as customer_name'),
       db.raw('customer_data.contact_person as contact_person'),
       'mq.employee_id',
+      'mq.employee_datas',
       db.raw('employee_data.employee_name as employee_name'),
       'mq.island_id',
+      'mq.island_datas',
       db.raw('island_data.island_name as island_name'),
       'mq.manage_quotation_date',
       'mq.manage_quotation_valid_date',
@@ -477,6 +644,63 @@ const create = async (data, trx = db) => {
     quotationNumber = await generateQuotationNumber(trx);
   }
   
+  // Get customer_datas from dblink if customer_id is provided
+  let customerDatas = null;
+  if (data.customer_id) {
+    try {
+      const customerData = await getCustomerDataFromDblink(data.customer_id);
+      if (customerData) {
+        customerDatas = customerData;
+        console.log('[manage-quotation:create] Customer data retrieved:', {
+          customer_id: data.customer_id,
+          has_data: !!customerData
+        });
+      } else {
+        console.warn('[manage-quotation:create] Customer data not found for customer_id:', data.customer_id);
+      }
+    } catch (error) {
+      console.error('[manage-quotation:create] Error getting customer data:', error.message);
+    }
+  }
+  
+  // Get employee_datas from dblink if employee_id is provided
+  let employeeDatas = null;
+  if (data.employee_id) {
+    try {
+      const employeeData = await getEmployeeDataFromDblink(data.employee_id);
+      if (employeeData) {
+        employeeDatas = employeeData;
+        console.log('[manage-quotation:create] Employee data retrieved:', {
+          employee_id: data.employee_id,
+          has_data: !!employeeData
+        });
+      } else {
+        console.warn('[manage-quotation:create] Employee data not found for employee_id:', data.employee_id);
+      }
+    } catch (error) {
+      console.error('[manage-quotation:create] Error getting employee data:', error.message);
+    }
+  }
+  
+  // Get island_datas from dblink if island_id is provided
+  let islandDatas = null;
+  if (data.island_id) {
+    try {
+      const islandData = await getIslandDataFromDblink(data.island_id);
+      if (islandData) {
+        islandDatas = islandData;
+        console.log('[manage-quotation:create] Island data retrieved:', {
+          island_id: data.island_id,
+          has_data: !!islandData
+        });
+      } else {
+        console.warn('[manage-quotation:create] Island data not found for island_id:', data.island_id);
+      }
+    } catch (error) {
+      console.error('[manage-quotation:create] Error getting island data:', error.message);
+    }
+  }
+  
   // Build fields object - include all expected fields
   const fields = {
     manage_quotation_no: quotationNumber,
@@ -506,6 +730,26 @@ const create = async (data, trx = db) => {
     created_by: data.created_by || null
   };
   
+  // Handle jsonb columns separately with explicit casting
+  if (customerDatas) {
+    fields.customer_datas = trx.raw('?::jsonb', [JSON.stringify(customerDatas)]);
+  } else {
+    fields.customer_datas = null;
+  }
+  
+  if (employeeDatas) {
+    fields.employee_datas = trx.raw('?::jsonb', [JSON.stringify(employeeDatas)]);
+  } else {
+    fields.employee_datas = null;
+  }
+  
+  if (islandDatas) {
+    fields.island_datas = trx.raw('?::jsonb', [JSON.stringify(islandDatas)]);
+  } else {
+    fields.island_datas = null;
+  }
+  
+  // Insert with jsonb handling
   const result = await trx(TABLE_NAME)
     .insert(fields)
     .returning('*');
@@ -523,6 +767,48 @@ const update = async (id, data, trx = db) => {
     if (existingQuotation && !existingQuotation.manage_quotation_no) {
       // Generate quotation number if status is submit and no number exists
       data.manage_quotation_no = await generateQuotationNumber(trx);
+    }
+  }
+  
+  // Get customer_datas from dblink if customer_id is being updated
+  if (data.customer_id !== undefined) {
+    if (data.customer_id) {
+      const customerData = await getCustomerDataFromDblink(data.customer_id);
+      if (customerData) {
+        data.customer_datas = customerData;
+      } else {
+        data.customer_datas = null;
+      }
+    } else {
+      data.customer_datas = null;
+    }
+  }
+  
+  // Get employee_datas from dblink if employee_id is being updated
+  if (data.employee_id !== undefined) {
+    if (data.employee_id) {
+      const employeeData = await getEmployeeDataFromDblink(data.employee_id);
+      if (employeeData) {
+        data.employee_datas = employeeData;
+      } else {
+        data.employee_datas = null;
+      }
+    } else {
+      data.employee_datas = null;
+    }
+  }
+  
+  // Get island_datas from dblink if island_id is being updated
+  if (data.island_id !== undefined) {
+    if (data.island_id) {
+      const islandData = await getIslandDataFromDblink(data.island_id);
+      if (islandData) {
+        data.island_datas = islandData;
+      } else {
+        data.island_datas = null;
+      }
+    } else {
+      data.island_datas = null;
     }
   }
   
@@ -551,6 +837,28 @@ const update = async (id, data, trx = db) => {
   if (data.include_msf_page !== undefined) updateFields.include_msf_page = data.include_msf_page;
   if (data.status !== undefined) updateFields.status = data.status;
   if (data.island_id !== undefined) updateFields.island_id = data.island_id;
+  // Handle jsonb columns separately with explicit casting
+  if (data.customer_datas !== undefined) {
+    if (data.customer_datas) {
+      updateFields.customer_datas = trx.raw('?::jsonb', [JSON.stringify(data.customer_datas)]);
+    } else {
+      updateFields.customer_datas = null;
+    }
+  }
+  if (data.employee_datas !== undefined) {
+    if (data.employee_datas) {
+      updateFields.employee_datas = trx.raw('?::jsonb', [JSON.stringify(data.employee_datas)]);
+    } else {
+      updateFields.employee_datas = null;
+    }
+  }
+  if (data.island_datas !== undefined) {
+    if (data.island_datas) {
+      updateFields.island_datas = trx.raw('?::jsonb', [JSON.stringify(data.island_datas)]);
+    } else {
+      updateFields.island_datas = null;
+    }
+  }
   if (data.updated_by !== undefined) updateFields.updated_by = data.updated_by;
   if (data.deleted_by !== undefined) updateFields.deleted_by = data.deleted_by;
   
@@ -1109,6 +1417,41 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
     ? `${descriptionPrefix}. ${sourceQuotation.manage_quotation_description}`
     : descriptionPrefix;
 
+  // Parse jsonb columns from source quotation if they exist
+  let customerDatas = null;
+  let employeeDatas = null;
+  let islandDatas = null;
+  
+  if (sourceQuotation.customer_datas) {
+    try {
+      customerDatas = typeof sourceQuotation.customer_datas === 'string' 
+        ? JSON.parse(sourceQuotation.customer_datas) 
+        : sourceQuotation.customer_datas;
+    } catch (error) {
+      console.error('[manage-quotation:duplicateQuotation] Error parsing customer_datas:', error.message);
+    }
+  }
+  
+  if (sourceQuotation.employee_datas) {
+    try {
+      employeeDatas = typeof sourceQuotation.employee_datas === 'string' 
+        ? JSON.parse(sourceQuotation.employee_datas) 
+        : sourceQuotation.employee_datas;
+    } catch (error) {
+      console.error('[manage-quotation:duplicateQuotation] Error parsing employee_datas:', error.message);
+    }
+  }
+  
+  if (sourceQuotation.island_datas) {
+    try {
+      islandDatas = typeof sourceQuotation.island_datas === 'string' 
+        ? JSON.parse(sourceQuotation.island_datas) 
+        : sourceQuotation.island_datas;
+    } catch (error) {
+      console.error('[manage-quotation:duplicateQuotation] Error parsing island_datas:', error.message);
+    }
+  }
+  
   // Prepare new quotation data
   const newQuotationData = {
     manage_quotation_no: newQuotationNo,
@@ -1135,6 +1478,9 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
     status: 'draft',
     include_aftersales_page: sourceQuotation.include_aftersales_page ?? false,
     include_msf_page: sourceQuotation.include_msf_page ?? false,
+    customer_datas: customerDatas,
+    employee_datas: employeeDatas,
+    island_datas: islandDatas,
     created_by: created_by
   };
 
