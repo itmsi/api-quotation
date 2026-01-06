@@ -54,10 +54,23 @@ const manageQuotationSchemas = {
         example: '2025-01-30'
       },
       manage_quotation_grand_total: {
-        type: 'string',
+        type: 'number',
         nullable: true,
         description: 'Grand total amount',
-        example: '1000000'
+        example: 1000000.00
+      },
+      manage_quotation_grand_total_before: {
+        type: 'number',
+        nullable: true,
+        description: 'Grand total before mutation',
+        example: 950000.00
+      },
+      manage_quotation_mutation_type: {
+        type: 'string',
+        enum: ['plus', 'minus'],
+        nullable: true,
+        description: 'Mutation type (plus or minus)',
+        example: 'plus'
       },
       manage_quotation_ppn: {
         type: 'string',
@@ -84,10 +97,10 @@ const manageQuotationSchemas = {
         example: '50'
       },
       manage_quotation_payment_nominal: {
-        type: 'string',
+        type: 'number',
         nullable: true,
         description: 'Payment nominal amount',
-        example: '500000'
+        example: 500000.00
       },
       manage_quotation_description: {
         type: 'string',
@@ -269,10 +282,22 @@ const manageQuotationSchemas = {
         example: '2025-01-30'
       },
       manage_quotation_grand_total: {
-        type: 'string',
-        maxLength: 100,
+        type: 'number',
         description: 'Grand total amount',
-        example: '1000000'
+        example: 1000000.00
+      },
+      manage_quotation_grand_total_before: {
+        type: 'number',
+        nullable: true,
+        description: 'Grand total before mutation',
+        example: 950000.00
+      },
+      manage_quotation_mutation_type: {
+        type: 'string',
+        enum: ['plus', 'minus'],
+        nullable: true,
+        description: 'Mutation type (plus or minus)',
+        example: 'plus'
       },
       manage_quotation_ppn: {
         type: 'string',
@@ -299,10 +324,9 @@ const manageQuotationSchemas = {
         example: '50'
       },
       manage_quotation_payment_nominal: {
-        type: 'string',
-        maxLength: 100,
+        type: 'number',
         description: 'Payment nominal amount',
-        example: '500000'
+        example: 500000.00
       },
       manage_quotation_description: {
         type: 'string',
