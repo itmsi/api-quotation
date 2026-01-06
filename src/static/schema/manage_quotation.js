@@ -72,6 +72,12 @@ const manageQuotationSchemas = {
         description: 'Mutation type (plus or minus)',
         example: 'plus'
       },
+      manage_quotation_mutation_nominal: {
+        type: 'number',
+        nullable: true,
+        description: 'Mutation nominal amount',
+        example: 50000.00
+      },
       manage_quotation_ppn: {
         type: 'string',
         nullable: true,
@@ -298,6 +304,12 @@ const manageQuotationSchemas = {
         nullable: true,
         description: 'Mutation type (plus or minus)',
         example: 'plus'
+      },
+      manage_quotation_mutation_nominal: {
+        type: 'number',
+        nullable: true,
+        description: 'Mutation nominal amount',
+        example: 50000.00
       },
       manage_quotation_ppn: {
         type: 'string',

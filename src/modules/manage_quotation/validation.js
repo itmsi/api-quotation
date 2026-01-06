@@ -76,6 +76,28 @@ const createValidation = [
     .optional()
     .isIn(['plus', 'minus'])
     .withMessage('Mutation type harus salah satu dari: plus, minus'),
+  body('manage_quotation_mutation_nominal')
+    .optional()
+    .isNumeric()
+    .withMessage('Mutation nominal harus berupa angka')
+    .custom((value) => {
+      if (value !== undefined && value !== null && value !== '') {
+        const num = parseFloat(value);
+        if (isNaN(num)) {
+          return false;
+        }
+        const str = num.toString();
+        const parts = str.split('.');
+        if (parts[0].length > 13) {
+          return false;
+        }
+        if (parts[1] && parts[1].length > 2) {
+          return false;
+        }
+      }
+      return true;
+    })
+    .withMessage('Mutation nominal harus berupa angka dengan maksimal 15 digit dan 2 desimal'),
   body('manage_quotation_ppn')
     .optional()
     .isLength({ max: 100 })
@@ -455,6 +477,28 @@ const updateValidation = [
     .optional()
     .isIn(['plus', 'minus'])
     .withMessage('Mutation type harus salah satu dari: plus, minus'),
+  body('manage_quotation_mutation_nominal')
+    .optional()
+    .isNumeric()
+    .withMessage('Mutation nominal harus berupa angka')
+    .custom((value) => {
+      if (value !== undefined && value !== null && value !== '') {
+        const num = parseFloat(value);
+        if (isNaN(num)) {
+          return false;
+        }
+        const str = num.toString();
+        const parts = str.split('.');
+        if (parts[0].length > 13) {
+          return false;
+        }
+        if (parts[1] && parts[1].length > 2) {
+          return false;
+        }
+      }
+      return true;
+    })
+    .withMessage('Mutation nominal harus berupa angka dengan maksimal 15 digit dan 2 desimal'),
   body('manage_quotation_ppn')
     .optional()
     .isLength({ max: 100 })

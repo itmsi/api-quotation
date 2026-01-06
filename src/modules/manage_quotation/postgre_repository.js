@@ -84,6 +84,7 @@ const findAll = async (params) => {
       'mq.manage_quotation_grand_total',
       'mq.manage_quotation_grand_total_before',
       'mq.manage_quotation_mutation_type',
+      'mq.manage_quotation_mutation_nominal',
       'mq.manage_quotation_ppn',
       'mq.manage_quotation_delivery_fee',
       'mq.manage_quotation_other',
@@ -191,6 +192,7 @@ const findAll = async (params) => {
               'mq.manage_quotation_grand_total',
               'mq.manage_quotation_grand_total_before',
               'mq.manage_quotation_mutation_type',
+              'mq.manage_quotation_mutation_nominal',
               'mq.manage_quotation_ppn',
               'mq.manage_quotation_delivery_fee',
               'mq.manage_quotation_other',
@@ -491,6 +493,7 @@ const create = async (data, trx = db) => {
     manage_quotation_grand_total: data.manage_quotation_grand_total !== undefined ? data.manage_quotation_grand_total : null,
     manage_quotation_grand_total_before: data.manage_quotation_grand_total_before !== undefined ? data.manage_quotation_grand_total_before : null,
     manage_quotation_mutation_type: data.manage_quotation_mutation_type || null,
+    manage_quotation_mutation_nominal: data.manage_quotation_mutation_nominal !== undefined ? data.manage_quotation_mutation_nominal : null,
     manage_quotation_ppn: data.manage_quotation_ppn || null,
     manage_quotation_delivery_fee: data.manage_quotation_delivery_fee || null,
     manage_quotation_other: data.manage_quotation_other || null,
@@ -541,6 +544,7 @@ const update = async (id, data, trx = db) => {
   if (data.manage_quotation_grand_total !== undefined) updateFields.manage_quotation_grand_total = data.manage_quotation_grand_total;
   if (data.manage_quotation_grand_total_before !== undefined) updateFields.manage_quotation_grand_total_before = data.manage_quotation_grand_total_before;
   if (data.manage_quotation_mutation_type !== undefined) updateFields.manage_quotation_mutation_type = data.manage_quotation_mutation_type;
+  if (data.manage_quotation_mutation_nominal !== undefined) updateFields.manage_quotation_mutation_nominal = data.manage_quotation_mutation_nominal;
   if (data.manage_quotation_ppn !== undefined) updateFields.manage_quotation_ppn = data.manage_quotation_ppn;
   if (data.manage_quotation_delivery_fee !== undefined) updateFields.manage_quotation_delivery_fee = data.manage_quotation_delivery_fee;
   if (data.manage_quotation_other !== undefined) updateFields.manage_quotation_other = data.manage_quotation_other;
@@ -1128,6 +1132,7 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
     manage_quotation_grand_total: sourceQuotation.manage_quotation_grand_total,
     manage_quotation_grand_total_before: sourceQuotation.manage_quotation_grand_total_before,
     manage_quotation_mutation_type: sourceQuotation.manage_quotation_mutation_type,
+    manage_quotation_mutation_nominal: sourceQuotation.manage_quotation_mutation_nominal,
     manage_quotation_ppn: sourceQuotation.manage_quotation_ppn,
     manage_quotation_delivery_fee: sourceQuotation.manage_quotation_delivery_fee,
     manage_quotation_other: sourceQuotation.manage_quotation_other,
