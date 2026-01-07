@@ -3,23 +3,55 @@ const accessoriesIslandDetailRepository = require('./accessories_island_detail_r
 
 const TABLE_NAME = 'accessories';
 
+const DBLINK_NAME = 'gate_sso_dblink';
+const DB_LINK_CONNECTION = `dbname=${process.env.DB_GATE_SSO_NAME} user=${process.env.DB_GATE_SSO_USER} password=${process.env.DB_GATE_SSO_PASSWORD} host=${process.env.DB_GATE_SSO_HOST} port=${process.env.DB_GATE_SSO_PORT}`;
+
+/**
+ * Ensure dblink connection with retry mechanism
+ */
+const ensureDblinkConnection = async (maxRetries = 3) => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Try to disconnect first if connection exists
+      try {
+        await db.raw(`SELECT dblink_disconnect('${DBLINK_NAME}')`);
+      } catch (error) {
+        // Ignore if connection doesn't exist
+      }
+
+      // Create new connection
+      await db.raw(`SELECT dblink_connect('${DBLINK_NAME}', '${DB_LINK_CONNECTION}')`);
+      return true; // Connection successful
+    } catch (error) {
+      if (attempt === maxRetries) {
+        console.error(`[accessory:ensureDblinkConnection] Failed after ${maxRetries} attempts:`, error.message);
+        return false; // Connection failed after all retries
+      }
+      // Wait a bit before retrying (exponential backoff)
+      await new Promise(resolve => setTimeout(resolve, 100 * attempt));
+    }
+  }
+  return false;
+};
+
 /**
  * Build where clause for search
  */
 const buildSearchWhere = (search) => {
   if (!search || search.trim() === '') return null;
-  
+
   const searchPattern = `%${search.trim().toLowerCase()}%`;
-  
-  return function() {
-    this.where(function() {
-      this.whereRaw('LOWER(accessory_part_number) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(accessory_part_name) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(accessory_specification) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(accessory_brand) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(accessory_remark) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(accessory_region) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(accessory_description) LIKE ?', [searchPattern]);
+
+  return function () {
+    this.where(function () {
+      this.whereRaw('LOWER(accessories.accessory_part_number) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(accessories.accessory_part_name) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(accessories.accessory_specification) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(accessories.accessory_brand) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(accessories.accessory_remark) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(accessories.accessory_region) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(accessories.accessory_description) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(updater_data.employee_name) LIKE ?', [searchPattern]);
     });
   };
 };
@@ -29,33 +61,107 @@ const buildSearchWhere = (search) => {
  */
 const findAll = async (params) => {
   const { page, limit, offset, search, sortBy, sortOrder } = params;
-  
+
   const sortOrderSafe = ['asc', 'desc'].includes((sortOrder || '').toLowerCase())
     ? sortOrder.toLowerCase()
     : 'desc';
   const pageNumber = Math.max(parseInt(page, 10) || 1, 1);
   const limitNumber = Math.max(parseInt(limit, 10) || 10, 1);
   const offsetNumber = Math.max(parseInt(offset, 10) || 0, 0);
-  
+
+  // Ensure dblink connection
+  const dblinkConnected = await ensureDblinkConnection();
+  let updaterJoin;
+
+  if (dblinkConnected) {
+    updaterJoin = db.raw(
+      `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS updater_data(employee_id uuid, employee_name varchar)`
+    );
+  } else {
+    updaterJoin = db.raw(`(SELECT NULL::uuid as employee_id, NULL::varchar as employee_name WHERE false) AS updater_data(employee_id uuid, employee_name varchar)`);
+  }
+
   let query = db(TABLE_NAME)
-    .where('is_delete', false);
-  
+    .select(`${TABLE_NAME}.*`, db.raw('updater_data.employee_name as updated_by_name'))
+    .leftJoin(updaterJoin, `${TABLE_NAME}.updated_by`, 'updater_data.employee_id')
+    .where(`${TABLE_NAME}.is_delete`, false);
+
   // Apply search
   if (search && search.trim() !== '') {
     const searchWhere = buildSearchWhere(search);
     query = query.where(searchWhere);
   }
-  
+
   // Apply sorting
   query = query.orderBy(sortBy || 'created_at', sortOrderSafe);
-  
+
   // Apply pagination
   query = query
     .limit(limitNumber)
     .offset(offsetNumber);
-  
-  const data = await query;
-  
+
+  let data;
+  try {
+    data = await query;
+  } catch (error) {
+    // Retry logic if dblink fails
+    if (error.message && (error.message.includes('could not establish connection') || error.message.includes('dblink'))) {
+      console.error('[accessory:findAll] Query failed due to dblink error, retrying...', error.message);
+      const reconnected = await ensureDblinkConnection();
+
+      if (reconnected) {
+        updaterJoin = db.raw(
+          `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS updater_data(employee_id uuid, employee_name varchar)`
+        );
+
+        try {
+          query = db(TABLE_NAME)
+            .select(`${TABLE_NAME}.*`, db.raw('updater_data.employee_name as updated_by_name'))
+            .leftJoin(updaterJoin, `${TABLE_NAME}.updated_by`, 'updater_data.employee_id')
+            .where(`${TABLE_NAME}.is_delete`, false);
+
+          if (search && search.trim() !== '') {
+            const searchWhere = buildSearchWhere(search);
+            query = query.where(searchWhere);
+          }
+
+          query = query.orderBy(sortBy || 'created_at', sortOrderSafe).limit(limitNumber).offset(offsetNumber);
+          data = await query;
+        } catch (retryError) {
+          // Fallback without dblink
+          query = db(TABLE_NAME)
+            .select(`${TABLE_NAME}.*`)
+            .where(`${TABLE_NAME}.is_delete`, false);
+
+          if (search && search.trim() !== '') {
+            const searchWhere = buildSearchWhere(search);
+            query = query.where(searchWhere);
+          }
+
+          query = query.orderBy(sortBy || 'created_at', sortOrderSafe).limit(limitNumber).offset(offsetNumber);
+          data = await query;
+          data = data.map(item => ({ ...item, updated_by_name: null }));
+        }
+      } else {
+        // Fallback without dblink
+        query = db(TABLE_NAME)
+          .select(`${TABLE_NAME}.*`)
+          .where(`${TABLE_NAME}.is_delete`, false);
+
+        if (search && search.trim() !== '') {
+          const searchWhere = buildSearchWhere(search);
+          query = query.where(searchWhere);
+        }
+
+        query = query.orderBy(sortBy || 'created_at', sortOrderSafe).limit(limitNumber).offset(offsetNumber);
+        data = await query;
+        data = data.map(item => ({ ...item, updated_by_name: null }));
+      }
+    } else {
+      throw error;
+    }
+  }
+
   // Get accessories_island_detail for each accessory
   if (data && data.length > 0) {
     for (const item of data) {
@@ -63,19 +169,36 @@ const findAll = async (params) => {
       item.accessories_island_detail = islandDetails;
     }
   }
-  
+
   // Count total
   let countQuery = db(TABLE_NAME)
-    .where('is_delete', false);
-  
+    .leftJoin(updaterJoin, `${TABLE_NAME}.updated_by`, 'updater_data.employee_id')
+    .where(`${TABLE_NAME}.is_delete`, false);
+
   if (search && search.trim() !== '') {
     const searchWhere = buildSearchWhere(search);
     countQuery = countQuery.where(searchWhere);
   }
-  
-  const totalResult = await countQuery.count('accessory_id as count').first();
+
+  let totalResult;
+  try {
+    totalResult = await countQuery.count('accessory_id as count').first();
+  } catch (error) {
+    if (error.message && (error.message.includes('could not establish connection') || error.message.includes('dblink'))) {
+      countQuery = db(TABLE_NAME)
+        .where(`${TABLE_NAME}.is_delete`, false);
+      if (search && search.trim() !== '') {
+        const searchWhere = buildSearchWhere(search);
+        countQuery = countQuery.where(searchWhere);
+      }
+      totalResult = await countQuery.count('accessory_id as count').first();
+    } else {
+      throw error;
+    }
+  }
+
   const total = parseInt(totalResult?.count || 0, 10);
-  
+
   return {
     items: data || [],
     pagination: {
@@ -94,13 +217,13 @@ const findById = async (id) => {
   const result = await db(TABLE_NAME)
     .where({ accessory_id: id, is_delete: false })
     .first();
-  
+
   if (result) {
     // Get accessories_island_detail
     const islandDetails = await accessoriesIslandDetailRepository.findByAccessoriesId(id);
     result.accessories_island_detail = islandDetails;
   }
-  
+
   return result || null;
 };
 
@@ -164,11 +287,11 @@ const create = async (data) => {
       accessory_description: data.accessory_description || null,
       created_by: data.created_by || null
     };
-    
+
     const [result] = await trx(TABLE_NAME)
       .insert(insertData)
       .returning('*');
-    
+
     return result;
   });
 };
@@ -190,7 +313,7 @@ const update = async (id, data) => {
     }
 
     const updateFields = {};
-    
+
     if (data.accessory_part_number !== undefined) updateFields.accessory_part_number = data.accessory_part_number;
     if (data.accessory_part_name !== undefined) updateFields.accessory_part_name = data.accessory_part_name;
     if (data.accessory_specification !== undefined) updateFields.accessory_specification = data.accessory_specification;
@@ -199,11 +322,11 @@ const update = async (id, data) => {
     if (data.accessory_region !== undefined) updateFields.accessory_region = data.accessory_region;
     if (data.accessory_description !== undefined) updateFields.accessory_description = data.accessory_description;
     if (data.updated_by !== undefined) updateFields.updated_by = data.updated_by;
-    
+
     if (Object.keys(updateFields).length === 0) {
       return null;
     }
-    
+
     const [result] = await trx(TABLE_NAME)
       .where({ accessory_id: id, is_delete: false })
       .update({
@@ -211,7 +334,7 @@ const update = async (id, data) => {
         updated_at: db.fn.now()
       })
       .returning('*');
-    
+
     return result || null;
   });
 };
@@ -224,16 +347,16 @@ const remove = async (id, data = {}) => {
     is_delete: true,
     deleted_at: db.fn.now()
   };
-  
+
   if (data.deleted_by !== undefined) {
     deleteFields.deleted_by = data.deleted_by;
   }
-  
+
   const [result] = await db(TABLE_NAME)
     .where({ accessory_id: id, is_delete: false })
     .update(deleteFields)
     .returning('*');
-  
+
   return result || null;
 };
 
@@ -250,7 +373,7 @@ const restore = async (id) => {
       updated_at: db.fn.now()
     })
     .returning('*');
-  
+
   return result || null;
 };
 
@@ -286,7 +409,7 @@ const findByIslandId = async (islandId) => {
       'a.is_delete': false
     })
     .orderBy('a.created_at', 'desc');
-  
+
   return results || [];
 };
 

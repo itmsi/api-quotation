@@ -20,7 +20,7 @@ const ensureDblinkConnection = async (maxRetries = 3) => {
       } catch (error) {
         // Ignore if connection doesn't exist
       }
-      
+
       // Create new connection
       await db.raw(`SELECT dblink_connect('${DBLINK_NAME}', '${DB_LINK_CONNECTION}')`);
       return true; // Connection successful
@@ -41,30 +41,35 @@ const ensureDblinkConnection = async (maxRetries = 3) => {
  */
 const findAll = async (params) => {
   const { page, limit, offset, search, sortBy, sortOrder, status, islandId } = params;
-  
+
   // Try to ensure dblink connection, but don't fail if it doesn't work
   const dblinkConnected = await ensureDblinkConnection();
-  
+
   // If dblink connection fails, we'll query without joins and handle data enrichment later
-  let customerJoin, employeeJoin, islandJoin;
-  
+  let customerJoin, employeeJoin, islandJoin, updaterJoin;
+
   if (dblinkConnected) {
     customerJoin = db.raw(
-    `dblink('${DBLINK_NAME}', 'SELECT customer_id, customer_name, contact_person FROM customers WHERE customer_id IS NOT NULL') AS customer_data(customer_id uuid, customer_name varchar, contact_person varchar)`
-  );
+      `dblink('${DBLINK_NAME}', 'SELECT customer_id, customer_name, contact_person FROM customers WHERE customer_id IS NOT NULL') AS customer_data(customer_id uuid, customer_name varchar, contact_person varchar)`
+    );
 
     employeeJoin = db.raw(
-    `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS employee_data(employee_id uuid, employee_name varchar)`
-  );
+      `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS employee_data(employee_id uuid, employee_name varchar)`
+    );
 
     islandJoin = db.raw(
-    `dblink('${DBLINK_NAME}', 'SELECT island_id, island_name FROM islands WHERE island_id IS NOT NULL') AS island_data(island_id uuid, island_name varchar)`
-  );
+      `dblink('${DBLINK_NAME}', 'SELECT island_id, island_name FROM islands WHERE island_id IS NOT NULL') AS island_data(island_id uuid, island_name varchar)`
+    );
+
+    updaterJoin = db.raw(
+      `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS updater_data(employee_id uuid, employee_name varchar)`
+    );
   } else {
     // Create dummy joins that return empty results if dblink is not available
     customerJoin = db.raw(`(SELECT NULL::uuid as customer_id, NULL::varchar as customer_name, NULL::varchar as contact_person WHERE false) AS customer_data(customer_id uuid, customer_name varchar, contact_person varchar)`);
     employeeJoin = db.raw(`(SELECT NULL::uuid as employee_id, NULL::varchar as employee_name WHERE false) AS employee_data(employee_id uuid, employee_name varchar)`);
     islandJoin = db.raw(`(SELECT NULL::uuid as island_id, NULL::varchar as island_name WHERE false) AS island_data(island_id uuid, island_name varchar)`);
+    updaterJoin = db.raw(`(SELECT NULL::uuid as employee_id, NULL::varchar as employee_name WHERE false) AS updater_data(employee_id uuid, employee_name varchar)`);
   }
 
   // Query data - use parameterized query with knex
@@ -104,6 +109,7 @@ const findAll = async (params) => {
       'mq.status',
       'mq.created_by',
       'mq.updated_by',
+      db.raw('updater_data.employee_name as updated_by_name'),
       'mq.deleted_by',
       'mq.created_at',
       'mq.updated_at',
@@ -113,32 +119,34 @@ const findAll = async (params) => {
     .leftJoin(customerJoin, 'mq.customer_id', 'customer_data.customer_id')
     .leftJoin(employeeJoin, 'mq.employee_id', 'employee_data.employee_id')
     .leftJoin(islandJoin, 'mq.island_id', 'island_data.island_id')
+    .leftJoin(updaterJoin, 'mq.updated_by', 'updater_data.employee_id')
     .where('mq.is_delete', false);
-  
+
   // Add search condition
   if (search && search.trim() !== '') {
     const searchLower = `%${search.toLowerCase()}%`;
-    query = query.where(function() {
+    query = query.where(function () {
       this.where('mq.manage_quotation_no', 'ILIKE', searchLower)
         .orWhere(db.raw('LOWER(CAST(mq.customer_id AS TEXT))'), 'LIKE', searchLower)
         .orWhere(db.raw('LOWER(CAST(mq.employee_id AS TEXT))'), 'LIKE', searchLower)
         .orWhere(db.raw('LOWER(CAST(mq.island_id AS TEXT))'), 'LIKE', searchLower)
         .orWhere(db.raw('LOWER(customer_data.customer_name)'), 'LIKE', searchLower)
         .orWhere(db.raw('LOWER(employee_data.employee_name)'), 'LIKE', searchLower)
-        .orWhere(db.raw('LOWER(island_data.island_name)'), 'LIKE', searchLower);
+        .orWhere(db.raw('LOWER(island_data.island_name)'), 'LIKE', searchLower)
+        .orWhere(db.raw('LOWER(updater_data.employee_name)'), 'LIKE', searchLower);
     });
   }
-  
+
   // Add status filter condition
   if (status && status.trim() !== '') {
     query = query.where('mq.status', status.trim().toLowerCase());
   }
-  
+
   // Add island_id filter condition
   if (islandId && islandId.trim() !== '') {
     query = query.where('mq.island_id', islandId.trim());
   }
-  
+
   // Add sorting
   const sortColumnMap = {
     'created_at': 'mq.created_at',
@@ -148,9 +156,9 @@ const findAll = async (params) => {
   };
   const sortBySafe = sortColumnMap[sortBy] || sortColumnMap.created_at;
   const sortOrderSafe = ['asc', 'desc'].includes(sortOrder?.toLowerCase()) ? sortOrder : 'desc';
-  
+
   query = query.orderBy(sortBySafe, sortOrderSafe).limit(parseInt(limit)).offset(parseInt(offset));
-  
+
   let data;
   try {
     data = await query;
@@ -158,10 +166,10 @@ const findAll = async (params) => {
     // If query fails due to dblink connection issue, retry with fresh connection
     if (error.message && (error.message.includes('could not establish connection') || error.message.includes('dblink'))) {
       console.error('[manage-quotation:findAll] Query failed due to dblink error, retrying...', error.message);
-      
+
       // Try to reconnect
       const reconnected = await ensureDblinkConnection();
-      
+
       if (reconnected) {
         // Rebuild joins with fresh connection
         customerJoin = db.raw(
@@ -173,7 +181,10 @@ const findAll = async (params) => {
         islandJoin = db.raw(
           `dblink('${DBLINK_NAME}', 'SELECT island_id, island_name FROM islands WHERE island_id IS NOT NULL') AS island_data(island_id uuid, island_name varchar)`
         );
-        
+        updaterJoin = db.raw(
+          `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS updater_data(employee_id uuid, employee_name varchar)`
+        );
+
         // Retry query without joins if still fails
         try {
           query = db({ mq: TABLE_NAME })
@@ -212,6 +223,7 @@ const findAll = async (params) => {
               'mq.status',
               'mq.created_by',
               'mq.updated_by',
+              db.raw('updater_data.employee_name as updated_by_name'),
               'mq.deleted_by',
               'mq.created_at',
               'mq.updated_at',
@@ -221,27 +233,28 @@ const findAll = async (params) => {
             .leftJoin(customerJoin, 'mq.customer_id', 'customer_data.customer_id')
             .leftJoin(employeeJoin, 'mq.employee_id', 'employee_data.employee_id')
             .leftJoin(islandJoin, 'mq.island_id', 'island_data.island_id')
+            .leftJoin(updaterJoin, 'mq.updated_by', 'updater_data.employee_id')
             .where('mq.is_delete', false);
-          
+
           // Reapply filters
           if (search && search.trim() !== '') {
             const searchLower = `%${search.toLowerCase()}%`;
-            query = query.where(function() {
+            query = query.where(function () {
               this.where('mq.manage_quotation_no', 'ILIKE', searchLower)
                 .orWhere(db.raw('LOWER(CAST(mq.customer_id AS TEXT))'), 'LIKE', searchLower)
                 .orWhere(db.raw('LOWER(CAST(mq.employee_id AS TEXT))'), 'LIKE', searchLower)
                 .orWhere(db.raw('LOWER(CAST(mq.island_id AS TEXT))'), 'LIKE', searchLower);
             });
           }
-          
+
           if (status && status.trim() !== '') {
             query = query.where('mq.status', status.trim().toLowerCase());
           }
-          
+
           if (islandId && islandId.trim() !== '') {
             query = query.where('mq.island_id', islandId.trim());
           }
-          
+
           query = query.orderBy(sortBySafe, sortOrderSafe).limit(parseInt(limit)).offset(parseInt(offset));
           data = await query;
         } catch (retryError) {
@@ -250,30 +263,31 @@ const findAll = async (params) => {
           query = db({ mq: TABLE_NAME })
             .select('mq.*')
             .where('mq.is_delete', false);
-          
+
           if (search && search.trim() !== '') {
             const searchLower = `%${search.toLowerCase()}%`;
             query = query.where('mq.manage_quotation_no', 'ILIKE', searchLower);
           }
-          
+
           if (status && status.trim() !== '') {
             query = query.where('mq.status', status.trim().toLowerCase());
           }
-          
+
           if (islandId && islandId.trim() !== '') {
             query = query.where('mq.island_id', islandId.trim());
           }
-          
+
           query = query.orderBy(sortBySafe, sortOrderSafe).limit(parseInt(limit)).offset(parseInt(offset));
           data = await query;
-          
+
           // Set null values for joined fields
           data = data.map(item => ({
             ...item,
             customer_name: null,
             contact_person: null,
             employee_name: null,
-            island_name: null
+            island_name: null,
+            updated_by_name: null
           }));
         }
       } else {
@@ -282,30 +296,31 @@ const findAll = async (params) => {
         query = db({ mq: TABLE_NAME })
           .select('mq.*')
           .where('mq.is_delete', false);
-        
+
         if (search && search.trim() !== '') {
           const searchLower = `%${search.toLowerCase()}%`;
           query = query.where('mq.manage_quotation_no', 'ILIKE', searchLower);
         }
-        
+
         if (status && status.trim() !== '') {
           query = query.where('mq.status', status.trim().toLowerCase());
         }
-        
+
         if (islandId && islandId.trim() !== '') {
           query = query.where('mq.island_id', islandId.trim());
         }
-        
+
         query = query.orderBy(sortBySafe, sortOrderSafe).limit(parseInt(limit)).offset(parseInt(offset));
         data = await query;
-        
+
         // Set null values for joined fields
         data = data.map(item => ({
           ...item,
           customer_name: null,
           contact_person: null,
           employee_name: null,
-          island_name: null
+          island_name: null,
+          updated_by_name: null
         }));
       }
     } else {
@@ -313,38 +328,40 @@ const findAll = async (params) => {
       throw error;
     }
   }
-  
+
   // Query total count
   let countQuery = db({ mq: TABLE_NAME })
     .count('* as count')
     .leftJoin(customerJoin, 'mq.customer_id', 'customer_data.customer_id')
     .leftJoin(employeeJoin, 'mq.employee_id', 'employee_data.employee_id')
     .leftJoin(islandJoin, 'mq.island_id', 'island_data.island_id')
+    .leftJoin(updaterJoin, 'mq.updated_by', 'updater_data.employee_id')
     .where('mq.is_delete', false);
-  
+
   if (search && search.trim() !== '') {
     const searchLower = `%${search.toLowerCase()}%`;
-    countQuery = countQuery.where(function() {
+    countQuery = countQuery.where(function () {
       this.where('mq.manage_quotation_no', 'ILIKE', searchLower)
         .orWhere(db.raw('LOWER(CAST(mq.customer_id AS TEXT))'), 'LIKE', searchLower)
         .orWhere(db.raw('LOWER(CAST(mq.employee_id AS TEXT))'), 'LIKE', searchLower)
         .orWhere(db.raw('LOWER(CAST(mq.island_id AS TEXT))'), 'LIKE', searchLower)
         .orWhere(db.raw('LOWER(customer_data.customer_name)'), 'LIKE', searchLower)
         .orWhere(db.raw('LOWER(employee_data.employee_name)'), 'LIKE', searchLower)
-        .orWhere(db.raw('LOWER(island_data.island_name)'), 'LIKE', searchLower);
+        .orWhere(db.raw('LOWER(island_data.island_name)'), 'LIKE', searchLower)
+        .orWhere(db.raw('LOWER(updater_data.employee_name)'), 'LIKE', searchLower);
     });
   }
-  
+
   // Add status filter condition to count query
   if (status && status.trim() !== '') {
     countQuery = countQuery.where('mq.status', status.trim().toLowerCase());
   }
-  
+
   // Add island_id filter condition to count query
   if (islandId && islandId.trim() !== '') {
     countQuery = countQuery.where('mq.island_id', islandId.trim());
   }
-  
+
   let totalResult;
   try {
     totalResult = await countQuery;
@@ -355,29 +372,29 @@ const findAll = async (params) => {
       countQuery = db({ mq: TABLE_NAME })
         .count('* as count')
         .where('mq.is_delete', false);
-      
+
       if (search && search.trim() !== '') {
         const searchLower = `%${search.toLowerCase()}%`;
         countQuery = countQuery.where('mq.manage_quotation_no', 'ILIKE', searchLower);
       }
-      
+
       if (status && status.trim() !== '') {
         countQuery = countQuery.where('mq.status', status.trim().toLowerCase());
       }
-      
+
       if (islandId && islandId.trim() !== '') {
         countQuery = countQuery.where('mq.island_id', islandId.trim());
       }
-      
+
       totalResult = await countQuery;
     } else {
       // Re-throw if it's not a dblink error
       throw error;
     }
   }
-  
+
   const total = totalResult[0]?.count || 0;
-  
+
   return {
     items: data || [],
     pagination: {
@@ -396,11 +413,11 @@ const findById = async (id) => {
   if (!id) {
     return null;
   }
-  
+
   const result = await db(TABLE_NAME)
     .where({ manage_quotation_id: id, is_delete: false })
     .first();
-  
+
   return result || null;
 };
 
@@ -411,11 +428,11 @@ const findOne = async (conditions) => {
   if (!conditions || Object.keys(conditions).length === 0) {
     return null;
   }
-  
+
   const result = await db(TABLE_NAME)
     .where({ ...conditions, is_delete: false })
     .first();
-  
+
   return result || null;
 };
 
@@ -438,7 +455,7 @@ const generateQuotationNumber = async (trx = db) => {
   const currentMonth = moment().month() + 1; // moment().month() returns 0-11, we need 1-12
   const monthRoman = monthToRoman(currentMonth);
   const prefix = 'IEC-MSI';
-  
+
   // Find the last quotation number for current year
   // Extract sequence number (first 3 digits before '/') and sort numerically
   // Query based on year only, sequence reset only when year changes
@@ -449,27 +466,27 @@ const generateQuotationNumber = async (trx = db) => {
     .whereRaw(`manage_quotation_no LIKE '%/${prefix}/%/${currentYear}'`)
     .orderByRaw(`CAST(SPLIT_PART(manage_quotation_no, '/', 1) AS INTEGER) DESC`)
     .first();
-  
+
   let sequence = 1;
-  
+
   if (lastQuotation && lastQuotation.manage_quotation_no) {
     // Extract sequence number from last quotation number
     // Format: 001/IEC-MSI/IX/2025 (4 parts) or 001/IEC-MSI/2025 (3 parts - old format)
     const parts = lastQuotation.manage_quotation_no.split('/');
-    
+
     // Handle both old format (3 parts) and new format (4 parts)
     if ((parts.length === 4 && parts[1] === prefix && parts[3] === currentYear) ||
-        (parts.length === 3 && parts[1] === prefix && parts[2] === currentYear)) {
+      (parts.length === 3 && parts[1] === prefix && parts[2] === currentYear)) {
       const lastSequence = parseInt(parts[0], 10);
       if (!isNaN(lastSequence) && lastSequence > 0) {
         sequence = lastSequence + 1;
       }
     }
   }
-  
+
   // Format sequence with leading zeros (001, 002, etc.)
   const sequenceStr = String(sequence).padStart(3, '0');
-  
+
   return `${sequenceStr}/${prefix}/${monthRoman}/${currentYear}`;
 };
 
@@ -482,7 +499,7 @@ const create = async (data, trx = db) => {
   if (data.status === 'submit' && !quotationNumber) {
     quotationNumber = await generateQuotationNumber(trx);
   }
-  
+
   // Build fields object - include all expected fields
   const fields = {
     manage_quotation_no: quotationNumber,
@@ -514,11 +531,11 @@ const create = async (data, trx = db) => {
     island_id: data.island_id || null,
     created_by: data.created_by || null
   };
-  
+
   const result = await trx(TABLE_NAME)
     .insert(fields)
     .returning('*');
-  
+
   return result[0] || null;
 };
 
@@ -534,7 +551,7 @@ const update = async (id, data, trx = db) => {
       data.manage_quotation_no = await generateQuotationNumber(trx);
     }
   }
-  
+
   const updateFields = {};
   if (data.manage_quotation_no !== undefined) updateFields.manage_quotation_no = data.manage_quotation_no;
   if (data.customer_id !== undefined) updateFields.customer_id = data.customer_id;
@@ -565,11 +582,11 @@ const update = async (id, data, trx = db) => {
   if (data.island_id !== undefined) updateFields.island_id = data.island_id;
   if (data.updated_by !== undefined) updateFields.updated_by = data.updated_by;
   if (data.deleted_by !== undefined) updateFields.deleted_by = data.deleted_by;
-  
+
   if (Object.keys(updateFields).length === 0) {
     return null;
   }
-  
+
   // Use Knex query builder instead of raw query to avoid binding issues
   updateFields.updated_at = trx.fn.now();
 
@@ -577,7 +594,7 @@ const update = async (id, data, trx = db) => {
     .where({ manage_quotation_id: id, is_delete: false })
     .update(updateFields)
     .returning('*');
-  
+
   return result[0] || null;
 };
 
@@ -588,7 +605,7 @@ const remove = async (id) => {
   if (!id) {
     return null;
   }
-  
+
   const result = await db(TABLE_NAME)
     .where({ manage_quotation_id: id, is_delete: false })
     .update({
@@ -596,7 +613,7 @@ const remove = async (id) => {
       deleted_at: db.fn.now()
     })
     .returning('*');
-  
+
   return result[0] || null;
 };
 
@@ -607,7 +624,7 @@ const restore = async (id) => {
   if (!id) {
     return null;
   }
-  
+
   const result = await db(TABLE_NAME)
     .where({ manage_quotation_id: id, is_delete: true })
     .update({
@@ -617,7 +634,7 @@ const restore = async (id) => {
       updated_at: db.fn.now()
     })
     .returning('*');
-  
+
   return result[0] || null;
 };
 
@@ -628,11 +645,11 @@ const hardDelete = async (id) => {
   if (!id) {
     return false;
   }
-  
+
   const result = await db(TABLE_NAME)
     .where({ manage_quotation_id: id })
     .del();
-  
+
   return result > 0;
 };
 
@@ -649,22 +666,22 @@ const validateComponenProductIds = async (items) => {
   if (!items || items.length === 0) {
     return { isValid: true, invalidIds: [] };
   }
-  
+
   const invalidIds = [];
-  
+
   for (const item of items) {
     // Skip validation if componen_product_id is null or empty
     if (!item.componen_product_id) {
       continue;
     }
-    
+
     // Check if componen_product_id exists
     const product = await componenProductRepository.findById(item.componen_product_id);
     if (!product) {
       invalidIds.push(item.componen_product_id);
     }
   }
-  
+
   return {
     isValid: invalidIds.length === 0,
     invalidIds
@@ -678,9 +695,9 @@ const createItems = async (manage_quotation_id, items, created_by, trx = db) => 
   if (!items || items.length === 0) {
     return [];
   }
-  
+
   const results = [];
-  
+
   for (const item of items) {
     // Convert order_number to integer, default to 0 if not provided or invalid
     let orderNumber = 0;
@@ -696,7 +713,7 @@ const createItems = async (manage_quotation_id, items, created_by, trx = db) => 
         orderNumber = 0;
       }
     }
-    
+
     // Ensure quantity is also an integer
     let quantity = 1;
     if (item.quantity !== undefined && item.quantity !== null) {
@@ -707,7 +724,7 @@ const createItems = async (manage_quotation_id, items, created_by, trx = db) => 
         quantity = isNaN(parsed) ? 1 : parsed;
       }
     }
-    
+
     const fields = {
       manage_quotation_id: manage_quotation_id || null,
       componen_product_id: item.componen_product_id || null,
@@ -728,14 +745,14 @@ const createItems = async (manage_quotation_id, items, created_by, trx = db) => 
       order_number: orderNumber,
       created_by: created_by || null
     };
-    
+
     const result = await trx(ITEMS_TABLE_NAME)
       .insert(fields)
       .returning('*');
-    
+
     results.push(result[0]);
   }
-  
+
   return results;
 };
 
@@ -746,7 +763,7 @@ const getItemsByQuotationId = async (manage_quotation_id) => {
   if (!manage_quotation_id) {
     return [];
   }
-  
+
   const result = await db(`${ITEMS_TABLE_NAME} as mqi`)
     .select(
       'mqi.manage_quotation_item_id',
@@ -789,14 +806,14 @@ const getItemsByQuotationId = async (manage_quotation_id) => {
       db.raw('cp.image as cp_image'),
       db.raw('cp.componen_type as cp_componen_type')
     )
-    .leftJoin('componen_products as cp', function() {
+    .leftJoin('componen_products as cp', function () {
       this.on('mqi.componen_product_id', '=', 'cp.componen_product_id')
-          .andOn(db.raw('cp.is_delete = false'));
+        .andOn(db.raw('cp.is_delete = false'));
     })
     .where('mqi.manage_quotation_id', manage_quotation_id)
     .where('mqi.is_delete', false)
     .orderBy('mqi.order_number', 'asc');
-  
+
   return result || [];
 };
 
@@ -807,14 +824,14 @@ const deleteItemsByQuotationId = async (manage_quotation_id) => {
   if (!manage_quotation_id) {
     return false;
   }
-  
+
   const result = await db(ITEMS_TABLE_NAME)
     .where({ manage_quotation_id: manage_quotation_id, is_delete: false })
     .update({
       is_delete: true,
       deleted_at: db.fn.now()
     });
-  
+
   return result > 0;
 };
 
@@ -824,10 +841,10 @@ const deleteItemsByQuotationId = async (manage_quotation_id) => {
 const replaceItems = async (manage_quotation_id, items, updated_by) => {
   // Soft delete all existing items
   await deleteItemsByQuotationId(manage_quotation_id);
-  
+
   // Create new items
   const newItems = await createItems(manage_quotation_id, items, updated_by);
-  
+
   return newItems;
 };
 
@@ -845,22 +862,22 @@ const validateAccessoryIds = async (accessories) => {
   if (!accessories || accessories.length === 0) {
     return { isValid: true, invalidIds: [] };
   }
-  
+
   const invalidIds = [];
-  
+
   for (const accessory of accessories) {
     // Skip validation if accessory_id is null or empty
     if (!accessory.accessory_id) {
       continue;
     }
-    
+
     // Check if accessory_id exists
     const acc = await accessoryRepository.findById(accessory.accessory_id);
     if (!acc) {
       invalidIds.push(accessory.accessory_id);
     }
   }
-  
+
   return {
     isValid: invalidIds.length === 0,
     invalidIds
@@ -901,9 +918,9 @@ const createAccessories = async (manage_quotation_id, accessories, created_by, t
   if (!accessories || accessories.length === 0) {
     return [];
   }
-  
+
   const results = [];
-  
+
   for (const accessory of accessories) {
     // Only store accessory_id and quantity, data will be fetched from accessories table via join
     const fields = {
@@ -914,14 +931,14 @@ const createAccessories = async (manage_quotation_id, accessories, created_by, t
       description: accessory.description ?? null,
       created_by: created_by || null
     };
-    
+
     const result = await trx(ACCESSORIES_TABLE_NAME)
       .insert(fields)
       .returning('*');
-    
+
     results.push(result[0]);
   }
-  
+
   return results;
 };
 
@@ -932,7 +949,7 @@ const getAccessoriesByQuotationId = async (manage_quotation_id) => {
   if (!manage_quotation_id) {
     return [];
   }
-  
+
   const result = await db(`${ACCESSORIES_TABLE_NAME} as mqia`)
     .select(
       'mqia.manage_quotation_item_accessory_id',
@@ -957,14 +974,14 @@ const getAccessoriesByQuotationId = async (manage_quotation_id) => {
       'a.accessory_region',
       'a.accessory_description'
     )
-    .leftJoin('accessories as a', function() {
+    .leftJoin('accessories as a', function () {
       this.on('mqia.accessory_id', '=', 'a.accessory_id')
-          .andOn(db.raw('a.is_delete = false'));
+        .andOn(db.raw('a.is_delete = false'));
     })
     .where('mqia.manage_quotation_id', manage_quotation_id)
     .where('mqia.is_delete', false)
     .orderBy('mqia.created_at', 'asc');
-  
+
   return result || [];
 };
 
@@ -975,14 +992,14 @@ const deleteAccessoriesByQuotationId = async (manage_quotation_id) => {
   if (!manage_quotation_id) {
     return false;
   }
-  
+
   const result = await db(ACCESSORIES_TABLE_NAME)
     .where({ manage_quotation_id: manage_quotation_id, is_delete: false })
     .update({
       is_delete: true,
       deleted_at: db.fn.now()
     });
-  
+
   return result > 0;
 };
 
@@ -992,10 +1009,10 @@ const deleteAccessoriesByQuotationId = async (manage_quotation_id) => {
 const replaceAccessories = async (manage_quotation_id, accessories, updated_by) => {
   // Soft delete all existing accessories
   await deleteAccessoriesByQuotationId(manage_quotation_id);
-  
+
   // Create new accessories
   const newAccessories = await createAccessories(manage_quotation_id, accessories, updated_by);
-  
+
   return newAccessories;
 };
 
@@ -1059,9 +1076,9 @@ const getSpecificationsByQuotationId = async (manage_quotation_id) => {
       db.raw('cp.horse_power as cp_horse_power'),
       db.raw('cp.market_price as cp_market_price')
     )
-    .leftJoin('componen_products as cp', function() {
+    .leftJoin('componen_products as cp', function () {
       this.on('mqis.componen_product_id', '=', 'cp.componen_product_id')
-          .andOn(db.raw('cp.is_delete = false'));
+        .andOn(db.raw('cp.is_delete = false'));
     })
     .where('mqis.manage_quotation_id', manage_quotation_id)
     .where('mqis.is_delete', false)
@@ -1114,8 +1131,8 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
   const newQuotationNo = await generateQuotationNumber(trx);
 
   // Build description: copy from manage_quotation_no mana
-  const descriptionPrefix = sourceQuotation.manage_quotation_no 
-    ? `Copy dari ${sourceQuotation.manage_quotation_no}` 
+  const descriptionPrefix = sourceQuotation.manage_quotation_no
+    ? `Copy dari ${sourceQuotation.manage_quotation_no}`
     : 'Copy dari quotation';
   const newDescription = sourceQuotation.manage_quotation_description
     ? `${descriptionPrefix}. ${sourceQuotation.manage_quotation_description}`
@@ -1158,11 +1175,11 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
 
   // Prepare items for duplication (remove IDs and manage_quotation_id)
   const itemsForInsert = sourceItems.map(item => {
-    const { 
-      manage_quotation_item_id, 
-      manage_quotation_id, 
-      created_at, 
-      updated_at, 
+    const {
+      manage_quotation_item_id,
+      manage_quotation_id,
+      created_at,
+      updated_at,
       deleted_at,
       created_by: item_created_by,
       updated_by: item_updated_by,

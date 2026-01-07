@@ -2,6 +2,37 @@ const db = require('../../config/database');
 
 const TABLE_NAME = 'componen_products';
 
+const DBLINK_NAME = 'gate_sso_dblink';
+const DB_LINK_CONNECTION = `dbname=${process.env.DB_GATE_SSO_NAME} user=${process.env.DB_GATE_SSO_USER} password=${process.env.DB_GATE_SSO_PASSWORD} host=${process.env.DB_GATE_SSO_HOST} port=${process.env.DB_GATE_SSO_PORT}`;
+
+/**
+ * Ensure dblink connection with retry mechanism
+ */
+const ensureDblinkConnection = async (maxRetries = 3) => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Try to disconnect first if connection exists
+      try {
+        await db.raw(`SELECT dblink_disconnect('${DBLINK_NAME}')`);
+      } catch (error) {
+        // Ignore if connection doesn't exist
+      }
+
+      // Create new connection
+      await db.raw(`SELECT dblink_connect('${DBLINK_NAME}', '${DB_LINK_CONNECTION}')`);
+      return true; // Connection successful
+    } catch (error) {
+      if (attempt === maxRetries) {
+        console.error(`[componen-product:ensureDblinkConnection] Failed after ${maxRetries} attempts:`, error.message);
+        return false; // Connection failed after all retries
+      }
+      // Wait a bit before retrying (exponential backoff)
+      await new Promise(resolve => setTimeout(resolve, 100 * attempt));
+    }
+  }
+  return false;
+};
+
 /**
  * Normalize spesifikasi untuk response API
  */
@@ -44,22 +75,23 @@ const mapProductType = (componenType) => {
  */
 const buildSearchWhere = (search) => {
   if (!search || search.trim() === '') return null;
-  
+
   const searchPattern = `%${search.trim().toLowerCase()}%`;
-  
-  return function() {
-    this.where(function() {
-      this.whereRaw('LOWER(code_unique) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(componen_product_name) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(segment) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(msi_model) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(msi_product) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(wheel_no) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(engine) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(horse_power) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(componen_product_unit_model) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(volume) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(componen_product_description) LIKE ?', [searchPattern]);
+
+  return function () {
+    this.where(function () {
+      this.whereRaw('LOWER(componen_products.code_unique) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(componen_products.componen_product_name) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(componen_products.segment) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(componen_products.msi_model) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(componen_products.msi_product) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(componen_products.wheel_no) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(componen_products.engine) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(componen_products.horse_power) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(componen_products.componen_product_unit_model) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(componen_products.volume) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(componen_products.componen_product_description) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(updater_data.employee_name) LIKE ?', [searchPattern]);
     });
   };
 };
@@ -69,49 +101,141 @@ const buildSearchWhere = (search) => {
  */
 const findAll = async (params) => {
   const { page, limit, offset, search, sortBy, sortOrder } = params;
-  
+
   const sortOrderSafe = ['asc', 'desc'].includes((sortOrder || '').toLowerCase())
     ? sortOrder.toLowerCase()
     : 'desc';
   const pageNumber = Math.max(parseInt(page, 10) || 1, 1);
   const limitNumber = Math.max(parseInt(limit, 10) || 10, 1);
   const offsetNumber = Math.max(parseInt(offset, 10) || 0, 0);
-  
+
+  // Ensure dblink connection
+  const dblinkConnected = await ensureDblinkConnection();
+  let updaterJoin;
+
+  if (dblinkConnected) {
+    updaterJoin = db.raw(
+      `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS updater_data(employee_id uuid, employee_name varchar)`
+    );
+  } else {
+    updaterJoin = db.raw(`(SELECT NULL::uuid as employee_id, NULL::varchar as employee_name WHERE false) AS updater_data(employee_id uuid, employee_name varchar)`);
+  }
+
   let query = db(TABLE_NAME)
-    .where('is_delete', false);
-  
+    .select(`${TABLE_NAME}.*`, db.raw('updater_data.employee_name as updated_by_name'))
+    .leftJoin(updaterJoin, `${TABLE_NAME}.updated_by`, 'updater_data.employee_id')
+    .where(`${TABLE_NAME}.is_delete`, false);
+
   // Apply search
   if (search && search.trim() !== '') {
     const searchWhere = buildSearchWhere(search);
     query = query.where(searchWhere);
   }
-  
+
   // Apply sorting
   query = query.orderBy(sortBy || 'created_at', sortOrderSafe);
-  
+
   // Apply pagination
   query = query
     .limit(limitNumber)
     .offset(offsetNumber);
-  
-  const data = await query;
+
+  let data;
+  try {
+    data = await query;
+  } catch (error) {
+    // Retry logic if dblink fails
+    if (error.message && (error.message.includes('could not establish connection') || error.message.includes('dblink'))) {
+      console.error('[componen-product:findAll] Query failed due to dblink error, retrying...', error.message);
+      const reconnected = await ensureDblinkConnection();
+
+      if (reconnected) {
+        updaterJoin = db.raw(
+          `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS updater_data(employee_id uuid, employee_name varchar)`
+        );
+
+        try {
+          query = db(TABLE_NAME)
+            .select(`${TABLE_NAME}.*`, db.raw('updater_data.employee_name as updated_by_name'))
+            .leftJoin(updaterJoin, `${TABLE_NAME}.updated_by`, 'updater_data.employee_id')
+            .where(`${TABLE_NAME}.is_delete`, false);
+
+          if (search && search.trim() !== '') {
+            const searchWhere = buildSearchWhere(search);
+            query = query.where(searchWhere);
+          }
+
+          query = query.orderBy(sortBy || 'created_at', sortOrderSafe).limit(limitNumber).offset(offsetNumber);
+          data = await query;
+        } catch (retryError) {
+          // Fallback without dblink
+          query = db(TABLE_NAME)
+            .select(`${TABLE_NAME}.*`)
+            .where(`${TABLE_NAME}.is_delete`, false);
+
+          if (search && search.trim() !== '') {
+            const searchWhere = buildSearchWhere(search);
+            query = query.where(searchWhere);
+          }
+
+          query = query.orderBy(sortBy || 'created_at', sortOrderSafe).limit(limitNumber).offset(offsetNumber);
+          data = await query;
+          data = data.map(item => ({ ...item, updated_by_name: null }));
+        }
+      } else {
+        // Fallback without dblink
+        query = db(TABLE_NAME)
+          .select(`${TABLE_NAME}.*`)
+          .where(`${TABLE_NAME}.is_delete`, false);
+
+        if (search && search.trim() !== '') {
+          const searchWhere = buildSearchWhere(search);
+          query = query.where(searchWhere);
+        }
+
+        query = query.orderBy(sortBy || 'created_at', sortOrderSafe).limit(limitNumber).offset(offsetNumber);
+        data = await query;
+        data = data.map(item => ({ ...item, updated_by_name: null }));
+      }
+    } else {
+      throw error;
+    }
+  }
+
   const itemsWithProductType = (data || []).map((item) => ({
     ...item,
     product_type: mapProductType(item.componen_type)
   }));
-  
+
   // Count total
   let countQuery = db(TABLE_NAME)
-    .where('is_delete', false);
-  
+    .leftJoin(updaterJoin, `${TABLE_NAME}.updated_by`, 'updater_data.employee_id')
+    .where(`${TABLE_NAME}.is_delete`, false);
+
   if (search && search.trim() !== '') {
     const searchWhere = buildSearchWhere(search);
     countQuery = countQuery.where(searchWhere);
   }
-  
-  const totalResult = await countQuery.count('componen_product_id as count').first();
+
+  let totalResult;
+  try {
+    totalResult = await countQuery.count('componen_product_id as count').first();
+  } catch (error) {
+    if (error.message && (error.message.includes('could not establish connection') || error.message.includes('dblink'))) {
+      countQuery = db(TABLE_NAME)
+        .where(`${TABLE_NAME}.is_delete`, false);
+      if (search && search.trim() !== '') {
+        const searchWhere = buildSearchWhere(search);
+        countQuery = countQuery.where(searchWhere);
+      }
+      totalResult = await countQuery.count('componen_product_id as count').first();
+    } else {
+      throw error;
+    }
+  }
+
   const total = parseInt(totalResult?.count || 0, 10);
-  
+
   return {
     items: itemsWithProductType,
     pagination: {
@@ -233,7 +357,7 @@ const create = async (data, specifications = []) => {
       componen_product_description: data.componen_product_description || null,
       created_by: data.created_by || null
     };
-    
+
     const [product] = await trx(TABLE_NAME)
       .insert(insertData)
       .returning('*');
@@ -297,7 +421,7 @@ const update = async (id, data, options = {}) => {
     }
 
     const updateFields = {};
-    
+
     if (data.componen_product_name !== undefined) updateFields.componen_product_name = data.componen_product_name;
     if (data.componen_type !== undefined) updateFields.componen_type = data.componen_type;
     if (data.code_unique !== undefined) updateFields.code_unique = data.code_unique;
@@ -407,16 +531,16 @@ const remove = async (id, data = {}) => {
       is_delete: true,
       deleted_at: db.fn.now()
     };
-    
+
     if (data.deleted_by !== undefined) {
       deleteFields.deleted_by = data.deleted_by;
     }
-    
+
     const [result] = await trx(TABLE_NAME)
       .where({ componen_product_id: id, is_delete: false })
       .update(deleteFields)
       .returning('*');
-    
+
     if (!result) {
       return null;
     }
@@ -431,7 +555,7 @@ const remove = async (id, data = {}) => {
         deleted_at: db.fn.now(),
         deleted_by: data.deleted_by || null
       });
-    
+
     return result;
   });
 };
@@ -450,7 +574,7 @@ const restore = async (id) => {
         updated_at: db.fn.now()
       })
       .returning('*');
-    
+
     if (!result) {
       return null;
     }
@@ -466,7 +590,7 @@ const restore = async (id) => {
         deleted_by: null,
         updated_at: db.fn.now()
       });
-    
+
     return result;
   });
 };
