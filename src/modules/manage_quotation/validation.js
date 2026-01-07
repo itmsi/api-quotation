@@ -73,9 +73,7 @@ const createValidation = [
     })
     .withMessage('Grand total before harus berupa angka dengan maksimal 15 digit dan 2 desimal'),
   body('manage_quotation_mutation_type')
-    .optional()
-    .isIn(['plus', 'minus'])
-    .withMessage('Mutation type harus salah satu dari: plus, minus'),
+    .optional(),
   body('manage_quotation_mutation_nominal')
     .optional()
     .isNumeric()
@@ -474,9 +472,7 @@ const updateValidation = [
     })
     .withMessage('Grand total before harus berupa angka dengan maksimal 15 digit dan 2 desimal'),
   body('manage_quotation_mutation_type')
-    .optional()
-    .isIn(['plus', 'minus'])
-    .withMessage('Mutation type harus salah satu dari: plus, minus'),
+    .optional(),
   body('manage_quotation_mutation_nominal')
     .optional()
     .isNumeric()

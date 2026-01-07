@@ -560,7 +560,7 @@ const update = async (id, data, trx = db) => {
   if (data.manage_quotation_valid_date !== undefined) updateFields.manage_quotation_valid_date = data.manage_quotation_valid_date;
   if (data.manage_quotation_grand_total !== undefined) updateFields.manage_quotation_grand_total = data.manage_quotation_grand_total;
   if (data.manage_quotation_grand_total_before !== undefined) updateFields.manage_quotation_grand_total_before = data.manage_quotation_grand_total_before;
-  if (data.manage_quotation_mutation_type !== undefined) updateFields.manage_quotation_mutation_type = data.manage_quotation_mutation_type;
+  if (data.manage_quotation_mutation_type !== undefined) updateFields.manage_quotation_mutation_type = data.manage_quotation_mutation_type || null;
   if (data.manage_quotation_mutation_nominal !== undefined) updateFields.manage_quotation_mutation_nominal = data.manage_quotation_mutation_nominal;
   if (data.manage_quotation_ppn !== undefined) updateFields.manage_quotation_ppn = data.manage_quotation_ppn;
   if (data.manage_quotation_delivery_fee !== undefined) updateFields.manage_quotation_delivery_fee = data.manage_quotation_delivery_fee;
