@@ -40,16 +40,16 @@ const createValidation = [
         }
         const str = num.toString();
         const parts = str.split('.');
-        if (parts[0].length > 13) {
+        if (parts[0].length > 20) {
           return false;
         }
-        if (parts[1] && parts[1].length > 2) {
+        if (parts[1] && parts[1].length > 5) {
           return false;
         }
       }
       return true;
     })
-    .withMessage('Grand total harus berupa angka dengan maksimal 15 digit dan 2 desimal'),
+    .withMessage('Grand total harus berupa angka dengan maksimal 25 digit dan 5 desimal'),
   body('manage_quotation_grand_total_before')
     .optional()
     .isNumeric()
@@ -62,16 +62,16 @@ const createValidation = [
         }
         const str = num.toString();
         const parts = str.split('.');
-        if (parts[0].length > 13) {
+        if (parts[0].length > 20) {
           return false;
         }
-        if (parts[1] && parts[1].length > 2) {
+        if (parts[1] && parts[1].length > 5) {
           return false;
         }
       }
       return true;
     })
-    .withMessage('Grand total before harus berupa angka dengan maksimal 15 digit dan 2 desimal'),
+    .withMessage('Grand total before harus berupa angka dengan maksimal 25 digit dan 5 desimal'),
   body('manage_quotation_mutation_type')
     .optional(),
   body('manage_quotation_mutation_nominal')
@@ -86,16 +86,16 @@ const createValidation = [
         }
         const str = num.toString();
         const parts = str.split('.');
-        if (parts[0].length > 13) {
+        if (parts[0].length > 20) {
           return false;
         }
-        if (parts[1] && parts[1].length > 2) {
+        if (parts[1] && parts[1].length > 5) {
           return false;
         }
       }
       return true;
     })
-    .withMessage('Mutation nominal harus berupa angka dengan maksimal 15 digit dan 2 desimal'),
+    .withMessage('Mutation nominal harus berupa angka dengan maksimal 25 digit dan 5 desimal'),
   body('manage_quotation_ppn')
     .optional()
     .isLength({ max: 100 })
@@ -128,16 +128,16 @@ const createValidation = [
         }
         const str = num.toString();
         const parts = str.split('.');
-        if (parts[0].length > 13) {
+        if (parts[0].length > 20) {
           return false;
         }
-        if (parts[1] && parts[1].length > 2) {
+        if (parts[1] && parts[1].length > 5) {
           return false;
         }
       }
       return true;
     })
-    .withMessage('Payment nominal harus berupa angka dengan maksimal 15 digit dan 2 desimal'),
+    .withMessage('Payment nominal harus berupa angka dengan maksimal 25 digit dan 5 desimal'),
   body('manage_quotation_description')
     .optional()
     .trim(),
@@ -439,16 +439,16 @@ const updateValidation = [
         }
         const str = num.toString();
         const parts = str.split('.');
-        if (parts[0].length > 13) {
+        if (parts[0].length > 20) {
           return false;
         }
-        if (parts[1] && parts[1].length > 2) {
+        if (parts[1] && parts[1].length > 5) {
           return false;
         }
       }
       return true;
     })
-    .withMessage('Grand total harus berupa angka dengan maksimal 15 digit dan 2 desimal'),
+    .withMessage('Grand total harus berupa angka dengan maksimal 25 digit dan 5 desimal'),
   body('manage_quotation_grand_total_before')
     .optional()
     .isNumeric()
@@ -461,16 +461,16 @@ const updateValidation = [
         }
         const str = num.toString();
         const parts = str.split('.');
-        if (parts[0].length > 13) {
+        if (parts[0].length > 20) {
           return false;
         }
-        if (parts[1] && parts[1].length > 2) {
+        if (parts[1] && parts[1].length > 5) {
           return false;
         }
       }
       return true;
     })
-    .withMessage('Grand total before harus berupa angka dengan maksimal 15 digit dan 2 desimal'),
+    .withMessage('Grand total before harus berupa angka dengan maksimal 25 digit dan 5 desimal'),
   body('manage_quotation_mutation_type')
     .optional(),
   body('manage_quotation_mutation_nominal')
@@ -485,16 +485,16 @@ const updateValidation = [
         }
         const str = num.toString();
         const parts = str.split('.');
-        if (parts[0].length > 13) {
+        if (parts[0].length > 20) {
           return false;
         }
-        if (parts[1] && parts[1].length > 2) {
+        if (parts[1] && parts[1].length > 5) {
           return false;
         }
       }
       return true;
     })
-    .withMessage('Mutation nominal harus berupa angka dengan maksimal 15 digit dan 2 desimal'),
+    .withMessage('Mutation nominal harus berupa angka dengan maksimal 25 digit dan 5 desimal'),
   body('manage_quotation_ppn')
     .optional()
     .isLength({ max: 100 })
@@ -527,16 +527,16 @@ const updateValidation = [
         }
         const str = num.toString();
         const parts = str.split('.');
-        if (parts[0].length > 13) {
+        if (parts[0].length > 20) {
           return false;
         }
-        if (parts[1] && parts[1].length > 2) {
+        if (parts[1] && parts[1].length > 5) {
           return false;
         }
       }
       return true;
     })
-    .withMessage('Payment nominal harus berupa angka dengan maksimal 15 digit dan 2 desimal'),
+    .withMessage('Payment nominal harus berupa angka dengan maksimal 25 digit dan 5 desimal'),
   body('manage_quotation_description')
     .optional()
     .trim(),
