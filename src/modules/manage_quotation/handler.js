@@ -664,8 +664,30 @@ const getById = async (req, res) => {
       Object.assign(data, dataWithTermContentTitle);
     }
 
-    // Read term_content_directory JSON file if exists
-    if (data.term_content_directory) {
+    // Parse properties JSONB if string
+    if (data.properties && typeof data.properties === 'string') {
+      try {
+        data.properties = JSON.parse(data.properties);
+      } catch (e) {
+        data.properties = {};
+      }
+    } else if (!data.properties) {
+      data.properties = {};
+    }
+
+    // Populate bank account fields from properties if not present or to ensure consistency
+    if (data.properties) {
+      if (data.properties.bank_account_id) data.bank_account_id = data.properties.bank_account_id;
+      if (data.properties.bank_account_name) data.bank_account_name = data.properties.bank_account_name;
+      if (data.properties.bank_account_number) data.bank_account_number = data.properties.bank_account_number;
+      if (data.properties.bank_account_bank_name) data.bank_account_bank_name = data.properties.bank_account_bank_name;
+    }
+
+    // Use term_content_directory from properties as term_content_payload if available (it contains HTML content)
+    // Otherwise fall back to reading file
+    if (data.properties && data.properties.term_content_directory) {
+      data.term_content_payload = data.properties.term_content_directory;
+    } else if (data.term_content_directory) {
       const payload = await readJsonFile(data.term_content_directory);
       data.term_content_payload = extractTermContentPayload(payload);
     }
