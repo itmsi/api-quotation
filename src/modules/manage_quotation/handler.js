@@ -856,6 +856,8 @@ const getPdfById = async (req, res) => {
 
     // Final aggressive cleanup: ensure ALL items in manage_quotation_items have cleaned componen_product_name
     // This is the absolute last step before sending response
+    // Final aggressive cleanup: ensure ALL items in manage_quotation_items have cleaned componen_product_name
+    // This is the absolute last step before sending response
     if (data.manage_quotation_items && Array.isArray(data.manage_quotation_items)) {
       data.manage_quotation_items = data.manage_quotation_items.map((item) => {
         if (item && item.componen_product_name && typeof item.componen_product_name === 'string') {
@@ -877,8 +879,39 @@ const getPdfById = async (req, res) => {
       firstItemProductName: data.manage_quotation_items?.[0]?.componen_product_name || 'N/A'
     });
 
-    // Read term_content_directory JSON file if exists
-    if (data.term_content_directory) {
+    // Parse properties JSONB if string
+    if (data.properties && typeof data.properties === 'string') {
+      try {
+        data.properties = JSON.parse(data.properties);
+      } catch (e) {
+        data.properties = {};
+      }
+    } else if (!data.properties) {
+      data.properties = {};
+    }
+
+    // Populate data from properties if available
+    if (data.properties) {
+      // Bank Account details
+      if (data.properties.bank_account_id) data.bank_account_id = data.properties.bank_account_id;
+      if (data.properties.bank_account_name) data.bank_account_name = data.properties.bank_account_name;
+      if (data.properties.bank_account_number) data.bank_account_number = data.properties.bank_account_number;
+      if (data.properties.bank_account_bank_name) data.bank_account_bank_name = data.properties.bank_account_bank_name;
+
+      // Customer details preference from properties as it is historical snapshot
+      if (data.properties.customer_phone) data.customer_phone = data.properties.customer_phone;
+      if (data.properties.customer_address) data.customer_address = data.properties.customer_address;
+      if (data.properties.contact_person) data.contact_person = data.properties.contact_person;
+
+      // Employee details preference from properties
+      if (data.properties.employee_phone) data.employee_phone = data.properties.employee_phone;
+    }
+
+    // Use term_content_directory from properties as term_content_payload if available (it contains HTML content)
+    // Otherwise fall back to reading file
+    if (data.properties && data.properties.term_content_directory) {
+      data.term_content_payload = data.properties.term_content_directory;
+    } else if (data.term_content_directory) {
       const payload = await readJsonFile(data.term_content_directory);
       data.term_content_payload = extractTermContentPayload(payload);
     }
