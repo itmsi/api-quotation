@@ -500,6 +500,61 @@ const create = async (data, trx = db) => {
     quotationNumber = await generateQuotationNumber(trx);
   }
 
+  // Fetch external data for properties
+  let customerData = {};
+  let employeeData = {};
+  let islandData = {};
+
+  try {
+    const dblinkConnected = await ensureDblinkConnection();
+
+    if (dblinkConnected) {
+      // Fetch customer
+      if (data.customer_id) {
+        const customerQuery = `SELECT customer_name, customer_email, customer_phone, customer_address, contact_person FROM customers WHERE customer_id = ''${data.customer_id}''`;
+        const customerRes = await db.raw(`SELECT * FROM dblink('${DBLINK_NAME}', '${customerQuery}') AS t(customer_name varchar, customer_email varchar, customer_phone varchar, customer_address text, contact_person varchar)`);
+        if (customerRes.rows.length > 0) customerData = customerRes.rows[0];
+      }
+
+      // Fetch employee
+      if (data.employee_id) {
+        const employeeQuery = `SELECT employee_name, employee_phone FROM employees WHERE employee_id = ''${data.employee_id}''`;
+        const employeeRes = await db.raw(`SELECT * FROM dblink('${DBLINK_NAME}', '${employeeQuery}') AS t(employee_name varchar, employee_phone varchar)`);
+        if (employeeRes.rows.length > 0) employeeData = employeeRes.rows[0];
+      }
+
+      // Fetch island
+      if (data.island_id) {
+        const islandQuery = `SELECT island_name FROM islands WHERE island_id = ''${data.island_id}''`;
+        const islandRes = await db.raw(`SELECT * FROM dblink('${DBLINK_NAME}', '${islandQuery}') AS t(island_name varchar)`);
+        if (islandRes.rows.length > 0) islandData = islandRes.rows[0];
+      }
+    }
+  } catch (err) {
+    console.error('[manage-quotation:create] Failed to fetch external data via dblink for properties', err);
+  }
+
+  // Construct properties JSONB object
+  const properties = {
+    customer_id: data.customer_id || null,
+    customer_name: customerData.customer_name || null,
+    customer_email: customerData.customer_email || null,
+    customer_phone: customerData.customer_phone || null,
+    customer_address: customerData.customer_address || null,
+    contact_person: customerData.contact_person || null,
+    employee_id: data.employee_id || null,
+    employee_name: employeeData.employee_name || null,
+    employee_phone: employeeData.employee_phone || null,
+    island_id: data.island_id || null,
+    island_name: islandData.island_name || null,
+    bank_account_id: data.bank_account_id || null,
+    bank_account_name: data.bank_account_name || null,
+    bank_account_number: data.bank_account_number || null,
+    bank_account_bank_name: data.bank_account_bank_name || null,
+    term_content_id: data.term_content_id || null,
+    term_content_directory: data.term_content_directory || null
+  };
+
   // Build fields object - include all expected fields
   const fields = {
     manage_quotation_no: quotationNumber,
@@ -520,11 +575,13 @@ const create = async (data, trx = db) => {
     manage_quotation_shipping_term: data.manage_quotation_shipping_term || null,
     manage_quotation_franco: data.manage_quotation_franco || null,
     manage_quotation_lead_time: data.manage_quotation_lead_time || null,
+    bank_account_id: data.bank_account_id || null,
     bank_account_name: data.bank_account_name || null,
     bank_account_number: data.bank_account_number || null,
     bank_account_bank_name: data.bank_account_bank_name || null,
     term_content_id: data.term_content_id || null,
-    term_content_directory: data.term_content_directory || null,
+    term_content_directory: null,
+    properties: JSON.stringify(properties),
     status: data.status || 'submit',
     include_aftersales_page: data.include_aftersales_page ?? false,
     include_msf_page: data.include_msf_page ?? false,
@@ -571,6 +628,7 @@ const update = async (id, data, trx = db) => {
   if (data.manage_quotation_shipping_term !== undefined) updateFields.manage_quotation_shipping_term = data.manage_quotation_shipping_term;
   if (data.manage_quotation_franco !== undefined) updateFields.manage_quotation_franco = data.manage_quotation_franco;
   if (data.manage_quotation_lead_time !== undefined) updateFields.manage_quotation_lead_time = data.manage_quotation_lead_time;
+  if (data.bank_account_id !== undefined) updateFields.bank_account_id = data.bank_account_id;
   if (data.bank_account_name !== undefined) updateFields.bank_account_name = data.bank_account_name;
   if (data.bank_account_number !== undefined) updateFields.bank_account_number = data.bank_account_number;
   if (data.bank_account_bank_name !== undefined) updateFields.bank_account_bank_name = data.bank_account_bank_name;
