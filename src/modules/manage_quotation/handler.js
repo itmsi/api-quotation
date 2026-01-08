@@ -332,6 +332,7 @@ const getAll = async (req, res) => {
       }
     }
 
+
     // Validate and normalize quotation_for
     let normalizedQuotationFor = null;
     if (quotation_for && quotation_for !== '' && quotation_for !== null && quotation_for !== undefined) {
@@ -674,6 +675,7 @@ const getById = async (req, res) => {
       Object.assign(data, dataWithTermContentTitle);
     }
 
+
     // Format numeric fields: remove trailing zeros if all decimals are zero
     const numericFields = [
       'manage_quotation_grand_total',
@@ -696,6 +698,7 @@ const getById = async (req, res) => {
         }
       }
     });
+
 
     // Read term_content_directory JSON file if exists
     if (data.term_content_directory) {
@@ -894,6 +897,7 @@ const getPdfById = async (req, res) => {
       data.term_content_payload = extractTermContentPayload(payload);
     }
 
+
     // Format numeric fields: remove trailing zeros if all decimals are zero
     const numericFields = [
       'manage_quotation_grand_total',
@@ -916,6 +920,7 @@ const getPdfById = async (req, res) => {
         }
       }
     });
+
 
     const response = mappingSuccess('Data berhasil diambil', data);
     return baseResponse(res, response);
@@ -970,6 +975,8 @@ const create = async (req, res) => {
       ...quotationData
     } = req.body;
 
+    // Include term_content_directory in quotationData for properties generation (it will be excluded from column insert in repository)
+    quotationData.term_content_directory = term_content_directory;
     const hasItemsArray = Array.isArray(manage_quotation_items);
     const itemsForProcessing = hasItemsArray ? manage_quotation_items : [];
     const itemsForInsert = [];

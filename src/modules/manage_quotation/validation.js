@@ -156,6 +156,10 @@ const createValidation = [
     .isLength({ max: 255 })
     .withMessage('Lead time maksimal 255 karakter')
     .trim(),
+  body('bank_account_id')
+    .optional()
+    .isUUID()
+    .withMessage('Format bank_account_id tidak valid'),
   body('bank_account_name')
     .optional()
     .isLength({ max: 255 })
@@ -587,6 +591,10 @@ const updateValidation = [
     .isLength({ max: 255 })
     .withMessage('Lead time maksimal 255 karakter')
     .trim(),
+  body('bank_account_id')
+    .optional()
+    .isUUID()
+    .withMessage('Format bank_account_id tidak valid'),
   body('bank_account_name')
     .optional()
     .isLength({ max: 255 })
