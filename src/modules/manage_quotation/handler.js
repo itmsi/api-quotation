@@ -62,6 +62,34 @@ const getIslandsByIds = async (ids = []) => {
   }
 };
 
+
+/**
+ * Get map of accessory details by ID
+ */
+const getAccessoryDetailsMap = async (items) => {
+  const ids = new Set();
+
+  if (Array.isArray(items)) {
+    for (const item of items) {
+      if (item && Array.isArray(item.manage_quotation_item_accessories)) {
+        item.manage_quotation_item_accessories.forEach(acc => {
+          if (acc.accessory_id) ids.add(acc.accessory_id);
+        });
+      }
+    }
+  }
+
+  if (ids.size === 0) return {};
+
+  const accessories = await repository.getAccessoriesByIds(Array.from(ids));
+  const map = {};
+  for (const acc of accessories) {
+    map[acc.accessory_id] = acc;
+  }
+
+  return map;
+};
+
 const ROOT_DIR = path.join(__dirname, '../../..');
 const TERM_CONTENT_FOLDER = path.join(ROOT_DIR, 'uploads/manage_quotation_term_contents');
 
@@ -1040,6 +1068,9 @@ const create = async (req, res) => {
     const accessoriesForInsert = [];
     const specificationsForInsert = [];
 
+    // Pre-fetch accessories details for properties
+    const accessoryDetailsMap = await getAccessoryDetailsMap(itemsForProcessing);
+
     if (hasItemsArray) {
       for (const rawItem of itemsForProcessing) {
         if (!rawItem || typeof rawItem !== 'object') {
@@ -1052,7 +1083,36 @@ const create = async (req, res) => {
           ...itemFields
         } = rawItem;
 
-        itemsForInsert.push(itemFields);
+        // Prepare properties snapshots
+        const specificationProperties = (itemSpecifications || []).map(spec => ({
+          manage_quotation_id: null, // Will be injected in repository
+          componen_product_id: spec.componen_product_id || itemFields.componen_product_id,
+          manage_quotation_item_specification_label: spec.manage_quotation_item_specification_label,
+          manage_quotation_item_specification_value: spec.manage_quotation_item_specification_value
+        }));
+
+        const accesoriesProperties = (itemAccessories || []).map(acc => {
+          const detail = accessoryDetailsMap[acc.accessory_id] || {};
+          return {
+            manage_quotation_id: null, // Will be injected in repository
+            accessory_id: acc.accessory_id,
+            quantity: acc.quantity,
+            accessory_part_number: detail.accessory_part_number,
+            accessory_part_name: detail.accessory_part_name,
+            accessory_specification: detail.accessory_specification,
+            accessory_brand: detail.accessory_brand,
+            accessory_remark: detail.accessory_remark,
+            accessory_region: detail.accessory_region,
+            accessory_description: detail.accessory_description,
+            componen_product_id: acc.componen_product_id || itemFields.componen_product_id
+          };
+        });
+
+        itemsForInsert.push({
+          ...itemFields,
+          specification_properties: specificationProperties,
+          accesories_properties: accesoriesProperties
+        });
 
         if (Array.isArray(itemAccessories)) {
           for (const accessory of itemAccessories) {
@@ -1282,6 +1342,9 @@ const update = async (req, res) => {
     const accessoriesForInsert = [];
     const specificationsForInsert = [];
 
+    // Pre-fetch accessories details for properties
+    const accessoryDetailsMap = await getAccessoryDetailsMap(itemsForProcessing);
+
     if (hasItemsArray) {
       for (const rawItem of itemsForProcessing) {
         if (!rawItem || typeof rawItem !== 'object') {
@@ -1294,7 +1357,36 @@ const update = async (req, res) => {
           ...itemFields
         } = rawItem;
 
-        itemsForInsert.push(itemFields);
+        // Prepare properties snapshots
+        const specificationProperties = (itemSpecifications || []).map(spec => ({
+          manage_quotation_id: null,
+          componen_product_id: spec.componen_product_id || itemFields.componen_product_id,
+          manage_quotation_item_specification_label: spec.manage_quotation_item_specification_label,
+          manage_quotation_item_specification_value: spec.manage_quotation_item_specification_value
+        }));
+
+        const accesoriesProperties = (itemAccessories || []).map(acc => {
+          const detail = accessoryDetailsMap[acc.accessory_id] || {};
+          return {
+            manage_quotation_id: null,
+            accessory_id: acc.accessory_id,
+            quantity: acc.quantity,
+            accessory_part_number: detail.accessory_part_number,
+            accessory_part_name: detail.accessory_part_name,
+            accessory_specification: detail.accessory_specification,
+            accessory_brand: detail.accessory_brand,
+            accessory_remark: detail.accessory_remark,
+            accessory_region: detail.accessory_region,
+            accessory_description: detail.accessory_description,
+            componen_product_id: acc.componen_product_id || itemFields.componen_product_id
+          };
+        });
+
+        itemsForInsert.push({
+          ...itemFields,
+          specification_properties: specificationProperties,
+          accesories_properties: accesoriesProperties
+        });
 
         if (Array.isArray(itemAccessories)) {
           for (const accessory of itemAccessories) {

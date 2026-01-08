@@ -1,5 +1,5 @@
 /**
- * Update numeric columns to decimal(25,5) in manage_quotations table
+ * Update manage_quotation numeric columns to decimal(25,5)
  */
 exports.up = function (knex) {
     return knex.schema.alterTable('manage_quotations', function (table) {
