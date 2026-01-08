@@ -920,7 +920,18 @@ const createItems = async (manage_quotation_id, items, created_by, trx = db) => 
       price: item.price ?? null,
       total: item.total ?? null,
       description: item.description ?? null,
+      description: item.description ?? null,
       order_number: orderNumber,
+      specification_properties: item.specification_properties
+        ? JSON.stringify(Array.isArray(item.specification_properties)
+          ? item.specification_properties.map(p => ({ ...p, manage_quotation_id: manage_quotation_id || null }))
+          : item.specification_properties)
+        : '{}',
+      accesories_properties: item.accesories_properties
+        ? JSON.stringify(Array.isArray(item.accesories_properties)
+          ? item.accesories_properties.map(p => ({ ...p, manage_quotation_id: manage_quotation_id || null }))
+          : item.accesories_properties)
+        : '{}',
       created_by: created_by || null
     };
 
@@ -1060,6 +1071,21 @@ const validateAccessoryIds = async (accessories) => {
     isValid: invalidIds.length === 0,
     invalidIds
   };
+};
+
+/**
+ * Get multiple accessories by IDs
+ */
+const getAccessoriesByIds = async (ids) => {
+  if (!ids || ids.length === 0) {
+    return [];
+  }
+
+  const result = await db('accessories')
+    .whereIn('accessory_id', ids)
+    .where('is_delete', false);
+
+  return result;
 };
 
 /**
@@ -1469,6 +1495,7 @@ module.exports = {
   deleteItemsByQuotationId,
   replaceItems,
   validateAccessoryIds,
+  getAccessoriesByIds,
   createAccessories,
   getAccessoriesByQuotationId,
   deleteAccessoriesByQuotationId,
