@@ -1338,6 +1338,9 @@ const update = async (req, res) => {
 
     // Handle term_content_directory - save as JSON file if provided
     if (term_content_directory !== undefined) {
+      // Store original content for properties generation
+      quotationData.properties_term_content_directory = term_content_directory;
+
       const payloadSource = term_content_directory !== null && term_content_directory !== ''
         ? term_content_directory
         : await readJsonFile(existing.term_content_directory || '');

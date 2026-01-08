@@ -622,6 +622,123 @@ const update = async (id, data, trx = db) => {
     }
   }
 
+  // Get existing record to access current IDs if not provided in update data
+  const existingRecord = await findById(id);
+  if (!existingRecord) return null;
+
+  // Determine effective IDs (newly updated or existing)
+  const effectiveCustomerId = data.customer_id !== undefined ? data.customer_id : existingRecord.customer_id;
+  const effectiveEmployeeId = data.employee_id !== undefined ? data.employee_id : existingRecord.employee_id;
+  const effectiveIslandId = data.island_id !== undefined ? data.island_id : existingRecord.island_id;
+
+  // Fetch external data for properties if any change might affect them
+  let customerData = {};
+  let employeeData = {};
+  let islandData = {};
+
+  // Parse existing properties or default to empty object
+  let existingProperties = existingRecord.properties || {};
+  if (typeof existingProperties === 'string') {
+    try {
+      existingProperties = JSON.parse(existingProperties);
+    } catch (e) {
+      existingProperties = {};
+    }
+  }
+
+  try {
+    const dblinkConnected = await ensureDblinkConnection();
+
+    if (dblinkConnected) {
+      // Fetch customer if ID is present
+      if (effectiveCustomerId) {
+        const customerQuery = `SELECT customer_name, customer_email, customer_phone, customer_address, contact_person FROM customers WHERE customer_id = ''${effectiveCustomerId}''`;
+        const customerRes = await db.raw(`SELECT * FROM dblink('${DBLINK_NAME}', '${customerQuery}') AS t(customer_name varchar, customer_email varchar, customer_phone varchar, customer_address text, contact_person varchar)`);
+        if (customerRes.rows.length > 0) customerData = customerRes.rows[0];
+      }
+
+      // Fetch employee if ID is present
+      if (effectiveEmployeeId) {
+        const employeeQuery = `SELECT employee_name, employee_phone FROM employees WHERE employee_id = ''${effectiveEmployeeId}''`;
+        const employeeRes = await db.raw(`SELECT * FROM dblink('${DBLINK_NAME}', '${employeeQuery}') AS t(employee_name varchar, employee_phone varchar)`);
+        if (employeeRes.rows.length > 0) employeeData = employeeRes.rows[0];
+      }
+
+      // Fetch island if ID is present
+      if (effectiveIslandId) {
+        const islandQuery = `SELECT island_name FROM islands WHERE island_id = ''${effectiveIslandId}''`;
+        const islandRes = await db.raw(`SELECT * FROM dblink('${DBLINK_NAME}', '${islandQuery}') AS t(island_name varchar)`);
+        if (islandRes.rows.length > 0) islandData = islandRes.rows[0];
+      }
+    }
+  } catch (err) {
+    console.error('[manage-quotation:update] Failed to fetch external data via dblink for properties', err);
+    // If dblink fails, try to use existing properties for fallback data if IDs haven't changed
+    if (effectiveCustomerId === existingRecord.customer_id) {
+      customerData = {
+        customer_name: existingProperties.customer_name,
+        customer_email: existingProperties.customer_email,
+        customer_phone: existingProperties.customer_phone,
+        customer_address: existingProperties.customer_address,
+        contact_person: existingProperties.contact_person
+      };
+    }
+    if (effectiveEmployeeId === existingRecord.employee_id) {
+      employeeData = {
+        employee_name: existingProperties.employee_name,
+        employee_phone: existingProperties.employee_phone
+      };
+    }
+    if (effectiveIslandId === existingRecord.island_id) {
+      islandData = {
+        island_name: existingProperties.island_name
+      };
+    }
+  }
+
+  // Determine values for other property fields
+  const effectiveBankAccountName = data.bank_account_name !== undefined ? data.bank_account_name : existingRecord.bank_account_name;
+  const effectiveBankAccountNumber = data.bank_account_number !== undefined ? data.bank_account_number : existingRecord.bank_account_number;
+  const effectiveBankAccountBankName = data.bank_account_bank_name !== undefined ? data.bank_account_bank_name : existingRecord.bank_account_bank_name;
+  const effectiveBankAccountId = data.bank_account_id !== undefined ? data.bank_account_id : existingRecord.bank_account_id;
+  const effectiveTermContentId = data.term_content_id !== undefined ? data.term_content_id : existingRecord.term_content_id;
+
+  // For term_content_directory (HTML content), prefer update data, else use what we had (but we only store content in properties if passed explicitly in data)
+  // If data.term_content_directory is passed (even if path), it might be used here. 
+  // However, usually Handler passes the path here after writing file.
+  // BUT the requirement said: "term_content_directory ambil dari body request (ini bisa berisi halaman html jadi sesuaiakan formatnya)"
+  // So if handler passes the original content in a separate field or if we use valid data.
+  // In Handler update, we are setting `quotationData.term_content_directory` to the new path (string) OR null.
+  // The original HTML content is in `req.body.term_content_directory` before handler processes it.
+  // Determine effective term_content_directory for properties
+  // Use properties_term_content_directory if provided (original content from handler),
+  // otherwise use term_content_directory (which might be path) or existing.
+  let effectiveTermContentDirectory = data.properties_term_content_directory;
+  if (effectiveTermContentDirectory === undefined) {
+    effectiveTermContentDirectory = data.term_content_directory !== undefined ? data.term_content_directory : existingRecord.term_content_directory;
+  }
+
+  // Construct properties JSONB object
+  const properties = {
+    customer_id: effectiveCustomerId || null,
+    customer_name: customerData.customer_name || null,
+    customer_email: customerData.customer_email || null,
+    customer_phone: customerData.customer_phone || null,
+    customer_address: customerData.customer_address || null,
+    contact_person: customerData.contact_person || null,
+    employee_id: effectiveEmployeeId || null,
+    employee_name: employeeData.employee_name || null,
+    employee_phone: employeeData.employee_phone || null,
+    island_id: effectiveIslandId || null,
+    island_name: islandData.island_name || null,
+    bank_account_id: effectiveBankAccountId || null,
+    bank_account_name: effectiveBankAccountName || null,
+    bank_account_number: effectiveBankAccountNumber || null,
+    bank_account_bank_name: effectiveBankAccountBankName || null,
+    term_content_id: effectiveTermContentId || null,
+    term_content_directory: effectiveTermContentDirectory || null
+  };
+
   const updateFields = {};
   if (data.manage_quotation_no !== undefined) updateFields.manage_quotation_no = data.manage_quotation_no;
   if (data.customer_id !== undefined) updateFields.customer_id = data.customer_id;
@@ -657,6 +774,9 @@ const update = async (id, data, trx = db) => {
   if (data.star !== undefined) updateFields.star = data.star !== null && data.star !== '' ? String(data.star) : '0';
   if (data.updated_by !== undefined) updateFields.updated_by = data.updated_by;
   if (data.deleted_by !== undefined) updateFields.deleted_by = data.deleted_by;
+
+  // Always update properties
+  updateFields.properties = JSON.stringify(properties);
 
   if (Object.keys(updateFields).length === 0) {
     return null;
