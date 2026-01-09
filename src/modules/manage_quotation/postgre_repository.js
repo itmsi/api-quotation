@@ -997,6 +997,8 @@ const getItemsByQuotationId = async (manage_quotation_id) => {
       'mqi.updated_at',
       'mqi.deleted_at',
       'mqi.is_delete',
+      'mqi.specification_properties',
+      'mqi.accesories_properties',
       // Data from componen_products - using db.raw for aliases
       db.raw('cp.code_unique as cp_code_unique'),
       db.raw('cp.segment as cp_segment'),
