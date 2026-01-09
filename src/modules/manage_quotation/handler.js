@@ -62,6 +62,34 @@ const getIslandsByIds = async (ids = []) => {
   }
 };
 
+
+/**
+ * Get map of accessory details by ID
+ */
+const getAccessoryDetailsMap = async (items) => {
+  const ids = new Set();
+
+  if (Array.isArray(items)) {
+    for (const item of items) {
+      if (item && Array.isArray(item.manage_quotation_item_accessories)) {
+        item.manage_quotation_item_accessories.forEach(acc => {
+          if (acc.accessory_id) ids.add(acc.accessory_id);
+        });
+      }
+    }
+  }
+
+  if (ids.size === 0) return {};
+
+  const accessories = await repository.getAccessoriesByIds(Array.from(ids));
+  const map = {};
+  for (const acc of accessories) {
+    map[acc.accessory_id] = acc;
+  }
+
+  return map;
+};
+
 const ROOT_DIR = path.join(__dirname, '../../..');
 const TERM_CONTENT_FOLDER = path.join(ROOT_DIR, 'uploads/manage_quotation_term_contents');
 
@@ -617,19 +645,100 @@ const getById = async (req, res) => {
     const specifications = await repository.getSpecificationsByQuotationId(id);
 
     const itemsWithRelations = items.map((item) => {
-      const itemAccessories = accessories.filter((accessory) => {
-        if (item.componen_product_id && accessory.componen_product_id) {
-          return accessory.componen_product_id === item.componen_product_id;
-        }
-        return false;
-      });
+      let itemAccessories = [];
+      let itemSpecifications = [];
 
-      const itemSpecifications = specifications.filter((specification) => {
-        if (item.componen_product_id && specification.componen_product_id) {
-          return specification.componen_product_id === item.componen_product_id;
+      // ACCESSORIES STRATEGY: Check accessories_properties first
+      let hasPropertiesAccessories = false;
+      if (item.accesories_properties) {
+        let props = item.accesories_properties;
+        if (typeof props === 'string') {
+          try {
+            props = JSON.parse(props);
+          } catch (e) {
+            props = [];
+          }
         }
-        return false;
-      });
+
+        if (Array.isArray(props) && props.length > 0) {
+          hasPropertiesAccessories = true;
+          itemAccessories = props.map(prop => ({
+            manage_quotation_item_accessory_id: null, // Identifiers not available in snapshot
+            manage_quotation_id: item.manage_quotation_id,
+            accessory_id: prop.accessory_id,
+            componen_product_id: prop.componen_product_id,
+            quantity: prop.quantity,
+            description: prop.accessory_description || prop.description,
+            created_by: item.created_by,
+            updated_by: item.updated_by,
+            deleted_by: null,
+            created_at: item.created_at, // Use item timestamp as proxy
+            updated_at: item.updated_at,
+            deleted_at: null,
+            is_delete: false,
+            // Enhanced properties from snapshot
+            accessory_part_number: prop.accessory_part_number,
+            accessory_part_name: prop.accessory_part_name,
+            accessory_specification: prop.accessory_specification,
+            accessory_brand: prop.accessory_brand,
+            accessory_remark: prop.accessory_remark,
+            accessory_region: prop.accessory_region,
+            accessory_description: prop.accessory_description
+          }));
+        }
+      }
+
+      if (!hasPropertiesAccessories) {
+        // Fallback to existing relational logic
+        itemAccessories = accessories.filter((accessory) => {
+          if (item.componen_product_id && accessory.componen_product_id) {
+            return accessory.componen_product_id === item.componen_product_id;
+          }
+          return false;
+        });
+      }
+
+      // SPECIFICATIONS STRATEGY: Check specification_properties first
+      let hasPropertiesSpecifications = false;
+      if (item.specification_properties) {
+        let props = item.specification_properties;
+        if (typeof props === 'string') {
+          try {
+            props = JSON.parse(props);
+          } catch (e) {
+            props = [];
+          }
+        }
+
+        if (Array.isArray(props) && props.length > 0) {
+          hasPropertiesSpecifications = true;
+          itemSpecifications = props.map(prop => ({
+            manage_quotation_item_specification_id: null,
+            manage_quotation_id: item.manage_quotation_id,
+            componen_product_id: prop.componen_product_id,
+            manage_quotation_item_specification_label: prop.manage_quotation_item_specification_label,
+            manage_quotation_item_specification_value: prop.manage_quotation_item_specification_value,
+            created_by: item.created_by,
+            updated_by: item.updated_by,
+            deleted_by: null,
+            created_at: item.created_at,
+            updated_at: item.updated_at,
+            deleted_at: null,
+            is_delete: false,
+            // Snapshot doesn't typically have extended CP fields, but we mapping what we have
+          }));
+        }
+      }
+
+      if (!hasPropertiesSpecifications) {
+        // Fallback to existing relational logic
+        itemSpecifications = specifications.filter((specification) => {
+          if (item.componen_product_id && specification.componen_product_id) {
+            return specification.componen_product_id === item.componen_product_id;
+          }
+          return false;
+        });
+      }
 
       const productType = mapProductType(item.cp_componen_type);
 
@@ -664,6 +773,7 @@ const getById = async (req, res) => {
       Object.assign(data, dataWithTermContentTitle);
     }
 
+
     // Format numeric fields: remove trailing zeros if all decimals are zero
     const numericFields = [
       'manage_quotation_grand_total',
@@ -687,8 +797,30 @@ const getById = async (req, res) => {
       }
     });
 
-    // Read term_content_directory JSON file if exists
-    if (data.term_content_directory) {
+    // Parse properties JSONB if string
+    if (data.properties && typeof data.properties === 'string') {
+      try {
+        data.properties = JSON.parse(data.properties);
+      } catch (e) {
+        data.properties = {};
+      }
+    } else if (!data.properties) {
+      data.properties = {};
+    }
+
+    // Populate bank account fields from properties if not present or to ensure consistency
+    if (data.properties) {
+      if (data.properties.bank_account_id) data.bank_account_id = data.properties.bank_account_id;
+      if (data.properties.bank_account_name) data.bank_account_name = data.properties.bank_account_name;
+      if (data.properties.bank_account_number) data.bank_account_number = data.properties.bank_account_number;
+      if (data.properties.bank_account_bank_name) data.bank_account_bank_name = data.properties.bank_account_bank_name;
+    }
+
+    // Use term_content_directory from properties as term_content_payload if available (it contains HTML content)
+    // Otherwise fall back to reading file
+    if (data.properties && data.properties.term_content_directory) {
+      data.term_content_payload = data.properties.term_content_directory;
+    } else if (data.term_content_directory) {
       const payload = await readJsonFile(data.term_content_directory);
       data.term_content_payload = extractTermContentPayload(payload);
     }
@@ -785,19 +917,99 @@ const getPdfById = async (req, res) => {
     const specifications = await repository.getSpecificationsByQuotationId(id);
 
     const itemsWithRelations = items.map((item) => {
-      const itemAccessories = accessories.filter((accessory) => {
-        if (item.componen_product_id && accessory.componen_product_id) {
-          return accessory.componen_product_id === item.componen_product_id;
-        }
-        return false;
-      });
+      let itemAccessories = [];
+      let itemSpecifications = [];
 
-      const itemSpecifications = specifications.filter((specification) => {
-        if (item.componen_product_id && specification.componen_product_id) {
-          return specification.componen_product_id === item.componen_product_id;
+      // ACCESSORIES STRATEGY: Check accessories_properties first
+      let hasPropertiesAccessories = false;
+      if (item.accesories_properties) {
+        let props = item.accesories_properties;
+        if (typeof props === 'string') {
+          try {
+            props = JSON.parse(props);
+          } catch (e) {
+            props = [];
+          }
         }
-        return false;
-      });
+
+        if (Array.isArray(props) && props.length > 0) {
+          hasPropertiesAccessories = true;
+          itemAccessories = props.map(prop => ({
+            manage_quotation_item_accessory_id: null, // Identifiers not available in snapshot
+            manage_quotation_id: item.manage_quotation_id,
+            accessory_id: prop.accessory_id,
+            componen_product_id: prop.componen_product_id,
+            quantity: prop.quantity,
+            description: prop.accessory_description || prop.description,
+            created_by: item.created_by,
+            updated_by: item.updated_by,
+            deleted_by: null,
+            created_at: item.created_at, // Use item timestamp as proxy
+            updated_at: item.updated_at,
+            deleted_at: null,
+            is_delete: false,
+            // Enhanced properties from snapshot
+            accessory_part_number: prop.accessory_part_number,
+            accessory_part_name: prop.accessory_part_name,
+            accessory_specification: prop.accessory_specification,
+            accessory_brand: prop.accessory_brand,
+            accessory_remark: prop.accessory_remark,
+            accessory_region: prop.accessory_region,
+            accessory_description: prop.accessory_description
+          }));
+        }
+      }
+
+      if (!hasPropertiesAccessories) {
+        // Fallback to existing relational logic
+        itemAccessories = accessories.filter((accessory) => {
+          if (item.componen_product_id && accessory.componen_product_id) {
+            return accessory.componen_product_id === item.componen_product_id;
+          }
+          return false;
+        });
+      }
+
+      // SPECIFICATIONS STRATEGY: Check specification_properties first
+      let hasPropertiesSpecifications = false;
+      if (item.specification_properties) {
+        let props = item.specification_properties;
+        if (typeof props === 'string') {
+          try {
+            props = JSON.parse(props);
+          } catch (e) {
+            props = [];
+          }
+        }
+
+        if (Array.isArray(props) && props.length > 0) {
+          hasPropertiesSpecifications = true;
+          itemSpecifications = props.map(prop => ({
+            manage_quotation_item_specification_id: null,
+            manage_quotation_id: item.manage_quotation_id,
+            componen_product_id: prop.componen_product_id,
+            manage_quotation_item_specification_label: prop.manage_quotation_item_specification_label,
+            manage_quotation_item_specification_value: prop.manage_quotation_item_specification_value,
+            created_by: item.created_by,
+            updated_by: item.updated_by,
+            deleted_by: null,
+            created_at: item.created_at,
+            updated_at: item.updated_at,
+            deleted_at: null,
+            is_delete: false,
+          }));
+        }
+      }
+
+      if (!hasPropertiesSpecifications) {
+        // Fallback to existing relational logic
+        itemSpecifications = specifications.filter((specification) => {
+          if (item.componen_product_id && specification.componen_product_id) {
+            return specification.componen_product_id === item.componen_product_id;
+          }
+          return false;
+        });
+      }
 
       const productType = mapProductType(item.cp_componen_type);
 
@@ -855,6 +1067,7 @@ const getPdfById = async (req, res) => {
     // Set final items to data.manage_quotation_items
     data.manage_quotation_items = finalItems;
 
+
     // Final aggressive cleanup: ensure ALL items in manage_quotation_items have cleaned componen_product_name
     // This is the absolute last step before sending response
     if (data.manage_quotation_items && Array.isArray(data.manage_quotation_items)) {
@@ -878,11 +1091,44 @@ const getPdfById = async (req, res) => {
       firstItemProductName: data.manage_quotation_items?.[0]?.componen_product_name || 'N/A'
     });
 
-    // Read term_content_directory JSON file if exists
-    if (data.term_content_directory) {
+
+    // Parse properties JSONB if string
+    if (data.properties && typeof data.properties === 'string') {
+      try {
+        data.properties = JSON.parse(data.properties);
+      } catch (e) {
+        data.properties = {};
+      }
+    } else if (!data.properties) {
+      data.properties = {};
+    }
+
+    // Populate data from properties if available
+    if (data.properties) {
+      // Bank Account details
+      if (data.properties.bank_account_id) data.bank_account_id = data.properties.bank_account_id;
+      if (data.properties.bank_account_name) data.bank_account_name = data.properties.bank_account_name;
+      if (data.properties.bank_account_number) data.bank_account_number = data.properties.bank_account_number;
+      if (data.properties.bank_account_bank_name) data.bank_account_bank_name = data.properties.bank_account_bank_name;
+
+      // Customer details preference from properties as it is historical snapshot
+      if (data.properties.customer_phone) data.customer_phone = data.properties.customer_phone;
+      if (data.properties.customer_address) data.customer_address = data.properties.customer_address;
+      if (data.properties.contact_person) data.contact_person = data.properties.contact_person;
+
+      // Employee details preference from properties
+      if (data.properties.employee_phone) data.employee_phone = data.properties.employee_phone;
+    }
+
+    // Use term_content_directory from properties as term_content_payload if available (it contains HTML content)
+    // Otherwise fall back to reading file
+    if (data.properties && data.properties.term_content_directory) {
+      data.term_content_payload = data.properties.term_content_directory;
+    } else if (data.term_content_directory) {
       const payload = await readJsonFile(data.term_content_directory);
       data.term_content_payload = extractTermContentPayload(payload);
     }
+
 
     // Format numeric fields: remove trailing zeros if all decimals are zero
     const numericFields = [
@@ -960,11 +1206,19 @@ const create = async (req, res) => {
       ...quotationData
     } = req.body;
 
+    // Include term_content_directory in quotationData for properties generation (it will be excluded from column insert in repository)
+    quotationData.term_content_directory = term_content_directory;
+
     const hasItemsArray = Array.isArray(manage_quotation_items);
     const itemsForProcessing = hasItemsArray ? manage_quotation_items : [];
     const itemsForInsert = [];
     const accessoriesForInsert = [];
     const specificationsForInsert = [];
+
+
+
+    // Pre-fetch accessories details for properties
+    const accessoryDetailsMap = await getAccessoryDetailsMap(itemsForProcessing);
 
     if (hasItemsArray) {
       for (const rawItem of itemsForProcessing) {
@@ -978,7 +1232,37 @@ const create = async (req, res) => {
           ...itemFields
         } = rawItem;
 
-        itemsForInsert.push(itemFields);
+
+        // Prepare properties snapshots
+        const specificationProperties = (itemSpecifications || []).map(spec => ({
+          manage_quotation_id: null, // Will be injected in repository
+          componen_product_id: spec.componen_product_id || itemFields.componen_product_id,
+          manage_quotation_item_specification_label: spec.manage_quotation_item_specification_label,
+          manage_quotation_item_specification_value: spec.manage_quotation_item_specification_value
+        }));
+
+        const accesoriesProperties = (itemAccessories || []).map(acc => {
+          const detail = accessoryDetailsMap[acc.accessory_id] || {};
+          return {
+            manage_quotation_id: null, // Will be injected in repository
+            accessory_id: acc.accessory_id,
+            quantity: acc.quantity,
+            accessory_part_number: detail.accessory_part_number,
+            accessory_part_name: detail.accessory_part_name,
+            accessory_specification: detail.accessory_specification,
+            accessory_brand: detail.accessory_brand,
+            accessory_remark: detail.accessory_remark,
+            accessory_region: detail.accessory_region,
+            accessory_description: detail.accessory_description,
+            componen_product_id: acc.componen_product_id || itemFields.componen_product_id
+          };
+        });
+
+        itemsForInsert.push({
+          ...itemFields,
+          specification_properties: specificationProperties,
+          accesories_properties: accesoriesProperties
+        });
 
         if (Array.isArray(itemAccessories)) {
           for (const accessory of itemAccessories) {
@@ -1208,6 +1492,11 @@ const update = async (req, res) => {
     const accessoriesForInsert = [];
     const specificationsForInsert = [];
 
+
+
+    // Pre-fetch accessories details for properties
+    const accessoryDetailsMap = await getAccessoryDetailsMap(itemsForProcessing);
+
     if (hasItemsArray) {
       for (const rawItem of itemsForProcessing) {
         if (!rawItem || typeof rawItem !== 'object') {
@@ -1220,7 +1509,39 @@ const update = async (req, res) => {
           ...itemFields
         } = rawItem;
 
-        itemsForInsert.push(itemFields);
+
+
+        // Prepare properties snapshots
+        const specificationProperties = (itemSpecifications || []).map(spec => ({
+          manage_quotation_id: null,
+          componen_product_id: spec.componen_product_id || itemFields.componen_product_id,
+          manage_quotation_item_specification_label: spec.manage_quotation_item_specification_label,
+          manage_quotation_item_specification_value: spec.manage_quotation_item_specification_value
+        }));
+
+        const accesoriesProperties = (itemAccessories || []).map(acc => {
+          const detail = accessoryDetailsMap[acc.accessory_id] || {};
+          return {
+            manage_quotation_id: null,
+            accessory_id: acc.accessory_id,
+            quantity: acc.quantity,
+            accessory_part_number: detail.accessory_part_number,
+            accessory_part_name: detail.accessory_part_name,
+            accessory_specification: detail.accessory_specification,
+            accessory_brand: detail.accessory_brand,
+            accessory_remark: detail.accessory_remark,
+            accessory_region: detail.accessory_region,
+            accessory_description: detail.accessory_description,
+            componen_product_id: acc.componen_product_id || itemFields.componen_product_id
+          };
+        });
+
+        itemsForInsert.push({
+          ...itemFields,
+          specification_properties: specificationProperties,
+          accesories_properties: accesoriesProperties
+        });
+
 
         if (Array.isArray(itemAccessories)) {
           for (const accessory of itemAccessories) {
@@ -1321,6 +1642,9 @@ const update = async (req, res) => {
 
     // Handle term_content_directory - save as JSON file if provided
     if (term_content_directory !== undefined) {
+      // Store original content for properties generation
+      quotationData.properties_term_content_directory = term_content_directory;
+
       const payloadSource = term_content_directory !== null && term_content_directory !== ''
         ? term_content_directory
         : await readJsonFile(existing.term_content_directory || '');

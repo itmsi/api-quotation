@@ -32,3 +32,4 @@ exports.down = function (knex) {
     });
   });
 };
+
