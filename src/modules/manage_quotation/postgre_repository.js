@@ -1032,11 +1032,8 @@ const deleteItemsByQuotationId = async (manage_quotation_id) => {
   }
 
   const result = await db(ITEMS_TABLE_NAME)
-    .where({ manage_quotation_id: manage_quotation_id, is_delete: false })
-    .update({
-      is_delete: true,
-      deleted_at: db.fn.now()
-    });
+    .where({ manage_quotation_id: manage_quotation_id })
+    .del();
 
   return result > 0;
 };
@@ -1215,11 +1212,8 @@ const deleteAccessoriesByQuotationId = async (manage_quotation_id) => {
   }
 
   const result = await db(ACCESSORIES_TABLE_NAME)
-    .where({ manage_quotation_id: manage_quotation_id, is_delete: false })
-    .update({
-      is_delete: true,
-      deleted_at: db.fn.now()
-    });
+    .where({ manage_quotation_id: manage_quotation_id })
+    .del();
 
   return result > 0;
 };
@@ -1314,11 +1308,8 @@ const deleteSpecificationsByQuotationId = async (manage_quotation_id) => {
   }
 
   const result = await db(SPECIFICATIONS_TABLE_NAME)
-    .where({ manage_quotation_id: manage_quotation_id, is_delete: false })
-    .update({
-      is_delete: true,
-      deleted_at: db.fn.now()
-    });
+    .where({ manage_quotation_id: manage_quotation_id })
+    .del();
 
   return result > 0;
 };
