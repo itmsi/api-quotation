@@ -88,20 +88,20 @@ const cleanComponenProductName = (productName) => {
   if (!productName || typeof productName !== 'string') {
     return productName;
   }
-  
+
   // Convert to string and trim
   let cleaned = String(productName).trim();
-  
+
   // Remove "MSI[digits] - " from the beginning (case-insensitive)
   // Pattern matches: "MSI001 - ", "MSI002 -", "MSI003-", "msi025 - ", etc.
   // Matches MSI followed by one or more digits, then optional spaces, dash, and optional spaces
   const prefixPattern = /^MSI\d+\s*-\s*/i;
-  
+
   if (prefixPattern.test(cleaned)) {
     cleaned = cleaned.replace(prefixPattern, '');
     cleaned = cleaned.trim(); // Trim again after removal
   }
-  
+
   // Remove suffix if found at the end (case-insensitive)
   // Suffixes to remove: COAL, NICKEL, ALL SEGMENT, ON THE ROAD
   const suffixesToRemove = [
@@ -110,17 +110,17 @@ const cleanComponenProductName = (productName) => {
     'ALL SEGMENT',
     'ON THE ROAD'
   ];
-  
+
   for (const suffix of suffixesToRemove) {
     // Create pattern that matches suffix at the end, with optional spaces/dashes before it
     // Pattern: optional spaces/dashes, then the suffix, then end of string
     const suffixPattern = new RegExp(`[\\s-]*${suffix.replace(/\s+/g, '\\s+')}\\s*$`, 'i');
-    
+
     if (suffixPattern.test(cleaned)) {
       cleaned = cleaned.replace(suffixPattern, '').trim();
     }
   }
-  
+
   return cleaned;
 };
 
@@ -175,7 +175,7 @@ const writeJsonFile = async (manageQuotationNo, manageQuotationId, payload) => {
   const relativePath = path.relative(ROOT_DIR, absolutePath);
 
   const dataToWrite = normalizeJsonPayload(payload);
-  
+
   // Ensure dataToWrite is always a valid object/array for JSON.stringify
   let fileContent;
   try {
@@ -240,17 +240,17 @@ const extractTermContentPayload = (payload) => {
   if (!payload) {
     return null;
   }
-  
+
   // If payload has content property, extract it
   if (payload && typeof payload === 'object' && payload.content !== undefined) {
     return typeof payload.content === 'string' ? payload.content : JSON.stringify(payload.content);
   }
-  
+
   // If payload is already a string, return it
   if (typeof payload === 'string') {
     return payload;
   }
-  
+
   // Otherwise, stringify the payload
   return JSON.stringify(payload);
 };
@@ -320,9 +320,9 @@ const mapProductType = (componenType) => {
 const getAll = async (req, res) => {
   try {
     const { page = 1, limit = 10, search = '', sort_by = 'created_at', sort_order = 'desc', status = '', island_id = '' } = req.body;
-    
+
     const offset = (page - 1) * limit;
-    
+
     // Validate and normalize island_id
     let normalizedIslandId = null;
     if (island_id && island_id !== '' && island_id !== null && island_id !== undefined) {
@@ -331,7 +331,7 @@ const getAll = async (req, res) => {
         normalizedIslandId = islandIdStr;
       }
     }
-    
+
     const params = {
       page,
       limit,
@@ -342,7 +342,7 @@ const getAll = async (req, res) => {
       status: status && status.trim() !== '' ? status.trim() : null,
       islandId: normalizedIslandId
     };
-    
+
     let data;
     try {
       data = await repository.findAll(params);
@@ -352,7 +352,7 @@ const getAll = async (req, res) => {
         error: error.message,
         stack: error.stack
       });
-      
+
       // Return empty result instead of failing
       const response = mappingError(error);
       return baseResponse(res, response);
@@ -408,8 +408,8 @@ const getAll = async (req, res) => {
                 if (customer?.customer_id) {
                   const customerName = customer.customer_name || '';
                   const contactPerson = customer.contact_person || '';
-                  const combinedName = contactPerson 
-                    ? `${customerName} - ${contactPerson}` 
+                  const combinedName = contactPerson
+                    ? `${customerName} - ${contactPerson}`
                     : customerName;
                   acc[customer.customer_id] = combinedName || null;
                 }
@@ -503,10 +503,10 @@ const getAll = async (req, res) => {
         let customerName = Object.prototype.hasOwnProperty.call(item, 'customer_name')
           ? item.customer_name
           : (item.customer_id ? customerMap[item.customer_id] ?? null : null);
-        
+
         // Get contact_person from item or from contactPersonMap
         const contactPerson = item.contact_person || (item.customer_id ? contactPersonMap[item.customer_id] ?? null : null);
-        
+
         // Combine customer_name with contact_person if contact_person exists
         if (customerName && contactPerson) {
           customerName = `${customerName} - ${contactPerson}`;
@@ -552,20 +552,20 @@ const getById = async (req, res) => {
   try {
     const { id } = req.params;
     const data = await repository.findById(id);
-    
+
     if (!data) {
       const response = mappingError('Data tidak ditemukan', 404);
       return baseResponse(res, response);
     }
-    
+
     if (data.customer_id) {
       try {
         const customer = await customerRepository.findById(data.customer_id);
         if (customer) {
           const customerName = data.customer_name || customer?.customer_name || '';
           const contactPerson = data.contact_person || customer?.contact_person || '';
-          data.customer_name = contactPerson 
-            ? `${customerName} - ${contactPerson}` 
+          data.customer_name = contactPerson
+            ? `${customerName} - ${contactPerson}`
             : customerName || null;
         } else if (data.customer_name) {
           // If customer not found but customer_name exists, keep it as is
@@ -584,7 +584,7 @@ const getById = async (req, res) => {
         }
       }
     }
-    
+
     if (data.employee_id && (data.employee_name === undefined || data.employee_name === null)) {
       try {
         const employee = await employeeRepository.findById(data.employee_id);
@@ -597,7 +597,7 @@ const getById = async (req, res) => {
         data.employee_name = null;
       }
     }
-    
+
     if (data.island_id && (data.island_name === undefined || data.island_name === null)) {
       try {
         const islands = await getIslandsByIds([data.island_id]);
@@ -610,7 +610,7 @@ const getById = async (req, res) => {
         data.island_name = null;
       }
     }
-    
+
     // Get detail data
     const items = await repository.getItemsByQuotationId(id);
     const accessories = await repository.getAccessoriesByQuotationId(id);
@@ -642,7 +642,7 @@ const getById = async (req, res) => {
     });
 
     data.manage_quotation_items = itemsWithRelations;
-    
+
     // Get term_content_title if term_content_id exists
     let termContentTitle = null;
     if (data.term_content_id) {
@@ -657,19 +657,42 @@ const getById = async (req, res) => {
         termContentTitle = null;
       }
     }
-    
+
     // Insert term_content_title after term_content_id
     if (data.term_content_id !== undefined) {
       const dataWithTermContentTitle = insertFieldAfterKey(data, 'term_content_id', 'term_content_title', termContentTitle);
       Object.assign(data, dataWithTermContentTitle);
     }
-    
+
+    // Format numeric fields: remove trailing zeros if all decimals are zero
+    const numericFields = [
+      'manage_quotation_grand_total',
+      'manage_quotation_payment_nominal',
+      'manage_quotation_grand_total_before',
+      'manage_quotation_mutation_nominal'
+    ];
+
+    numericFields.forEach(field => {
+      if (data[field] !== undefined && data[field] !== null) {
+        let strVal = String(data[field]);
+        if (strVal.includes('.')) {
+          // Remove trailing zeros
+          strVal = strVal.replace(/0+$/, '');
+          // Remove trailing decimal point if it exists (e.g. "100." -> "100")
+          if (strVal.endsWith('.')) {
+            strVal = strVal.slice(0, -1);
+          }
+          data[field] = strVal;
+        }
+      }
+    });
+
     // Read term_content_directory JSON file if exists
     if (data.term_content_directory) {
       const payload = await readJsonFile(data.term_content_directory);
       data.term_content_payload = extractTermContentPayload(payload);
     }
-    
+
     const response = mappingSuccess('Data berhasil diambil', data);
     return baseResponse(res, response);
   } catch (error) {
@@ -685,12 +708,12 @@ const getPdfById = async (req, res) => {
   try {
     const { id } = req.params;
     const data = await repository.findById(id);
-    
+
     if (!data) {
       const response = mappingError('Data tidak ditemukan', 404);
       return baseResponse(res, response);
     }
-    
+
     if (data.customer_id) {
       try {
         const customer = await customerRepository.findById(data.customer_id);
@@ -715,7 +738,7 @@ const getPdfById = async (req, res) => {
         data.customer_address = null;
       }
     }
-    
+
     if (data.employee_id) {
       try {
         const employee = await employeeRepository.findById(data.employee_id);
@@ -736,7 +759,7 @@ const getPdfById = async (req, res) => {
         data.employee_phone = null;
       }
     }
-    
+
     if (data.island_id) {
       try {
         const islands = await getIslandsByIds([data.island_id]);
@@ -755,7 +778,7 @@ const getPdfById = async (req, res) => {
         }
       }
     }
-    
+
     // Get detail data
     const items = await repository.getItemsByQuotationId(id);
     const accessories = await repository.getAccessoriesByQuotationId(id);
@@ -781,7 +804,7 @@ const getPdfById = async (req, res) => {
       // Clean componen_product_name by removing "MSI[number] - " prefix and suffix
       // Get original value from item
       let cleanedProductName = item.componen_product_name;
-      
+
       // Clean the product name if it exists
       if (cleanedProductName && typeof cleanedProductName === 'string') {
         // Remove "MSI[number] - " prefix and suffix using helper function
@@ -807,12 +830,12 @@ const getPdfById = async (req, res) => {
       // Get current componen_product_name value
       let productName = item.componen_product_name;
       const originalProductName = productName; // Keep original for debugging
-      
+
       // Clean if it's a string and not null/undefined
       if (productName && typeof productName === 'string') {
         // Use helper function to clean prefix and suffix
         productName = cleanComponenProductName(productName);
-        
+
         // Debug log (can be removed later)
         if (originalProductName !== productName) {
           Logger.info('[manage-quotation:getPdfById] Cleaned componen_product_name', {
@@ -821,7 +844,7 @@ const getPdfById = async (req, res) => {
           });
         }
       }
-      
+
       // Return new object with cleaned componen_product_name - MUST override original
       return {
         ...item,
@@ -831,7 +854,7 @@ const getPdfById = async (req, res) => {
 
     // Set final items to data.manage_quotation_items
     data.manage_quotation_items = finalItems;
-    
+
     // Final aggressive cleanup: ensure ALL items in manage_quotation_items have cleaned componen_product_name
     // This is the absolute last step before sending response
     if (data.manage_quotation_items && Array.isArray(data.manage_quotation_items)) {
@@ -839,7 +862,7 @@ const getPdfById = async (req, res) => {
         if (item && item.componen_product_name && typeof item.componen_product_name === 'string') {
           // Use helper function to clean prefix and suffix
           const productName = cleanComponenProductName(item.componen_product_name);
-          
+
           return {
             ...item,
             componen_product_name: productName
@@ -848,19 +871,42 @@ const getPdfById = async (req, res) => {
         return item;
       });
     }
-    
+
     // Debug: Verify finalItems has cleaned names
     Logger.info('[manage-quotation:getPdfById] Final cleanup completed', {
       itemsCount: data.manage_quotation_items?.length || 0,
       firstItemProductName: data.manage_quotation_items?.[0]?.componen_product_name || 'N/A'
     });
-    
+
     // Read term_content_directory JSON file if exists
     if (data.term_content_directory) {
       const payload = await readJsonFile(data.term_content_directory);
       data.term_content_payload = extractTermContentPayload(payload);
     }
-    
+
+    // Format numeric fields: remove trailing zeros if all decimals are zero
+    const numericFields = [
+      'manage_quotation_grand_total',
+      'manage_quotation_payment_nominal',
+      'manage_quotation_grand_total_before',
+      'manage_quotation_mutation_nominal'
+    ];
+
+    numericFields.forEach(field => {
+      if (data[field] !== undefined && data[field] !== null) {
+        let strVal = String(data[field]);
+        if (strVal.includes('.')) {
+          // Remove trailing zeros
+          strVal = strVal.replace(/0+$/, '');
+          // Remove trailing decimal point if it exists (e.g. "100." -> "100")
+          if (strVal.endsWith('.')) {
+            strVal = strVal.slice(0, -1);
+          }
+          data[field] = strVal;
+        }
+      }
+    });
+
     const response = mappingSuccess('Data berhasil diambil', data);
     return baseResponse(res, response);
   } catch (error) {
@@ -895,7 +941,7 @@ const create = async (req, res) => {
 
     return entry;
   };
-  
+
   try {
     logStep('request.received', 'info', {
       bodyKeys: Object.keys(req.body || {}),
@@ -905,7 +951,7 @@ const create = async (req, res) => {
 
     const tokenData = decodeToken('created', req);
     logStep('token.decoded', 'success', { created_by: tokenData.created_by });
-    
+
     const {
       manage_quotation_items,
       manage_quotation_no,
@@ -913,27 +959,27 @@ const create = async (req, res) => {
       term_content_directory,
       ...quotationData
     } = req.body;
-    
+
     const hasItemsArray = Array.isArray(manage_quotation_items);
     const itemsForProcessing = hasItemsArray ? manage_quotation_items : [];
     const itemsForInsert = [];
     const accessoriesForInsert = [];
     const specificationsForInsert = [];
-    
+
     if (hasItemsArray) {
       for (const rawItem of itemsForProcessing) {
         if (!rawItem || typeof rawItem !== 'object') {
           continue;
         }
-        
+
         const {
           manage_quotation_item_accessories: itemAccessories,
           manage_quotation_item_specifications: itemSpecifications,
           ...itemFields
         } = rawItem;
-        
+
         itemsForInsert.push(itemFields);
-        
+
         if (Array.isArray(itemAccessories)) {
           for (const accessory of itemAccessories) {
             accessoriesForInsert.push({
@@ -942,7 +988,7 @@ const create = async (req, res) => {
             });
           }
         }
-        
+
         if (Array.isArray(itemSpecifications)) {
           for (const specification of itemSpecifications) {
             specificationsForInsert.push({
@@ -953,7 +999,7 @@ const create = async (req, res) => {
         }
       }
     }
-    
+
     if (Array.isArray(req.body.manage_quotation_item_accessories)) {
       for (const accessory of req.body.manage_quotation_item_accessories) {
         accessoriesForInsert.push({
@@ -962,7 +1008,7 @@ const create = async (req, res) => {
         });
       }
     }
-    
+
     if (Array.isArray(req.body.manage_quotation_item_specifications)) {
       for (const specification of req.body.manage_quotation_item_specifications) {
         specificationsForInsert.push({
@@ -977,10 +1023,10 @@ const create = async (req, res) => {
       accessories: accessoriesForInsert.length,
       specifications: specificationsForInsert.length
     });
-    
+
     const hasAccessoriesArray = accessoriesForInsert.length > 0;
     const hasSpecificationsArray = specificationsForInsert.length > 0;
-    
+
     if (itemsForInsert.length > 0) {
       const validation = await repository.validateComponenProductIds(itemsForInsert);
       if (!validation.isValid) {
@@ -997,7 +1043,7 @@ const create = async (req, res) => {
     } else {
       logStep('validation.items', 'skipped', { reason: 'no items provided' });
     }
-    
+
     if (hasAccessoriesArray) {
       const validation = await repository.validateAccessoryIds(accessoriesForInsert);
       if (!validation.isValid) {
@@ -1031,7 +1077,7 @@ const create = async (req, res) => {
     } else {
       logStep('validation.specifications', 'skipped', { reason: 'no specifications provided' });
     }
-    
+
     quotationData.created_by = tokenData.created_by;
     if (term_content_id !== undefined) {
       // Normalize term_content_id: convert empty string, "NaN", or null to null
@@ -1065,14 +1111,14 @@ const create = async (req, res) => {
       } else {
         logStep('transaction.termContent.write', 'skipped', { reason: 'no term_content_directory provided' });
       }
-      
+
       if (itemsForInsert.length > 0) {
         await repository.createItems(createdQuotation.manage_quotation_id, itemsForInsert, tokenData.created_by, trx);
         logStep('transaction.items.create', 'success', { count: itemsForInsert.length });
       } else {
         logStep('transaction.items.create', 'skipped', { reason: 'no items to insert' });
       }
-      
+
       if (accessoriesForInsert.length > 0) {
         await repository.createAccessories(createdQuotation.manage_quotation_id, accessoriesForInsert, tokenData.created_by, trx);
         logStep('transaction.accessories.create', 'success', { count: accessoriesForInsert.length });
@@ -1087,13 +1133,13 @@ const create = async (req, res) => {
         logStep('transaction.specifications.create', 'skipped', { reason: 'no specifications to insert' });
       }
     });
-    
+
     if (createdQuotation?.term_content_directory) {
       const payload = await readJsonFile(createdQuotation.term_content_directory);
       createdQuotation.term_content_payload = extractTermContentPayload(payload);
       logStep('postProcess.termContent.read', 'success', { hasPayload: Boolean(payload) });
     }
-    
+
     const response = mappingSuccess('Data berhasil dibuat', createdQuotation, 201);
     response.data.logs = processLogs;
     return baseResponse(res, response);
@@ -1109,7 +1155,7 @@ const create = async (req, res) => {
         console.error('Gagal menghapus file term content saat rollback create:', cleanupError);
       }
     }
-    
+
     const response = mappingError(error);
     response.data.logs = processLogs;
     return baseResponse(res, response);
@@ -1122,10 +1168,10 @@ const create = async (req, res) => {
 const update = async (req, res) => {
   let newRelativePath = null;
   let existing = null;
-  
+
   try {
     const { id } = req.params;
-    
+
     // Log request start
     if (process.env.NODE_ENV === 'development') {
       Logger.info('[manage-quotation:update] request received', {
@@ -1134,17 +1180,17 @@ const update = async (req, res) => {
         hasItems: Array.isArray(req.body?.manage_quotation_items)
       });
     }
-    
+
     // Get user info from token
     const tokenData = decodeToken('updated', req);
-    
+
     // Validate token data
     if (!tokenData.updated_by || tokenData.updated_by === '') {
       Logger.error('[manage-quotation:update] invalid token data', { tokenData });
       const response = mappingError('Token tidak valid atau tidak memiliki informasi user', 401);
       return baseResponse(res, response);
     }
-    
+
     // Extract items and accessories from request body
     // Remove manage_quotation_no from body as it will be auto-generated if status changes to submit
     const {
@@ -1154,28 +1200,28 @@ const update = async (req, res) => {
       term_content_directory,
       ...quotationData
     } = req.body;
-    
+
     const itemsProvided = Object.prototype.hasOwnProperty.call(req.body, 'manage_quotation_items');
     const hasItemsArray = Array.isArray(manage_quotation_items);
     const itemsForProcessing = hasItemsArray ? manage_quotation_items : [];
     const itemsForInsert = [];
     const accessoriesForInsert = [];
     const specificationsForInsert = [];
-    
+
     if (hasItemsArray) {
       for (const rawItem of itemsForProcessing) {
         if (!rawItem || typeof rawItem !== 'object') {
           continue;
         }
-        
+
         const {
           manage_quotation_item_accessories: itemAccessories,
           manage_quotation_item_specifications: itemSpecifications,
           ...itemFields
         } = rawItem;
-        
+
         itemsForInsert.push(itemFields);
-        
+
         if (Array.isArray(itemAccessories)) {
           for (const accessory of itemAccessories) {
             accessoriesForInsert.push({
@@ -1184,7 +1230,7 @@ const update = async (req, res) => {
             });
           }
         }
-        
+
         if (Array.isArray(itemSpecifications)) {
           for (const specification of itemSpecifications) {
             specificationsForInsert.push({
@@ -1195,7 +1241,7 @@ const update = async (req, res) => {
         }
       }
     }
-    
+
     if (Array.isArray(req.body.manage_quotation_item_accessories)) {
       for (const accessory of req.body.manage_quotation_item_accessories) {
         accessoriesForInsert.push({
@@ -1204,7 +1250,7 @@ const update = async (req, res) => {
         });
       }
     }
-    
+
     if (Array.isArray(req.body.manage_quotation_item_specifications)) {
       for (const specification of req.body.manage_quotation_item_specifications) {
         specificationsForInsert.push({
@@ -1213,17 +1259,17 @@ const update = async (req, res) => {
         });
       }
     }
-    
+
     const accessoriesProvided = itemsProvided || Object.prototype.hasOwnProperty.call(req.body, 'manage_quotation_item_accessories');
     const specificationsProvided = itemsProvided || Object.prototype.hasOwnProperty.call(req.body, 'manage_quotation_item_specifications');
-    
+
     // Get existing quotation data
     existing = await repository.findById(id);
     if (!existing) {
       const response = mappingError('Data tidak ditemukan', 404);
       return baseResponse(res, response);
     }
-    
+
     // Validate componen_product_id if items provided
     if (itemsForInsert.length > 0) {
       const validation = await repository.validateComponenProductIds(itemsForInsert);
@@ -1236,7 +1282,7 @@ const update = async (req, res) => {
         return baseResponse(res, response);
       }
     }
-    
+
     // Validate accessory_id if accessories provided
     if (accessoriesForInsert.length > 0) {
       const validation = await repository.validateAccessoryIds(accessoriesForInsert);
@@ -1262,7 +1308,7 @@ const update = async (req, res) => {
         return baseResponse(res, response);
       }
     }
-    
+
     // Handle term_content_id
     if (term_content_id !== undefined) {
       // Normalize term_content_id: convert empty string, "NaN", or null to null
@@ -1272,20 +1318,20 @@ const update = async (req, res) => {
         quotationData.term_content_id = term_content_id;
       }
     }
-    
+
     // Handle term_content_directory - save as JSON file if provided
     if (term_content_directory !== undefined) {
       const payloadSource = term_content_directory !== null && term_content_directory !== ''
         ? term_content_directory
         : await readJsonFile(existing.term_content_directory || '');
-      
+
       if (payloadSource && Object.keys(payloadSource).length > 0) {
         newRelativePath = await writeJsonFile(
           existing.manage_quotation_no || 'term_content',
           existing.manage_quotation_id,
           payloadSource
         );
-        
+
         quotationData.term_content_directory = newRelativePath;
       } else if (term_content_directory === null || term_content_directory === '') {
         // If explicitly set to null or empty, delete the file and clear the field
@@ -1295,28 +1341,28 @@ const update = async (req, res) => {
         quotationData.term_content_directory = null;
       }
     }
-    
+
     // Add updated_by
     quotationData.updated_by = tokenData.updated_by;
-    
+
     // Update quotation
     const data = await repository.update(id, quotationData);
-    
+
     if (!data) {
       const response = mappingError('Data tidak ditemukan', 404);
       return baseResponse(res, response);
     }
-    
+
     // Delete old file if path changed
     if (newRelativePath && existing.term_content_directory && existing.term_content_directory !== newRelativePath) {
       await deleteJsonFile(existing.term_content_directory);
     }
-    
+
     // Update items jika array disediakan (termasuk kosong untuk reset)
     if (itemsProvided) {
       await repository.replaceItems(id, itemsForInsert, tokenData.updated_by);
     }
-    
+
     // Update accessories jika array disediakan (termasuk kosong untuk reset)
     if (accessoriesProvided) {
       await repository.replaceAccessories(id, accessoriesForInsert, tokenData.updated_by);
@@ -1326,20 +1372,20 @@ const update = async (req, res) => {
     if (specificationsProvided) {
       await repository.replaceSpecifications(id, specificationsForInsert, tokenData.updated_by);
     }
-    
+
     // Read term_content_directory JSON file if exists
     if (data.term_content_directory) {
       const payload = await readJsonFile(data.term_content_directory);
       data.term_content_payload = extractTermContentPayload(payload);
     }
-    
+
     const response = mappingSuccess('Data berhasil diupdate', data);
-    
+
     // Log success
     if (process.env.NODE_ENV === 'development') {
       Logger.info('[manage-quotation:update] update successful', { id });
     }
-    
+
     return baseResponse(res, response);
   } catch (error) {
     // Log error details
@@ -1349,7 +1395,7 @@ const update = async (req, res) => {
       stack: error.stack,
       bodyKeys: Object.keys(req.body || {})
     });
-    
+
     // Cleanup new file if error occurred
     if (newRelativePath && existing && existing.term_content_directory !== newRelativePath) {
       try {
@@ -1361,7 +1407,7 @@ const update = async (req, res) => {
         });
       }
     }
-    
+
     const response = mappingError(error);
     return baseResponse(res, response);
   }
@@ -1373,22 +1419,22 @@ const update = async (req, res) => {
 const remove = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Get user info from token
     const tokenData = decodeToken('deleted', req);
-    
+
     // First update with deleted_by info
     await repository.update(id, {
       deleted_by: tokenData.deleted_by
     });
-    
+
     const result = await repository.remove(id);
-    
+
     if (!result) {
       const response = mappingError('Data tidak ditemukan', 404);
       return baseResponse(res, response);
     }
-    
+
     const response = mappingSuccess('Data berhasil dihapus', result);
     return baseResponse(res, response);
   } catch (error) {
@@ -1404,12 +1450,12 @@ const restore = async (req, res) => {
   try {
     const { id } = req.params;
     const data = await repository.restore(id);
-    
+
     if (!data) {
       const response = mappingError('Data tidak ditemukan', 404);
       return baseResponse(res, response);
     }
-    
+
     const response = mappingSuccess('Data berhasil direstore', data);
     return baseResponse(res, response);
   } catch (error) {
@@ -1424,24 +1470,24 @@ const restore = async (req, res) => {
 const duplikat = async (req, res) => {
   try {
     const { manage_quotation_id } = req.params;
-    
+
     // Get user info from token
     const tokenData = decodeToken('created', req);
-    
+
     // Validate token data
     if (!tokenData.created_by || tokenData.created_by === '') {
       Logger.error('[manage-quotation:duplikat] invalid token data', { tokenData });
       const response = mappingError('Token tidak valid atau tidak memiliki informasi user', 401);
       return baseResponse(res, response);
     }
-    
+
     // Check if source quotation exists
     const sourceQuotation = await repository.findById(manage_quotation_id);
     if (!sourceQuotation) {
       const response = mappingError('Quotation tidak ditemukan', 404);
       return baseResponse(res, response);
     }
-    
+
     // Duplicate quotation within transaction
     let duplicatedQuotation = null;
     await db.transaction(async (trx) => {
@@ -1451,10 +1497,10 @@ const duplikat = async (req, res) => {
         trx
       );
     });
-    
+
     // Get full data with relations
     const data = await repository.findById(duplicatedQuotation.manage_quotation_id);
-    
+
     // Get detail data
     const items = await repository.getItemsByQuotationId(duplicatedQuotation.manage_quotation_id);
     const accessories = await repository.getAccessoriesByQuotationId(duplicatedQuotation.manage_quotation_id);
@@ -1486,13 +1532,13 @@ const duplikat = async (req, res) => {
     });
 
     data.manage_quotation_items = itemsWithRelations;
-    
+
     // Read term_content_directory JSON file if exists
     if (data.term_content_directory) {
       const payload = await readJsonFile(data.term_content_directory);
       data.term_content_payload = extractTermContentPayload(payload);
     }
-    
+
     const response = mappingSuccess('Data berhasil diduplikat', data, 201);
     return baseResponse(res, response);
   } catch (error) {
@@ -1501,7 +1547,7 @@ const duplikat = async (req, res) => {
       error: error.message,
       stack: error.stack
     });
-    
+
     const response = mappingError(error);
     return baseResponse(res, response);
   }
