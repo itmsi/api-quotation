@@ -884,6 +884,29 @@ const getPdfById = async (req, res) => {
       data.term_content_payload = extractTermContentPayload(payload);
     }
 
+    // Format numeric fields: remove trailing zeros if all decimals are zero
+    const numericFields = [
+      'manage_quotation_grand_total',
+      'manage_quotation_payment_nominal',
+      'manage_quotation_grand_total_before',
+      'manage_quotation_mutation_nominal'
+    ];
+
+    numericFields.forEach(field => {
+      if (data[field] !== undefined && data[field] !== null) {
+        let strVal = String(data[field]);
+        if (strVal.includes('.')) {
+          // Remove trailing zeros
+          strVal = strVal.replace(/0+$/, '');
+          // Remove trailing decimal point if it exists (e.g. "100." -> "100")
+          if (strVal.endsWith('.')) {
+            strVal = strVal.slice(0, -1);
+          }
+          data[field] = strVal;
+        }
+      }
+    });
+
     const response = mappingSuccess('Data berhasil diambil', data);
     return baseResponse(res, response);
   } catch (error) {
