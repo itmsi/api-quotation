@@ -1,4 +1,5 @@
 const db = require('../../config/database');
+const { v4: uuidv4 } = require('uuid');
 
 const TABLE_NAME = 'componen_products';
 
@@ -320,24 +321,11 @@ const findById = async (id) => {
     return null;
   }
 
-  const specifications = await db('componen_product_specifications')
-    .select(
-      'componen_product_specification_id',
-      'componen_product_specification_label',
-      'componen_product_specification_value',
-      'componen_product_specification_description',
-      'created_at',
-      'created_by',
-      'updated_at',
-      'updated_by'
-    )
-    .where({
-      componen_product_id: id,
-      is_delete: false
-    })
-    .orderBy('created_at', 'asc');
+  const storedSpecs = typeof componenProduct.specification_properties === 'string'
+    ? JSON.parse(componenProduct.specification_properties)
+    : (componenProduct.specification_properties || []);
 
-  const normalizedSpecs = mapSpecificationResponse(specifications || []);
+  const normalizedSpecs = mapSpecificationResponse(storedSpecs);
 
   return {
     ...componenProduct,
@@ -396,7 +384,9 @@ const create = async (data, specifications = []) => {
       }
     }
 
+    const newId = uuidv4();
     const insertData = {
+      componen_product_id: newId,
       componen_product_name: data.componen_product_name || null,
       componen_type: data.componen_type || null,
       company_id: data.company_id || null,
@@ -421,6 +411,18 @@ const create = async (data, specifications = []) => {
       created_by: data.created_by || null
     };
 
+    let specsToStore = [];
+    if (Array.isArray(specifications) && specifications.length > 0) {
+      specsToStore = specifications.map((spec) => ({
+        componen_product_id: newId,
+        componen_product_specification_label: spec.componen_product_specification_label || null,
+        componen_product_specification_value: spec.componen_product_specification_value || null,
+        componen_product_specification_description: spec.componen_product_specification_description || null
+      }));
+    }
+
+    insertData.specification_properties = JSON.stringify(specsToStore);
+
     const [product] = await trx(TABLE_NAME)
       .insert(insertData)
       .returning('*');
@@ -429,30 +431,12 @@ const create = async (data, specifications = []) => {
       throw new Error('Gagal membuat data componen product');
     }
 
-    let specsToReturn = [];
+    // Parse back the JSON for response
+    const storedSpecs = typeof product.specification_properties === 'string'
+      ? JSON.parse(product.specification_properties)
+      : (product.specification_properties || []);
 
-    if (Array.isArray(specifications) && specifications.length > 0) {
-      const preparedSpecifications = specifications.map((spec) => ({
-        componen_product_id: product.componen_product_id,
-        componen_product_specification_label: spec.componen_product_specification_label || null,
-        componen_product_specification_value: spec.componen_product_specification_value || null,
-        componen_product_specification_description: spec.componen_product_specification_description || null,
-        created_by: data.created_by || null
-      }));
-
-      specsToReturn = await trx('componen_product_specifications')
-        .insert(preparedSpecifications)
-        .returning([
-          'componen_product_specification_id',
-          'componen_product_specification_label',
-          'componen_product_specification_value',
-          'componen_product_specification_description',
-          'created_at',
-          'created_by'
-        ]);
-    }
-
-    const normalizedSpecs = mapSpecificationResponse(specsToReturn);
+    const normalizedSpecs = mapSpecificationResponse(storedSpecs);
 
     return {
       ...product,
@@ -508,6 +492,19 @@ const update = async (id, data, options = {}) => {
     if (data.componen_product_description !== undefined) updateFields.componen_product_description = data.componen_product_description;
     if (data.updated_by !== undefined) updateFields.updated_by = data.updated_by;
 
+    if (specificationsProvided) {
+      let specsToStore = [];
+      if (Array.isArray(specifications) && specifications.length > 0) {
+        specsToStore = specifications.map((spec) => ({
+          componen_product_id: id,
+          componen_product_specification_label: spec.componen_product_specification_label || null,
+          componen_product_specification_value: spec.componen_product_specification_value || null,
+          componen_product_specification_description: spec.componen_product_specification_description || null
+        }));
+      }
+      updateFields.specification_properties = JSON.stringify(specsToStore);
+    }
+
     let product = null;
 
     if (Object.keys(updateFields).length > 0) {
@@ -534,50 +531,11 @@ const update = async (id, data, options = {}) => {
       }
     }
 
-    if (specificationsProvided) {
-      await trx('componen_product_specifications')
-        .where({
-          componen_product_id: id,
-          is_delete: false
-        })
-        .update({
-          is_delete: true,
-          deleted_at: db.fn.now(),
-          deleted_by: data.updated_by || null
-        });
+    const storedSpecs = typeof product.specification_properties === 'string'
+      ? JSON.parse(product.specification_properties)
+      : (product.specification_properties || []);
 
-      if (Array.isArray(specifications) && specifications.length > 0) {
-        const preparedSpecifications = specifications.map((spec) => ({
-          componen_product_id: id,
-          componen_product_specification_label: spec.componen_product_specification_label || null,
-          componen_product_specification_value: spec.componen_product_specification_value || null,
-          componen_product_specification_description: spec.componen_product_specification_description || null,
-          created_by: data.updated_by || data.created_by || null
-        }));
-
-        await trx('componen_product_specifications')
-          .insert(preparedSpecifications);
-      }
-    }
-
-    const specificationsResult = await trx('componen_product_specifications')
-      .where({
-        componen_product_id: id,
-        is_delete: false
-      })
-      .select(
-        'componen_product_specification_id',
-        'componen_product_specification_label',
-        'componen_product_specification_value',
-        'componen_product_specification_description',
-        'created_at',
-        'created_by',
-        'updated_at',
-        'updated_by'
-      )
-      .orderBy('created_at', 'asc');
-
-    const normalizedSpecs = mapSpecificationResponse(specificationsResult);
+    const normalizedSpecs = mapSpecificationResponse(storedSpecs);
 
     return {
       ...product,
@@ -610,17 +568,6 @@ const remove = async (id, data = {}) => {
       return null;
     }
 
-    await trx('componen_product_specifications')
-      .where({
-        componen_product_id: id,
-        is_delete: false
-      })
-      .update({
-        is_delete: true,
-        deleted_at: db.fn.now(),
-        deleted_by: data.deleted_by || null
-      });
-
     return result;
   });
 };
@@ -644,18 +591,6 @@ const restore = async (id) => {
       return null;
     }
 
-    await trx('componen_product_specifications')
-      .where({
-        componen_product_id: id,
-        is_delete: true
-      })
-      .update({
-        is_delete: false,
-        deleted_at: null,
-        deleted_by: null,
-        updated_at: db.fn.now()
-      });
-
     return result;
   });
 };
@@ -665,10 +600,6 @@ const restore = async (id) => {
  */
 const hardDelete = async (id) => {
   return db.transaction(async (trx) => {
-    await trx('componen_product_specifications')
-      .where({ componen_product_id: id })
-      .del();
-
     return trx(TABLE_NAME)
       .where({ componen_product_id: id })
       .del();

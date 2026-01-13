@@ -104,6 +104,7 @@ const findAll = async (params) => {
       'mq.bank_account_bank_name',
       'mq.term_content_id',
       'mq.term_content_directory',
+      'mq.term_content_payload',
       'mq.include_aftersales_page',
       'mq.include_msf_page',
       'mq.status',
@@ -227,6 +228,7 @@ const findAll = async (params) => {
               'mq.bank_account_bank_name',
               'mq.term_content_id',
               'mq.term_content_directory',
+              'mq.term_content_payload',
               'mq.include_aftersales_page',
               'mq.include_msf_page',
               'mq.status',
@@ -561,7 +563,8 @@ const create = async (data, trx = db) => {
     bank_account_number: data.bank_account_number || null,
     bank_account_bank_name: data.bank_account_bank_name || null,
     term_content_id: data.term_content_id || null,
-    term_content_directory: data.term_content_directory || null
+    term_content_directory: data.term_content_directory || null,
+    term_content_payload: data.term_content_payload || null
   };
 
   // Build fields object - include all expected fields
@@ -590,6 +593,7 @@ const create = async (data, trx = db) => {
     bank_account_bank_name: data.bank_account_bank_name || null,
     term_content_id: data.term_content_id || null,
     term_content_directory: null,
+    term_content_payload: data.term_content_payload || null,
     properties: JSON.stringify(properties),
     status: data.status || 'submit',
     include_aftersales_page: data.include_aftersales_page ?? false,
@@ -718,6 +722,8 @@ const update = async (id, data, trx = db) => {
     effectiveTermContentDirectory = data.term_content_directory !== undefined ? data.term_content_directory : existingRecord.term_content_directory;
   }
 
+  let effectiveTermContentPayload = data.term_content_payload !== undefined ? data.term_content_payload : existingRecord.term_content_payload;
+
   // Construct properties JSONB object
   const properties = {
     customer_id: effectiveCustomerId || null,
@@ -736,7 +742,8 @@ const update = async (id, data, trx = db) => {
     bank_account_number: effectiveBankAccountNumber || null,
     bank_account_bank_name: effectiveBankAccountBankName || null,
     term_content_id: effectiveTermContentId || null,
-    term_content_directory: effectiveTermContentDirectory || null
+    term_content_directory: effectiveTermContentDirectory || null,
+    term_content_payload: effectiveTermContentPayload || null
   };
 
   const updateFields = {};
@@ -764,6 +771,7 @@ const update = async (id, data, trx = db) => {
   if (data.bank_account_bank_name !== undefined) updateFields.bank_account_bank_name = data.bank_account_bank_name;
   if (data.term_content_id !== undefined) updateFields.term_content_id = data.term_content_id;
   if (data.term_content_directory !== undefined) updateFields.term_content_directory = data.term_content_directory;
+  if (data.term_content_payload !== undefined) updateFields.term_content_payload = data.term_content_payload;
   if (data.include_aftersales_page !== undefined) updateFields.include_aftersales_page = data.include_aftersales_page;
   if (data.include_msf_page !== undefined) updateFields.include_msf_page = data.include_msf_page;
   if (data.status !== undefined) updateFields.status = data.status;
@@ -1338,8 +1346,6 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
 
   // Get all related data
   const sourceItems = await getItemsByQuotationId(sourceQuotationId);
-  const sourceAccessories = await getAccessoriesByQuotationId(sourceQuotationId);
-  const sourceSpecifications = await getSpecificationsByQuotationId(sourceQuotationId);
 
   // Generate new quotation number
   const newQuotationNo = await generateQuotationNumber(trx);
@@ -1378,6 +1384,7 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
     bank_account_bank_name: sourceQuotation.bank_account_bank_name,
     term_content_id: sourceQuotation.term_content_id,
     term_content_directory: sourceQuotation.term_content_directory,
+    term_content_payload: sourceQuotation.term_content_payload,
     status: 'draft',
     include_aftersales_page: sourceQuotation.include_aftersales_page ?? false,
     include_msf_page: sourceQuotation.include_msf_page ?? false,
@@ -1415,75 +1422,28 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
       cp_componen_type,
       ...rest
     } = item;
-    return rest;
-  });
 
-  // Prepare accessories for duplication
-  const accessoriesForInsert = sourceAccessories.map(accessory => {
-    const {
-      manage_quotation_item_accessory_id,
-      manage_quotation_id,
-      created_at,
-      updated_at,
-      deleted_at,
-      created_by: acc_created_by,
-      updated_by: acc_updated_by,
-      deleted_by: acc_deleted_by,
-      is_delete,
-      // Remove fields from JOIN with accessories
-      accessory_part_number_source,
-      accessory_part_name_source,
-      accessory_specification_source,
-      accessory_brand_source,
-      accessory_remark_source,
-      accessory_region_source,
-      accessory_description_source,
-      ...rest
-    } = accessory;
-    return rest;
-  });
+    // Parse properties if they are strings (they should be JSONB, so objects, but just in case)
+    let specProps = item.specification_properties;
+    if (typeof specProps === 'string') {
+      try { specProps = JSON.parse(specProps); } catch (e) { specProps = []; }
+    }
 
-  // Prepare specifications for duplication
-  const specificationsForInsert = sourceSpecifications.map(spec => {
-    const {
-      manage_quotation_item_specification_id,
-      manage_quotation_id,
-      created_at,
-      updated_at,
-      deleted_at,
-      created_by: spec_created_by,
-      updated_by: spec_updated_by,
-      deleted_by: spec_deleted_by,
-      is_delete,
-      // Remove fields from JOIN with componen_products
-      cp_code_unique,
-      cp_componen_product_name,
-      cp_segment,
-      cp_msi_model,
-      cp_msi_product,
-      cp_wheel_no,
-      cp_engine,
-      cp_volume,
-      cp_horse_power,
-      cp_market_price,
-      ...rest
-    } = spec;
-    return rest;
+    let accProps = item.accesories_properties;
+    if (typeof accProps === 'string') {
+      try { accProps = JSON.parse(accProps); } catch (e) { accProps = []; }
+    }
+
+    return {
+      ...rest,
+      specification_properties: specProps,
+      accesories_properties: accProps
+    };
   });
 
   // Create items
   if (itemsForInsert.length > 0) {
     await createItems(newQuotation.manage_quotation_id, itemsForInsert, created_by, trx);
-  }
-
-  // Create accessories
-  if (accessoriesForInsert.length > 0) {
-    await createAccessories(newQuotation.manage_quotation_id, accessoriesForInsert, created_by, trx);
-  }
-
-  // Create specifications
-  if (specificationsForInsert.length > 0) {
-    await createSpecifications(newQuotation.manage_quotation_id, specificationsForInsert, created_by, trx);
   }
 
   return newQuotation;

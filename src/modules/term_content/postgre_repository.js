@@ -39,6 +39,7 @@ const baseSelectColumns = () => (
       'term_contents.term_content_id',
       'term_contents.term_content_title',
       'term_contents.term_content_directory',
+      'term_contents.term_content_payload',
       'term_contents.created_by',
       'term_contents.updated_by',
       'term_contents.deleted_by',
@@ -77,6 +78,7 @@ const findAll = async (params) => {
       'term_contents.term_content_id',
       'term_contents.term_content_title',
       'term_contents.term_content_directory',
+      'term_contents.term_content_payload',
       'term_contents.created_by',
       'term_contents.updated_by',
       db.raw('updater_data.employee_name as updated_by_name'),
@@ -124,6 +126,7 @@ const findAll = async (params) => {
               'term_contents.term_content_id',
               'term_contents.term_content_title',
               'term_contents.term_content_directory',
+              'term_contents.term_content_payload',
               'term_contents.created_by',
               'term_contents.updated_by',
               db.raw('updater_data.employee_name as updated_by_name'),
@@ -249,6 +252,7 @@ const create = async (data) => {
     term_content_id: data.term_content_id,
     term_content_title: data.term_content_title || null,
     term_content_directory: data.term_content_directory,
+    term_content_payload: data.term_content_payload,
     created_by: data.created_by || null
   };
 
@@ -267,6 +271,9 @@ const update = async (id, data) => {
   }
   if (data.term_content_directory !== undefined) {
     updateFields.term_content_directory = data.term_content_directory;
+  }
+  if (data.term_content_payload !== undefined) {
+    updateFields.term_content_payload = data.term_content_payload;
   }
   if (data.updated_by !== undefined) {
     updateFields.updated_by = data.updated_by;
