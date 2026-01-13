@@ -46,9 +46,9 @@ routing.use(`${API_TAG}/item_product`, itemProductModule)
 const componenProductModule = require('../../modules/componen_product')
 routing.use(`${API_TAG}/componen_product`, componenProductModule)
 
-// Componen Product Specification Module
-const componenProductSpecificationModule = require('../../modules/componen_product_specification')
-routing.use(`${API_TAG}/componen_product/specification`, componenProductSpecificationModule)
+// Componen Product Specification Module - DISABLED: Tabel sudah dihapus, digantikan dengan specification_properties di componen_products
+// const componenProductSpecificationModule = require('../../modules/componen_product_specification')
+// routing.use(`${API_TAG}/componen_product/specification`, componenProductSpecificationModule)
 
 // Accessory Module
 const accessoryModule = require('../../modules/accessory')

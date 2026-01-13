@@ -327,8 +327,11 @@ const findById = async (id) => {
 
   const normalizedSpecs = mapSpecificationResponse(storedSpecs);
 
+  // Remove specification_properties from response, only return normalized componen_product_specifications
+  const { specification_properties, ...productWithoutSpecs } = componenProduct;
+
   return {
-    ...componenProduct,
+    ...productWithoutSpecs,
     componen_product_specifications: normalizedSpecs,
     product_type: mapProductTypeResponse(componenProduct.product_type, componenProduct.componen_type)
   };
@@ -438,8 +441,11 @@ const create = async (data, specifications = []) => {
 
     const normalizedSpecs = mapSpecificationResponse(storedSpecs);
 
+    // Remove specification_properties from response, only return normalized componen_product_specifications
+    const { specification_properties, ...productWithoutSpecs } = product;
+
     return {
-      ...product,
+      ...productWithoutSpecs,
       componen_product_specifications: normalizedSpecs,
       product_type: mapProductTypeResponse(product.product_type, product.componen_type)
     };
@@ -537,8 +543,11 @@ const update = async (id, data, options = {}) => {
 
     const normalizedSpecs = mapSpecificationResponse(storedSpecs);
 
+    // Remove specification_properties from response, only return normalized componen_product_specifications
+    const { specification_properties, ...productWithoutSpecs } = product;
+
     return {
-      ...product,
+      ...productWithoutSpecs,
       componen_product_specifications: normalizedSpecs,
       product_type: mapProductTypeResponse(product.product_type, product.componen_type)
     };

@@ -1,11 +1,21 @@
 /**
  * Seeder: componen_product_specifications data (from componen_product_specifications_202511111110.sql)
+ * 
+ * DISABLED: Tabel componen_product_specifications sudah dihapus.
+ * Data specifications sekarang disimpan di kolom specification_properties (JSONB) 
+ * di tabel componen_products.
  */
 
 const fs = require('fs')
 const path = require('path')
 
 exports.seed = async function seedComponenProductSpecifications(knex) {
+  // DISABLED: Tabel sudah dihapus, seeder tidak lagi diperlukan
+  console.log('Seeder 0014_componen_product_specifications_seeder.js is disabled. Table componen_product_specifications has been removed.');
+  return;
+  
+  // Original code below (disabled):
+  /*
   await knex.raw('TRUNCATE TABLE componen_product_specifications CASCADE')
 
   const sqlFileName = 'componen_product_specifications_202511111110.sql'
@@ -42,6 +52,7 @@ exports.seed = async function seedComponenProductSpecifications(knex) {
     }
   }
   /* eslint-enable no-restricted-syntax */
+  */
 }
 
 
