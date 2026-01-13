@@ -573,15 +573,16 @@ const getById = async (req, res) => {
 
     // Get detail data
     const items = await repository.getItemsByQuotationId(id);
-    const accessories = await repository.getAccessoriesByQuotationId(id);
-    const specifications = await repository.getSpecificationsByQuotationId(id);
+    // DISABLED: Tabel manage_quotation_item_accessories dan manage_quotation_item_specifications sudah dihapus
+    // Data sekarang diambil dari kolom accesories_properties dan specification_properties (JSONB) di manage_quotation_items
+    // const accessories = await repository.getAccessoriesByQuotationId(id);
+    // const specifications = await repository.getSpecificationsByQuotationId(id);
 
     const itemsWithRelations = items.map((item) => {
       let itemAccessories = [];
       let itemSpecifications = [];
 
-      // ACCESSORIES STRATEGY: Check accessories_properties first
-      let hasPropertiesAccessories = false;
+      // ACCESSORIES STRATEGY: Use accesories_properties from item
       if (item.accesories_properties) {
         let props = item.accesories_properties;
         if (typeof props === 'string') {
@@ -593,7 +594,6 @@ const getById = async (req, res) => {
         }
 
         if (Array.isArray(props) && props.length > 0) {
-          hasPropertiesAccessories = true;
           itemAccessories = props.map(prop => ({
             manage_quotation_item_accessory_id: null, // Identifiers not available in snapshot
             manage_quotation_id: item.manage_quotation_id,
@@ -620,18 +620,7 @@ const getById = async (req, res) => {
         }
       }
 
-      if (!hasPropertiesAccessories) {
-        // Fallback to existing relational logic
-        itemAccessories = accessories.filter((accessory) => {
-          if (item.componen_product_id && accessory.componen_product_id) {
-            return accessory.componen_product_id === item.componen_product_id;
-          }
-          return false;
-        });
-      }
-
-      // SPECIFICATIONS STRATEGY: Check specification_properties first
-      let hasPropertiesSpecifications = false;
+      // SPECIFICATIONS STRATEGY: Use specification_properties from item
       if (item.specification_properties) {
         let props = item.specification_properties;
         if (typeof props === 'string') {
@@ -643,7 +632,6 @@ const getById = async (req, res) => {
         }
 
         if (Array.isArray(props) && props.length > 0) {
-          hasPropertiesSpecifications = true;
           itemSpecifications = props.map(prop => ({
             manage_quotation_item_specification_id: null,
             manage_quotation_id: item.manage_quotation_id,
@@ -660,16 +648,6 @@ const getById = async (req, res) => {
             // Snapshot doesn't typically have extended CP fields, but we mapping what we have
           }));
         }
-      }
-
-      if (!hasPropertiesSpecifications) {
-        // Fallback to existing relational logic
-        itemSpecifications = specifications.filter((specification) => {
-          if (item.componen_product_id && specification.componen_product_id) {
-            return specification.componen_product_id === item.componen_product_id;
-          }
-          return false;
-        });
       }
 
       const productType = mapProductType(item.cp_componen_type);
@@ -854,15 +832,16 @@ const getPdfById = async (req, res) => {
 
     // Get detail data
     const items = await repository.getItemsByQuotationId(id);
-    const accessories = await repository.getAccessoriesByQuotationId(id);
-    const specifications = await repository.getSpecificationsByQuotationId(id);
+    // DISABLED: Tabel manage_quotation_item_accessories dan manage_quotation_item_specifications sudah dihapus
+    // Data sekarang diambil dari kolom accesories_properties dan specification_properties (JSONB) di manage_quotation_items
+    // const accessories = await repository.getAccessoriesByQuotationId(id);
+    // const specifications = await repository.getSpecificationsByQuotationId(id);
 
     const itemsWithRelations = items.map((item) => {
       let itemAccessories = [];
       let itemSpecifications = [];
 
-      // ACCESSORIES STRATEGY: Check accessories_properties first
-      let hasPropertiesAccessories = false;
+      // ACCESSORIES STRATEGY: Use accesories_properties from item
       if (item.accesories_properties) {
         let props = item.accesories_properties;
         if (typeof props === 'string') {
@@ -874,7 +853,6 @@ const getPdfById = async (req, res) => {
         }
 
         if (Array.isArray(props) && props.length > 0) {
-          hasPropertiesAccessories = true;
           itemAccessories = props.map(prop => ({
             manage_quotation_item_accessory_id: null, // Identifiers not available in snapshot
             manage_quotation_id: item.manage_quotation_id,
@@ -901,18 +879,7 @@ const getPdfById = async (req, res) => {
         }
       }
 
-      if (!hasPropertiesAccessories) {
-        // Fallback to existing relational logic
-        itemAccessories = accessories.filter((accessory) => {
-          if (item.componen_product_id && accessory.componen_product_id) {
-            return accessory.componen_product_id === item.componen_product_id;
-          }
-          return false;
-        });
-      }
-
-      // SPECIFICATIONS STRATEGY: Check specification_properties first
-      let hasPropertiesSpecifications = false;
+      // SPECIFICATIONS STRATEGY: Use specification_properties from item
       if (item.specification_properties) {
         let props = item.specification_properties;
         if (typeof props === 'string') {
@@ -924,7 +891,6 @@ const getPdfById = async (req, res) => {
         }
 
         if (Array.isArray(props) && props.length > 0) {
-          hasPropertiesSpecifications = true;
           itemSpecifications = props.map(prop => ({
             manage_quotation_item_specification_id: null,
             manage_quotation_id: item.manage_quotation_id,
@@ -940,16 +906,6 @@ const getPdfById = async (req, res) => {
             is_delete: false,
           }));
         }
-      }
-
-      if (!hasPropertiesSpecifications) {
-        // Fallback to existing relational logic
-        itemSpecifications = specifications.filter((specification) => {
-          if (item.componen_product_id && specification.componen_product_id) {
-            return specification.componen_product_id === item.componen_product_id;
-          }
-          return false;
-        });
       }
 
       const productType = mapProductType(item.cp_componen_type);
@@ -1753,23 +1709,80 @@ const duplikat = async (req, res) => {
 
     // Get detail data
     const items = await repository.getItemsByQuotationId(duplicatedQuotation.manage_quotation_id);
-    const accessories = await repository.getAccessoriesByQuotationId(duplicatedQuotation.manage_quotation_id);
-    const specifications = await repository.getSpecificationsByQuotationId(duplicatedQuotation.manage_quotation_id);
+    // DISABLED: Tabel manage_quotation_item_accessories dan manage_quotation_item_specifications sudah dihapus
+    // Data sekarang diambil dari kolom accesories_properties dan specification_properties (JSONB) di manage_quotation_items
+    // const accessories = await repository.getAccessoriesByQuotationId(duplicatedQuotation.manage_quotation_id);
+    // const specifications = await repository.getSpecificationsByQuotationId(duplicatedQuotation.manage_quotation_id);
 
     const itemsWithRelations = items.map((item) => {
-      const itemAccessories = accessories.filter((accessory) => {
-        if (item.componen_product_id && accessory.componen_product_id) {
-          return accessory.componen_product_id === item.componen_product_id;
-        }
-        return false;
-      });
+      let itemAccessories = [];
+      let itemSpecifications = [];
 
-      const itemSpecifications = specifications.filter((specification) => {
-        if (item.componen_product_id && specification.componen_product_id) {
-          return specification.componen_product_id === item.componen_product_id;
+      // ACCESSORIES STRATEGY: Use accesories_properties from item
+      if (item.accesories_properties) {
+        let props = item.accesories_properties;
+        if (typeof props === 'string') {
+          try {
+            props = JSON.parse(props);
+          } catch (e) {
+            props = [];
+          }
         }
-        return false;
-      });
+
+        if (Array.isArray(props) && props.length > 0) {
+          itemAccessories = props.map(prop => ({
+            manage_quotation_item_accessory_id: null,
+            manage_quotation_id: item.manage_quotation_id,
+            accessory_id: prop.accessory_id,
+            componen_product_id: prop.componen_product_id,
+            quantity: prop.quantity,
+            description: prop.accessory_description || prop.description,
+            created_by: item.created_by,
+            updated_by: item.updated_by,
+            deleted_by: null,
+            created_at: item.created_at,
+            updated_at: item.updated_at,
+            deleted_at: null,
+            is_delete: false,
+            accessory_part_number: prop.accessory_part_number,
+            accessory_part_name: prop.accessory_part_name,
+            accessory_specification: prop.accessory_specification,
+            accessory_brand: prop.accessory_brand,
+            accessory_remark: prop.accessory_remark,
+            accessory_region: prop.accessory_region,
+            accessory_description: prop.accessory_description
+          }));
+        }
+      }
+
+      // SPECIFICATIONS STRATEGY: Use specification_properties from item
+      if (item.specification_properties) {
+        let props = item.specification_properties;
+        if (typeof props === 'string') {
+          try {
+            props = JSON.parse(props);
+          } catch (e) {
+            props = [];
+          }
+        }
+
+        if (Array.isArray(props) && props.length > 0) {
+          itemSpecifications = props.map(prop => ({
+            manage_quotation_item_specification_id: null,
+            manage_quotation_id: item.manage_quotation_id,
+            componen_product_id: prop.componen_product_id,
+            manage_quotation_item_specification_label: prop.manage_quotation_item_specification_label,
+            manage_quotation_item_specification_value: prop.manage_quotation_item_specification_value,
+            created_by: item.created_by,
+            updated_by: item.updated_by,
+            deleted_by: null,
+            created_at: item.created_at,
+            updated_at: item.updated_at,
+            deleted_at: null,
+            is_delete: false,
+          }));
+        }
+      }
 
       const productType = mapProductType(item.cp_componen_type);
 

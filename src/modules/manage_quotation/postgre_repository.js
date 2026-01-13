@@ -1065,8 +1065,10 @@ const replaceItems = async (manage_quotation_id, items, updated_by) => {
  * ACCESSORY FUNCTIONS
  */
 
-const ACCESSORIES_TABLE_NAME = 'manage_quotation_item_accessories';
-const SPECIFICATIONS_TABLE_NAME = 'manage_quotation_item_specifications';
+// DISABLED: Tabel manage_quotation_item_accessories dan manage_quotation_item_specifications sudah dihapus
+// Data sekarang disimpan di kolom accesories_properties dan specification_properties (JSONB) di tabel manage_quotation_items
+// const ACCESSORIES_TABLE_NAME = 'manage_quotation_item_accessories';
+// const SPECIFICATIONS_TABLE_NAME = 'manage_quotation_item_specifications';
 
 /**
  * Validate accessory_id exists
@@ -1141,193 +1143,91 @@ const validateSpecificationComponenProductIds = async (specifications) => {
 
 /**
  * Create quotation accessories
+ * DISABLED: Tabel manage_quotation_item_accessories sudah dihapus.
+ * Data accessories sekarang disimpan di kolom accesories_properties (JSONB) di tabel manage_quotation_items.
  */
 const createAccessories = async (manage_quotation_id, accessories, created_by, trx = db) => {
-  if (!accessories || accessories.length === 0) {
-    return [];
-  }
-
-  const results = [];
-
-  for (const accessory of accessories) {
-    // Only store accessory_id and quantity, data will be fetched from accessories table via join
-    const fields = {
-      manage_quotation_id: manage_quotation_id || null,
-      accessory_id: accessory.accessory_id || null,
-      componen_product_id: accessory.componen_product_id || null,
-      quantity: accessory.quantity ?? 1,
-      description: accessory.description ?? null,
-      created_by: created_by || null
-    };
-
-    const result = await trx(ACCESSORIES_TABLE_NAME)
-      .insert(fields)
-      .returning('*');
-
-    results.push(result[0]);
-  }
-
-  return results;
+  // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
+  console.warn('[DEPRECATED] createAccessories() is disabled. Use accesories_properties in manage_quotation_items instead.');
+  return [];
 };
 
 /**
  * Get accessories by quotation ID with JOIN to accessories
+ * DISABLED: Tabel manage_quotation_item_accessories sudah dihapus.
+ * Data accessories sekarang diambil dari kolom accesories_properties (JSONB) di tabel manage_quotation_items.
  */
 const getAccessoriesByQuotationId = async (manage_quotation_id) => {
-  if (!manage_quotation_id) {
-    return [];
-  }
-
-  const result = await db(`${ACCESSORIES_TABLE_NAME} as mqia`)
-    .select(
-      'mqia.manage_quotation_item_accessory_id',
-      'mqia.manage_quotation_id',
-      'mqia.accessory_id',
-      'mqia.componen_product_id',
-      'mqia.quantity',
-      'mqia.description',
-      'mqia.created_by',
-      'mqia.updated_by',
-      'mqia.deleted_by',
-      'mqia.created_at',
-      'mqia.updated_at',
-      'mqia.deleted_at',
-      'mqia.is_delete',
-      // Data from accessories table (use these as primary data)
-      'a.accessory_part_number',
-      'a.accessory_part_name',
-      'a.accessory_specification',
-      'a.accessory_brand',
-      'a.accessory_remark',
-      'a.accessory_region',
-      'a.accessory_description'
-    )
-    .leftJoin('accessories as a', function () {
-      this.on('mqia.accessory_id', '=', 'a.accessory_id')
-        .andOn(db.raw('a.is_delete = false'));
-    })
-    .where('mqia.manage_quotation_id', manage_quotation_id)
-    .where('mqia.is_delete', false)
-    .orderBy('mqia.created_at', 'asc');
-
-  return result || [];
+  // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
+  console.warn('[DEPRECATED] getAccessoriesByQuotationId() is disabled. Use accesories_properties from manage_quotation_items instead.');
+  return [];
 };
 
 /**
  * Delete accessories by quotation ID
+ * DISABLED: Tabel manage_quotation_item_accessories sudah dihapus.
+ * Data accessories sekarang dihapus dengan mengupdate kolom accesories_properties di tabel manage_quotation_items.
  */
 const deleteAccessoriesByQuotationId = async (manage_quotation_id) => {
-  if (!manage_quotation_id) {
-    return false;
-  }
-
-  const result = await db(ACCESSORIES_TABLE_NAME)
-    .where({ manage_quotation_id: manage_quotation_id })
-    .del();
-
-  return result > 0;
+  // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
+  console.warn('[DEPRECATED] deleteAccessoriesByQuotationId() is disabled. Update accesories_properties in manage_quotation_items instead.');
+  return false;
 };
 
 /**
  * Delete all accessories and recreate for quotation
+ * DISABLED: Tabel manage_quotation_item_accessories sudah dihapus.
+ * Data accessories sekarang diupdate melalui kolom accesories_properties di tabel manage_quotation_items.
  */
 const replaceAccessories = async (manage_quotation_id, accessories, updated_by) => {
-  // Soft delete all existing accessories
-  await deleteAccessoriesByQuotationId(manage_quotation_id);
-
-  // Create new accessories
-  const newAccessories = await createAccessories(manage_quotation_id, accessories, updated_by);
-
-  return newAccessories;
+  // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
+  console.warn('[DEPRECATED] replaceAccessories() is disabled. Update accesories_properties in manage_quotation_items instead.');
+  return [];
 };
 
 /**
  * SPECIFICATION FUNCTIONS
+ * DISABLED: Tabel manage_quotation_item_specifications sudah dihapus.
+ * Data specifications sekarang disimpan di kolom specification_properties (JSONB) di tabel manage_quotation_items.
  */
 
 const createSpecifications = async (manage_quotation_id, specifications, created_by, trx = db) => {
-  if (!specifications || specifications.length === 0) {
-    return [];
-  }
-
-  const results = [];
-
-  for (const spec of specifications) {
-    const fields = {
-      manage_quotation_id: manage_quotation_id || null,
-      componen_product_id: spec.componen_product_id || null,
-      manage_quotation_item_specification_label: spec.manage_quotation_item_specification_label ?? null,
-      manage_quotation_item_specification_value: spec.manage_quotation_item_specification_value ?? null,
-      created_by: created_by || null
-    };
-
-    const result = await trx(SPECIFICATIONS_TABLE_NAME)
-      .insert(fields)
-      .returning('*');
-
-    results.push(result[0]);
-  }
-
-  return results;
+  // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
+  console.warn('[DEPRECATED] createSpecifications() is disabled. Use specification_properties in manage_quotation_items instead.');
+  return [];
 };
 
+/**
+ * Get specifications by quotation ID
+ * DISABLED: Tabel manage_quotation_item_specifications sudah dihapus.
+ * Data specifications sekarang diambil dari kolom specification_properties (JSONB) di tabel manage_quotation_items.
+ */
 const getSpecificationsByQuotationId = async (manage_quotation_id) => {
-  if (!manage_quotation_id) {
-    return [];
-  }
-
-  const result = await db(`${SPECIFICATIONS_TABLE_NAME} as mqis`)
-    .select(
-      'mqis.manage_quotation_item_specification_id',
-      'mqis.manage_quotation_id',
-      'mqis.componen_product_id',
-      'mqis.manage_quotation_item_specification_label',
-      'mqis.manage_quotation_item_specification_value',
-      'mqis.created_by',
-      'mqis.updated_by',
-      'mqis.deleted_by',
-      'mqis.created_at',
-      'mqis.updated_at',
-      'mqis.deleted_at',
-      'mqis.is_delete',
-      db.raw('cp.code_unique as cp_code_unique'),
-      db.raw('cp.componen_product_name as cp_componen_product_name'),
-      db.raw('cp.segment as cp_segment'),
-      db.raw('cp.msi_model as cp_msi_model'),
-      db.raw('cp.msi_product as cp_msi_product'),
-      db.raw('cp.wheel_no as cp_wheel_no'),
-      db.raw('cp.engine as cp_engine'),
-      db.raw('cp.volume as cp_volume'),
-      db.raw('cp.horse_power as cp_horse_power'),
-      db.raw('cp.market_price as cp_market_price')
-    )
-    .leftJoin('componen_products as cp', function () {
-      this.on('mqis.componen_product_id', '=', 'cp.componen_product_id')
-        .andOn(db.raw('cp.is_delete = false'));
-    })
-    .where('mqis.manage_quotation_id', manage_quotation_id)
-    .where('mqis.is_delete', false)
-    .orderBy('mqis.created_at', 'asc');
-
-  return result || [];
+  // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
+  console.warn('[DEPRECATED] getSpecificationsByQuotationId() is disabled. Use specification_properties from manage_quotation_items instead.');
+  return [];
 };
 
+/**
+ * Delete specifications by quotation ID
+ * DISABLED: Tabel manage_quotation_item_specifications sudah dihapus.
+ * Data specifications sekarang dihapus dengan mengupdate kolom specification_properties di tabel manage_quotation_items.
+ */
 const deleteSpecificationsByQuotationId = async (manage_quotation_id) => {
-  if (!manage_quotation_id) {
-    return false;
-  }
-
-  const result = await db(SPECIFICATIONS_TABLE_NAME)
-    .where({ manage_quotation_id: manage_quotation_id })
-    .del();
-
-  return result > 0;
+  // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
+  console.warn('[DEPRECATED] deleteSpecificationsByQuotationId() is disabled. Update specification_properties in manage_quotation_items instead.');
+  return false;
 };
 
+/**
+ * Replace specifications for quotation
+ * DISABLED: Tabel manage_quotation_item_specifications sudah dihapus.
+ * Data specifications sekarang diupdate melalui kolom specification_properties di tabel manage_quotation_items.
+ */
 const replaceSpecifications = async (manage_quotation_id, specifications, updated_by) => {
-  await deleteSpecificationsByQuotationId(manage_quotation_id);
-  const newSpecifications = await createSpecifications(manage_quotation_id, specifications, updated_by);
-  return newSpecifications;
+  // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
+  console.warn('[DEPRECATED] replaceSpecifications() is disabled. Update specification_properties in manage_quotation_items instead.');
+  return [];
 };
 
 /**
