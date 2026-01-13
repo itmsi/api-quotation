@@ -107,6 +107,10 @@ const findAll = async (params) => {
       'mq.include_aftersales_page',
       'mq.include_msf_page',
       'mq.status',
+      'mq.company',
+      'mq.project_id',
+      'mq.quotation_for',
+      'mq.star',
       'mq.created_by',
       'mq.updated_by',
       db.raw('updater_data.employee_name as updated_by_name'),
@@ -529,6 +533,10 @@ const create = async (data, trx = db) => {
     include_aftersales_page: data.include_aftersales_page ?? false,
     include_msf_page: data.include_msf_page ?? false,
     island_id: data.island_id || null,
+    company: data.company || null,
+    project_id: data.project_id || null,
+    quotation_for: data.quotation_for || null,
+    star: data.star !== undefined ? (data.star ? parseInt(data.star) : null) : null,
     created_by: data.created_by || null
   };
 
@@ -580,6 +588,10 @@ const update = async (id, data, trx = db) => {
   if (data.include_msf_page !== undefined) updateFields.include_msf_page = data.include_msf_page;
   if (data.status !== undefined) updateFields.status = data.status;
   if (data.island_id !== undefined) updateFields.island_id = data.island_id;
+  if (data.company !== undefined) updateFields.company = data.company;
+  if (data.project_id !== undefined) updateFields.project_id = data.project_id;
+  if (data.quotation_for !== undefined) updateFields.quotation_for = data.quotation_for;
+  if (data.star !== undefined) updateFields.star = data.star ? parseInt(data.star) : null;
   if (data.updated_by !== undefined) updateFields.updated_by = data.updated_by;
   if (data.deleted_by !== undefined) updateFields.deleted_by = data.deleted_by;
 

@@ -257,7 +257,11 @@ const manageQuotationPaths = {
                   island_id: '123e4567-e89b-12d3-a456-426614174003',
                   manage_quotation_date: '2025-01-15',
                   manage_quotation_valid_date: '2025-01-30',
-                  status: 'submit'
+                  status: 'submit',
+                  company: 'PT Example Company',
+                  project_id: 'PROJ-001',
+                  quotation_for: 'Customer Name',
+                  star: 5
                 }
               }
             }
@@ -334,6 +338,10 @@ const manageQuotationPaths = {
               status: 'draft',
               include_aftersales_page: false,
               include_msf_page: true,
+              company: 'PT Example Company',
+              project_id: 'PROJ-001',
+              quotation_for: 'Customer Name',
+              star: 5,
               manage_quotation_items: [
                 {
                   componen_product_id: '123e4567-e89b-12d3-a456-426614174004',
@@ -413,7 +421,11 @@ const manageQuotationPaths = {
                   island_id: '123e4567-e89b-12d3-a456-426614174003',
                   manage_quotation_date: '2025-01-15',
                   manage_quotation_valid_date: '2025-01-30',
-                  status: 'submit'
+                  status: 'submit',
+                  company: 'PT Example Company',
+                  project_id: 'PROJ-001',
+                  quotation_for: 'Customer Name',
+                  star: 5
                 }
               }
             }
@@ -550,6 +562,10 @@ const manageQuotationPaths = {
               status: 'submit',
               include_aftersales_page: true,
               include_msf_page: false,
+              company: 'PT Example Company',
+              project_id: 'PROJ-001',
+              quotation_for: 'Customer Name',
+              star: 5,
               manage_quotation_items: [
                 {
                   componen_product_id: '123e4567-e89b-12d3-a456-426614174004',
@@ -612,6 +628,10 @@ const manageQuotationPaths = {
                   manage_quotation_date: '2025-01-15',
                   manage_quotation_valid_date: '2025-01-30',
                   status: 'submit',
+                  company: 'PT Example Company',
+                  project_id: 'PROJ-001',
+                  quotation_for: 'Customer Name',
+                  star: 5,
                   created_at: '2025-01-15T10:00:00.000Z'
                 }
               }
@@ -750,6 +770,10 @@ const manageQuotationPaths = {
                   manage_quotation_valid_date: '2025-01-30',
                   manage_quotation_description: 'Copy dari 001/IEC-MSI/2025. Additional notes about the quotation',
                   status: 'draft',
+                  company: 'PT Example Company',
+                  project_id: 'PROJ-001',
+                  quotation_for: 'Customer Name',
+                  star: 5,
                   created_at: '2025-01-15T10:00:00.000Z'
                 }
               }

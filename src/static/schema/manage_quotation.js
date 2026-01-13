@@ -201,6 +201,30 @@ const manageQuotationSchemas = {
         example: false,
         default: false
       },
+      company: {
+        type: 'string',
+        nullable: true,
+        description: 'Company name',
+        example: 'PT Example Company'
+      },
+      project_id: {
+        type: 'string',
+        nullable: true,
+        description: 'Project ID',
+        example: 'PROJ-001'
+      },
+      quotation_for: {
+        type: 'string',
+        nullable: true,
+        description: 'Quotation for',
+        example: 'Customer Name'
+      },
+      star: {
+        type: 'integer',
+        nullable: true,
+        description: 'Star rating',
+        example: 5
+      },
       created_by: {
         type: 'string',
         format: 'uuid',
@@ -434,6 +458,29 @@ const manageQuotationSchemas = {
         description: 'Menandakan apakah halaman MSF perlu disertakan dalam dokumen',
         example: false,
         default: false
+      },
+      company: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Company name',
+        example: 'PT Example Company'
+      },
+      project_id: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Project ID',
+        example: 'PROJ-001'
+      },
+      quotation_for: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Quotation for',
+        example: 'Customer Name'
+      },
+      star: {
+        type: 'integer',
+        description: 'Star rating',
+        example: 5
       },
       manage_quotation_items: {
         type: 'array',

@@ -225,6 +225,25 @@ const createValidation = [
     .isBoolean()
     .withMessage('include_msf_page harus berupa boolean')
     .toBoolean(),
+  body('company')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Company maksimal 255 karakter')
+    .trim(),
+  body('project_id')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Project ID maksimal 255 karakter')
+    .trim(),
+  body('quotation_for')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Quotation for maksimal 255 karakter')
+    .trim(),
+  body('star')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Star harus berupa angka integer non-negatif'),
   body('manage_quotation_items')
     .optional()
     .isArray({ min: 0 })
@@ -624,6 +643,25 @@ const updateValidation = [
     .isBoolean()
     .withMessage('include_msf_page harus berupa boolean')
     .toBoolean(),
+  body('company')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Company maksimal 255 karakter')
+    .trim(),
+  body('project_id')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Project ID maksimal 255 karakter')
+    .trim(),
+  body('quotation_for')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Quotation for maksimal 255 karakter')
+    .trim(),
+  body('star')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Star harus berupa angka integer non-negatif'),
   body('manage_quotation_items')
     .optional()
     .isArray({ min: 0 })
