@@ -8,6 +8,15 @@ const createValidation = [
     .optional()
     .isInt({ min: 1, max: 3 })
     .withMessage('Componen type harus berupa angka 1, 2, atau 3 (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR)'),
+  body('company_id')
+    .optional()
+    .isUUID()
+    .withMessage('Company ID harus berupa UUID yang valid'),
+  body('product_type')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Product type maksimal 255 karakter')
+    .trim(),
   body('componen_product_name')
     .optional()
     .isLength({ max: 255 })
@@ -147,6 +156,15 @@ const updateValidation = [
     .optional()
     .isInt({ min: 1, max: 3 })
     .withMessage('Componen type harus berupa angka 1, 2, atau 3 (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR)'),
+  body('company_id')
+    .optional()
+    .isUUID()
+    .withMessage('Company ID harus berupa UUID yang valid'),
+  body('product_type')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Product type maksimal 255 karakter')
+    .trim(),
   body('componen_product_name')
     .optional()
     .isLength({ max: 255 })
@@ -303,8 +321,8 @@ const listValidation = [
     .trim(),
   body('sort_by')
     .optional()
-    .isIn(['created_at', 'code_unique', 'componen_product_name', 'segment', 'msi_model', 'msi_product', 'volume', 'componen_product_unit_model'])
-    .withMessage('Sort by harus salah satu dari: created_at, code_unique, componen_product_name, segment, msi_model, msi_product, volume, componen_product_unit_model'),
+    .isIn(['created_at', 'code_unique', 'componen_product_name', 'segment', 'msi_model', 'msi_product', 'volume', 'componen_product_unit_model', 'product_type'])
+    .withMessage('Sort by harus salah satu dari: created_at, code_unique, componen_product_name, segment, msi_model, msi_product, volume, componen_product_unit_model, product_type'),
   body('sort_order')
     .optional()
     .isIn(['asc', 'desc'])

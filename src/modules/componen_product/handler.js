@@ -110,7 +110,8 @@ const mapSortBy = (sortBy) => {
     'msi_model': 'msi_model',
     'msi_product': 'msi_product',
     'volume': 'volume',
-    'componen_product_unit_model': 'componen_product_unit_model'
+    'componen_product_unit_model': 'componen_product_unit_model',
+    'product_type': 'product_type'
   };
   return mapping[sortBy] || 'created_at';
 };
@@ -296,6 +297,8 @@ const create = async (req, res) => {
     
     const componenProductData = {
       componen_type: req.body.componen_type ? parseInt(req.body.componen_type) : null,
+      company_id: req.body.company_id || null,
+      product_type: req.body.product_type || null,
       code_unique: req.body.code_unique || null,
       segment: req.body.segment || null,
       msi_model: req.body.msi_model || null,
@@ -367,6 +370,8 @@ const update = async (req, res) => {
     
     const componenProductData = {
       componen_type: req.body.componen_type !== undefined ? (req.body.componen_type ? parseInt(req.body.componen_type) : null) : undefined,
+      company_id: req.body.company_id,
+      product_type: req.body.product_type,
       code_unique: req.body.code_unique,
       segment: req.body.segment,
       msi_model: req.body.msi_model,

@@ -49,6 +49,20 @@ const mapSpecificationResponse = (specifications = []) => {
 };
 
 /**
+ * Map product_type from database to response
+ * Note: product_type is now a direct column, but we still map from componen_type for backward compatibility
+ */
+const mapProductTypeResponse = (productType, componenType) => {
+  // If product_type is provided directly, use it
+  if (productType && productType.trim() !== '') {
+    return productType.trim();
+  }
+  
+  // Otherwise, fallback to mapping from componen_type for backward compatibility
+  return mapProductType(componenType);
+};
+
+/**
  * Map nilai componen_type menjadi product_type
  */
 const mapProductType = (componenType) => {
@@ -91,7 +105,9 @@ const buildSearchWhere = (search) => {
         .orWhereRaw('LOWER(componen_products.componen_product_unit_model) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(componen_products.volume) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(componen_products.componen_product_description) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(updater_data.employee_name) LIKE ?', [searchPattern]);
+        .orWhereRaw('LOWER(componen_products.product_type) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(updater_data.employee_name) LIKE ?', [searchPattern])
+        .orWhereRaw('LOWER(company_data.company_name) LIKE ?', [searchPattern]);
     });
   };
 };
@@ -112,18 +128,24 @@ const findAll = async (params) => {
   // Ensure dblink connection
   const dblinkConnected = await ensureDblinkConnection();
   let updaterJoin;
+  let companyJoin;
 
   if (dblinkConnected) {
     updaterJoin = db.raw(
       `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS updater_data(employee_id uuid, employee_name varchar)`
     );
+    companyJoin = db.raw(
+      `dblink('${DBLINK_NAME}', 'SELECT company_id, company_name FROM companies WHERE company_id IS NOT NULL AND is_delete = false') AS company_data(company_id uuid, company_name varchar)`
+    );
   } else {
     updaterJoin = db.raw(`(SELECT NULL::uuid as employee_id, NULL::varchar as employee_name WHERE false) AS updater_data(employee_id uuid, employee_name varchar)`);
+    companyJoin = db.raw(`(SELECT NULL::uuid as company_id, NULL::varchar as company_name WHERE false) AS company_data(company_id uuid, company_name varchar)`);
   }
 
   let query = db(TABLE_NAME)
-    .select(`${TABLE_NAME}.*`, db.raw('updater_data.employee_name as updated_by_name'))
+    .select(`${TABLE_NAME}.*`, db.raw('updater_data.employee_name as updated_by_name'), db.raw('company_data.company_name as company_name'))
     .leftJoin(updaterJoin, `${TABLE_NAME}.updated_by`, 'updater_data.employee_id')
+    .leftJoin(companyJoin, `${TABLE_NAME}.company_id`, 'company_data.company_id')
     .where(`${TABLE_NAME}.is_delete`, false);
 
   // Apply search
@@ -153,11 +175,15 @@ const findAll = async (params) => {
         updaterJoin = db.raw(
           `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS updater_data(employee_id uuid, employee_name varchar)`
         );
+        companyJoin = db.raw(
+          `dblink('${DBLINK_NAME}', 'SELECT company_id, company_name FROM companies WHERE company_id IS NOT NULL AND is_delete = false') AS company_data(company_id uuid, company_name varchar)`
+        );
 
         try {
           query = db(TABLE_NAME)
-            .select(`${TABLE_NAME}.*`, db.raw('updater_data.employee_name as updated_by_name'))
+            .select(`${TABLE_NAME}.*`, db.raw('updater_data.employee_name as updated_by_name'), db.raw('company_data.company_name as company_name'))
             .leftJoin(updaterJoin, `${TABLE_NAME}.updated_by`, 'updater_data.employee_id')
+            .leftJoin(companyJoin, `${TABLE_NAME}.company_id`, 'company_data.company_id')
             .where(`${TABLE_NAME}.is_delete`, false);
 
           if (search && search.trim() !== '') {
@@ -180,7 +206,7 @@ const findAll = async (params) => {
 
           query = query.orderBy(sortBy || 'created_at', sortOrderSafe).limit(limitNumber).offset(offsetNumber);
           data = await query;
-          data = data.map(item => ({ ...item, updated_by_name: null }));
+          data = data.map(item => ({ ...item, updated_by_name: null, company_name: null }));
         }
       } else {
         // Fallback without dblink
@@ -195,21 +221,26 @@ const findAll = async (params) => {
 
         query = query.orderBy(sortBy || 'created_at', sortOrderSafe).limit(limitNumber).offset(offsetNumber);
         data = await query;
-        data = data.map(item => ({ ...item, updated_by_name: null }));
+        data = data.map(item => ({ ...item, updated_by_name: null, company_name: null }));
       }
     } else {
       throw error;
     }
   }
 
-  const itemsWithProductType = (data || []).map((item) => ({
-    ...item,
-    product_type: mapProductType(item.componen_type)
-  }));
+  const itemsWithProductType = (data || []).map((item) => {
+    // Remove specification_properties from response
+    const { specification_properties, ...itemWithoutSpecs } = item;
+    return {
+      ...itemWithoutSpecs,
+      product_type: mapProductTypeResponse(item.product_type, item.componen_type)
+    };
+  });
 
   // Count total
   let countQuery = db(TABLE_NAME)
     .leftJoin(updaterJoin, `${TABLE_NAME}.updated_by`, 'updater_data.employee_id')
+    .leftJoin(companyJoin, `${TABLE_NAME}.company_id`, 'company_data.company_id')
     .where(`${TABLE_NAME}.is_delete`, false);
 
   if (search && search.trim() !== '') {
@@ -251,9 +282,39 @@ const findAll = async (params) => {
  * Find single componen product by ID
  */
 const findById = async (id) => {
-  const componenProduct = await db(TABLE_NAME)
-    .where({ componen_product_id: id, is_delete: false })
-    .first();
+  // Ensure dblink connection
+  const dblinkConnected = await ensureDblinkConnection();
+  let companyJoin;
+
+  if (dblinkConnected) {
+    companyJoin = db.raw(
+      `dblink('${DBLINK_NAME}', 'SELECT company_id, company_name FROM companies WHERE company_id IS NOT NULL AND is_delete = false') AS company_data(company_id uuid, company_name varchar)`
+    );
+  } else {
+    companyJoin = db.raw(`(SELECT NULL::uuid as company_id, NULL::varchar as company_name WHERE false) AS company_data(company_id uuid, company_name varchar)`);
+  }
+
+  let componenProduct;
+  try {
+    componenProduct = await db(TABLE_NAME)
+      .select(`${TABLE_NAME}.*`, db.raw('company_data.company_name as company_name'))
+      .leftJoin(companyJoin, `${TABLE_NAME}.company_id`, 'company_data.company_id')
+      .where({ [`${TABLE_NAME}.componen_product_id`]: id, [`${TABLE_NAME}.is_delete`]: false })
+      .first();
+  } catch (error) {
+    // Fallback without dblink
+    if (error.message && (error.message.includes('could not establish connection') || error.message.includes('dblink'))) {
+      componenProduct = await db(TABLE_NAME)
+        .where({ componen_product_id: id, is_delete: false })
+        .first();
+      
+      if (componenProduct) {
+        componenProduct.company_name = null;
+      }
+    } else {
+      throw error;
+    }
+  }
 
   if (!componenProduct) {
     return null;
@@ -281,7 +342,7 @@ const findById = async (id) => {
   return {
     ...componenProduct,
     componen_product_specifications: normalizedSpecs,
-    product_type: mapProductType(componenProduct.componen_type)
+    product_type: mapProductTypeResponse(componenProduct.product_type, componenProduct.componen_type)
   };
 };
 
@@ -338,6 +399,8 @@ const create = async (data, specifications = []) => {
     const insertData = {
       componen_product_name: data.componen_product_name || null,
       componen_type: data.componen_type || null,
+      company_id: data.company_id || null,
+      product_type: data.product_type || null,
       code_unique: data.code_unique || null,
       segment: data.segment || null,
       msi_model: data.msi_model || null,
@@ -394,7 +457,7 @@ const create = async (data, specifications = []) => {
     return {
       ...product,
       componen_product_specifications: normalizedSpecs,
-      product_type: mapProductType(product.componen_type)
+      product_type: mapProductTypeResponse(product.product_type, product.componen_type)
     };
   });
 };
@@ -424,6 +487,8 @@ const update = async (id, data, options = {}) => {
 
     if (data.componen_product_name !== undefined) updateFields.componen_product_name = data.componen_product_name;
     if (data.componen_type !== undefined) updateFields.componen_type = data.componen_type;
+    if (data.company_id !== undefined) updateFields.company_id = data.company_id;
+    if (data.product_type !== undefined) updateFields.product_type = data.product_type;
     if (data.code_unique !== undefined) updateFields.code_unique = data.code_unique;
     if (data.segment !== undefined) updateFields.segment = data.segment;
     if (data.msi_model !== undefined) updateFields.msi_model = data.msi_model;
@@ -517,7 +582,7 @@ const update = async (id, data, options = {}) => {
     return {
       ...product,
       componen_product_specifications: normalizedSpecs,
-      product_type: mapProductType(product.componen_type)
+      product_type: mapProductTypeResponse(product.product_type, product.componen_type)
     };
   });
 };
