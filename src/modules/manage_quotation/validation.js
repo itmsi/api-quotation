@@ -242,8 +242,21 @@ const createValidation = [
     .trim(),
   body('star')
     .optional()
-    .isInt({ min: 0 })
-    .withMessage('Star harus berupa angka integer non-negatif'),
+    .custom((value) => {
+      // Allow null, undefined, empty string, or any string
+      if (value === null || value === undefined || value === '') {
+        return true;
+      }
+      if (typeof value === 'string') {
+        return true;
+      }
+      // Allow number but convert to string
+      if (typeof value === 'number') {
+        return true;
+      }
+      return false;
+    })
+    .withMessage('Star harus berupa string atau null'),
   body('manage_quotation_items')
     .optional()
     .isArray({ min: 0 })
@@ -660,8 +673,21 @@ const updateValidation = [
     .trim(),
   body('star')
     .optional()
-    .isInt({ min: 0 })
-    .withMessage('Star harus berupa angka integer non-negatif'),
+    .custom((value) => {
+      // Allow null, undefined, empty string, or any string
+      if (value === null || value === undefined || value === '') {
+        return true;
+      }
+      if (typeof value === 'string') {
+        return true;
+      }
+      // Allow number but convert to string
+      if (typeof value === 'number') {
+        return true;
+      }
+      return false;
+    })
+    .withMessage('Star harus berupa string atau null'),
   body('manage_quotation_items')
     .optional()
     .isArray({ min: 0 })

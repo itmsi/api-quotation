@@ -220,10 +220,11 @@ const manageQuotationSchemas = {
         example: 'Customer Name'
       },
       star: {
-        type: 'integer',
+        type: 'string',
         nullable: true,
         description: 'Star rating',
-        example: 5
+        example: '0',
+        default: '0'
       },
       created_by: {
         type: 'string',
@@ -478,9 +479,11 @@ const manageQuotationSchemas = {
         example: 'Customer Name'
       },
       star: {
-        type: 'integer',
+        type: 'string',
+        nullable: true,
         description: 'Star rating',
-        example: 5
+        example: '0',
+        default: '0'
       },
       manage_quotation_items: {
         type: 'array',

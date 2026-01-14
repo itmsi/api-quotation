@@ -536,7 +536,7 @@ const create = async (data, trx = db) => {
     company: data.company || null,
     project_id: data.project_id || null,
     quotation_for: data.quotation_for || null,
-    star: data.star !== undefined ? (data.star ? parseInt(data.star) : null) : null,
+    star: data.star !== undefined ? (data.star !== null && data.star !== '' ? String(data.star) : '0') : '0',
     created_by: data.created_by || null
   };
 
@@ -591,7 +591,7 @@ const update = async (id, data, trx = db) => {
   if (data.company !== undefined) updateFields.company = data.company;
   if (data.project_id !== undefined) updateFields.project_id = data.project_id;
   if (data.quotation_for !== undefined) updateFields.quotation_for = data.quotation_for;
-  if (data.star !== undefined) updateFields.star = data.star ? parseInt(data.star) : null;
+  if (data.star !== undefined) updateFields.star = data.star !== null && data.star !== '' ? String(data.star) : '0';
   if (data.updated_by !== undefined) updateFields.updated_by = data.updated_by;
   if (data.deleted_by !== undefined) updateFields.deleted_by = data.deleted_by;
 
