@@ -319,7 +319,7 @@ const mapProductType = (componenType) => {
  */
 const getAll = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = '', sort_by = 'created_at', sort_order = 'desc', status = '', island_id = '' } = req.body;
+    const { page = 1, limit = 10, search = '', sort_by = 'created_at', sort_order = 'desc', status = '', island_id = '', quotation_for = '' } = req.body;
 
     const offset = (page - 1) * limit;
 
@@ -332,6 +332,15 @@ const getAll = async (req, res) => {
       }
     }
 
+    // Validate and normalize quotation_for
+    let normalizedQuotationFor = null;
+    if (quotation_for && quotation_for !== '' && quotation_for !== null && quotation_for !== undefined) {
+      const quotationForStr = String(quotation_for).trim();
+      if (quotationForStr !== '' && quotationForStr !== 'NaN' && quotationForStr !== 'null') {
+        normalizedQuotationFor = quotationForStr;
+      }
+    }
+
     const params = {
       page,
       limit,
@@ -340,7 +349,8 @@ const getAll = async (req, res) => {
       sortBy: mapSortBy(sort_by),
       sortOrder: sort_order,
       status: status && status.trim() !== '' ? status.trim() : null,
-      islandId: normalizedIslandId
+      islandId: normalizedIslandId,
+      quotationFor: normalizedQuotationFor
     };
 
     let data;

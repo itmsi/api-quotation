@@ -40,7 +40,7 @@ const ensureDblinkConnection = async (maxRetries = 3) => {
  * Find all manage quotations with pagination, search, and sort
  */
 const findAll = async (params) => {
-  const { page, limit, offset, search, sortBy, sortOrder, status, islandId } = params;
+  const { page, limit, offset, search, sortBy, sortOrder, status, islandId, quotationFor } = params;
 
   // Try to ensure dblink connection, but don't fail if it doesn't work
   const dblinkConnected = await ensureDblinkConnection();
@@ -149,6 +149,11 @@ const findAll = async (params) => {
   // Add island_id filter condition
   if (islandId && islandId.trim() !== '') {
     query = query.where('mq.island_id', islandId.trim());
+  }
+
+  // Add quotation_for filter condition
+  if (quotationFor && quotationFor.trim() !== '') {
+    query = query.where('mq.quotation_for', quotationFor.trim());
   }
 
   // Add sorting

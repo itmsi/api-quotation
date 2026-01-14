@@ -1201,6 +1201,12 @@ const manageQuotationSchemas = {
         nullable: true,
         description: 'Filter by island_id (UUID). Leave empty, null, or NaN to get all islands',
         example: ''
+      },
+      quotation_for: {
+        type: 'string',
+        nullable: true,
+        description: 'Filter by quotation_for. Leave empty, null, or NaN to get all quotations',
+        example: ''
       }
     }
   },

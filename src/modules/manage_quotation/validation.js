@@ -933,6 +933,28 @@ const listValidation = [
       return false;
     })
     .withMessage('island_id harus berupa UUID yang valid, string kosong, null, atau NaN'),
+  body('quotation_for')
+    .optional()
+    .custom((value) => {
+      // Allow empty string, null, undefined, NaN, or any string
+      if (value === null || value === undefined || value === '') {
+        return true;
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
+          return true;
+        }
+        // Allow any non-empty string
+        return true;
+      }
+      // Allow NaN
+      if (typeof value === 'number' && isNaN(value)) {
+        return true;
+      }
+      return false;
+    })
+    .withMessage('quotation_for harus berupa string, string kosong, null, atau NaN'),
 ];
 
 /**

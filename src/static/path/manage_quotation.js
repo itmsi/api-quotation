@@ -29,7 +29,8 @@ const manageQuotationPaths = {
                   sort_by: 'created_at',
                   sort_order: 'desc',
                   status: '',
-                  island_id: ''
+                  island_id: '',
+                  quotation_for: ''
                 }
               },
               getDraftOnly: {
@@ -42,7 +43,8 @@ const manageQuotationPaths = {
                   sort_by: 'created_at',
                   sort_order: 'desc',
                   status: 'draft',
-                  island_id: ''
+                  island_id: '',
+                  quotation_for: ''
                 }
               },
               getSubmitOnly: {
@@ -55,7 +57,8 @@ const manageQuotationPaths = {
                   sort_by: 'created_at',
                   sort_order: 'desc',
                   status: 'submit',
-                  island_id: ''
+                  island_id: '',
+                  quotation_for: ''
                 }
               },
               getRejectOnly: {
@@ -68,7 +71,8 @@ const manageQuotationPaths = {
                   sort_by: 'created_at',
                   sort_order: 'desc',
                   status: 'reject',
-                  island_id: ''
+                  island_id: '',
+                  quotation_for: ''
                 }
               },
               getByIslandId: {
@@ -81,7 +85,8 @@ const manageQuotationPaths = {
                   sort_by: 'created_at',
                   sort_order: 'desc',
                   status: '',
-                  island_id: '123e4567-e89b-12d3-a456-426614174003'
+                  island_id: '123e4567-e89b-12d3-a456-426614174003',
+                  quotation_for: ''
                 }
               },
               getAllWithEmptyIslandId: {
@@ -94,7 +99,22 @@ const manageQuotationPaths = {
                   sort_by: 'created_at',
                   sort_order: 'desc',
                   status: '',
-                  island_id: ''
+                  island_id: '',
+                  quotation_for: ''
+                }
+              },
+              getByQuotationFor: {
+                summary: 'Get quotations by quotation_for',
+                description: 'Filter quotations by specific quotation_for',
+                value: {
+                  page: 1,
+                  limit: 10,
+                  search: '',
+                  sort_by: 'created_at',
+                  sort_order: 'desc',
+                  status: '',
+                  island_id: '',
+                  quotation_for: 'Customer Name'
                 }
               }
             }
