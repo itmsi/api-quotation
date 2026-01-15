@@ -295,10 +295,28 @@ const create = async (req, res) => {
       imageUrl = req.body.image || null;
     }
     
+    // Normalize company_id
+    let normalizedCompanyId = null;
+    if (req.body.company_id && req.body.company_id !== '' && req.body.company_id !== null && req.body.company_id !== undefined) {
+      const companyIdStr = String(req.body.company_id).trim();
+      if (companyIdStr !== '' && companyIdStr !== 'NaN' && companyIdStr !== 'null') {
+        normalizedCompanyId = companyIdStr;
+      }
+    }
+
+    // Normalize product_type
+    let normalizedProductType = null;
+    if (req.body.product_type && req.body.product_type !== '' && req.body.product_type !== null && req.body.product_type !== undefined) {
+      const productTypeStr = String(req.body.product_type).trim();
+      if (productTypeStr !== '' && productTypeStr !== 'NaN' && productTypeStr !== 'null') {
+        normalizedProductType = productTypeStr;
+      }
+    }
+
     const componenProductData = {
       componen_type: req.body.componen_type ? parseInt(req.body.componen_type) : null,
-      company_id: req.body.company_id || null,
-      product_type: req.body.product_type || null,
+      company_id: normalizedCompanyId,
+      product_type: normalizedProductType,
       code_unique: req.body.code_unique || null,
       segment: req.body.segment || null,
       msi_model: req.body.msi_model || null,
@@ -368,10 +386,40 @@ const update = async (req, res) => {
       }
     }
     
+    // Normalize company_id if provided
+    let normalizedCompanyId = undefined;
+    if (req.body.company_id !== undefined) {
+      if (req.body.company_id && req.body.company_id !== '' && req.body.company_id !== null) {
+        const companyIdStr = String(req.body.company_id).trim();
+        if (companyIdStr !== '' && companyIdStr !== 'NaN' && companyIdStr !== 'null') {
+          normalizedCompanyId = companyIdStr;
+        } else {
+          normalizedCompanyId = null;
+        }
+      } else {
+        normalizedCompanyId = null;
+      }
+    }
+
+    // Normalize product_type if provided
+    let normalizedProductType = undefined;
+    if (req.body.product_type !== undefined) {
+      if (req.body.product_type && req.body.product_type !== '' && req.body.product_type !== null) {
+        const productTypeStr = String(req.body.product_type).trim();
+        if (productTypeStr !== '' && productTypeStr !== 'NaN' && productTypeStr !== 'null') {
+          normalizedProductType = productTypeStr;
+        } else {
+          normalizedProductType = null;
+        }
+      } else {
+        normalizedProductType = null;
+      }
+    }
+
     const componenProductData = {
       componen_type: req.body.componen_type !== undefined ? (req.body.componen_type ? parseInt(req.body.componen_type) : null) : undefined,
-      company_id: req.body.company_id,
-      product_type: req.body.product_type,
+      company_id: normalizedCompanyId,
+      product_type: normalizedProductType,
       code_unique: req.body.code_unique,
       segment: req.body.segment,
       msi_model: req.body.msi_model,

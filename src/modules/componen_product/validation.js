@@ -10,13 +10,44 @@ const createValidation = [
     .withMessage('Componen type harus berupa angka 1, 2, atau 3 (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR)'),
   body('company_id')
     .optional()
-    .isUUID()
-    .withMessage('Company ID harus berupa UUID yang valid'),
+    .custom((value) => {
+      if (value === null || value === undefined || value === '') {
+        return true;
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
+          return true;
+        }
+        // If it's a valid UUID, validate it
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidRegex.test(trimmed)) {
+          return true;
+        }
+        return false;
+      }
+      return false;
+    })
+    .withMessage('Company ID harus berupa UUID yang valid, string kosong, null, atau NaN'),
   body('product_type')
     .optional()
-    .isLength({ max: 255 })
-    .withMessage('Product type maksimal 255 karakter')
-    .trim(),
+    .custom((value) => {
+      if (value === null || value === undefined || value === '') {
+        return true;
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
+          return true;
+        }
+        if (trimmed.length > 255) {
+          throw new Error('Product type maksimal 255 karakter');
+        }
+        return true;
+      }
+      return false;
+    })
+    .withMessage('Product type harus berupa string, string kosong, null, atau NaN (maksimal 255 karakter)'),
   body('componen_product_name')
     .optional()
     .isLength({ max: 255 })
@@ -158,13 +189,44 @@ const updateValidation = [
     .withMessage('Componen type harus berupa angka 1, 2, atau 3 (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR)'),
   body('company_id')
     .optional()
-    .isUUID()
-    .withMessage('Company ID harus berupa UUID yang valid'),
+    .custom((value) => {
+      if (value === null || value === undefined || value === '') {
+        return true;
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
+          return true;
+        }
+        // If it's a valid UUID, validate it
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidRegex.test(trimmed)) {
+          return true;
+        }
+        return false;
+      }
+      return false;
+    })
+    .withMessage('Company ID harus berupa UUID yang valid, string kosong, null, atau NaN'),
   body('product_type')
     .optional()
-    .isLength({ max: 255 })
-    .withMessage('Product type maksimal 255 karakter')
-    .trim(),
+    .custom((value) => {
+      if (value === null || value === undefined || value === '') {
+        return true;
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
+          return true;
+        }
+        if (trimmed.length > 255) {
+          throw new Error('Product type maksimal 255 karakter');
+        }
+        return true;
+      }
+      return false;
+    })
+    .withMessage('Product type harus berupa string, string kosong, null, atau NaN (maksimal 255 karakter)'),
   body('componen_product_name')
     .optional()
     .isLength({ max: 255 })
