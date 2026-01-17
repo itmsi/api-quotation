@@ -1,4 +1,3 @@
-
 const db = require('../../config/database');
 const repository = require('./postgre_repository');
 const customerRepository = require('../cutomer/postgre_repository');
@@ -61,7 +60,6 @@ const getIslandsByIds = async (ids = []) => {
   }
 };
 
-
 /**
  * Get map of accessory details by ID
  */
@@ -88,8 +86,6 @@ const getAccessoryDetailsMap = async (items) => {
 
   return map;
 };
-
-
 
 /**
  * Remove "MSI[number] - " prefix from componen_product_name
@@ -177,8 +173,6 @@ const normalizeJsonPayload = (payload) => {
   // For other types (number, boolean, etc.), wrap in object
   return { content: payload };
 };
-
-
 
 /**
  * Extract term_content_payload as string from payload object
@@ -280,7 +274,6 @@ const getAll = async (req, res) => {
         normalizedIslandId = islandIdStr;
       }
     }
-
 
     // Validate and normalize quotation_for
     let normalizedQuotationFor = null;
@@ -683,7 +676,6 @@ const getById = async (req, res) => {
       Object.assign(data, dataWithTermContentTitle);
     }
 
-
     // Format numeric fields: remove trailing zeros if all decimals are zero
     const numericFields = [
       'manage_quotation_grand_total',
@@ -707,9 +699,6 @@ const getById = async (req, res) => {
       }
     });
 
-
-    // Read term_content_directory JSON file if exists
-    if (data.term_content_directory) {
     // Parse properties JSONB if string
     if (data.properties && typeof data.properties === 'string') {
       try {
@@ -966,8 +955,6 @@ const getPdfById = async (req, res) => {
 
     // Final aggressive cleanup: ensure ALL items in manage_quotation_items have cleaned componen_product_name
     // This is the absolute last step before sending response
-    // Final aggressive cleanup: ensure ALL items in manage_quotation_items have cleaned componen_product_name
-    // This is the absolute last step before sending response
     if (data.manage_quotation_items && Array.isArray(data.manage_quotation_items)) {
       data.manage_quotation_items = data.manage_quotation_items.map((item) => {
         if (item && item.componen_product_name && typeof item.componen_product_name === 'string') {
@@ -1077,7 +1064,6 @@ const getPdfById = async (req, res) => {
         }
       }
     });
-
 
     const response = mappingSuccess('Data berhasil diambil', data);
     return baseResponse(res, response);
@@ -1338,8 +1324,6 @@ const create = async (req, res) => {
   } catch (error) {
     logStep('process.failed', 'error', { message: error.message });
 
-
-
     const response = mappingError(error);
     response.data.logs = processLogs;
     return baseResponse(res, response);
@@ -1567,8 +1551,6 @@ const update = async (req, res) => {
       return baseResponse(res, response);
     }
 
-
-
     // Update items jika array disediakan (termasuk kosong untuk reset)
     if (itemsProvided) {
       await repository.replaceItems(id, itemsForInsert, tokenData.updated_by);
@@ -1611,8 +1593,6 @@ const update = async (req, res) => {
       stack: error.stack,
       bodyKeys: Object.keys(req.body || {})
     });
-
-
 
     const response = mappingError(error);
     return baseResponse(res, response);
@@ -1832,4 +1812,3 @@ module.exports = {
   restore,
   duplikat
 };
-
