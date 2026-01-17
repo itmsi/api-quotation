@@ -104,6 +104,7 @@ const findAll = async (params) => {
       'mq.bank_account_bank_name',
       'mq.term_content_id',
       'mq.term_content_directory',
+      'mq.term_content_payload',
       'mq.include_aftersales_page',
       'mq.include_msf_page',
       'mq.status',
@@ -227,6 +228,7 @@ const findAll = async (params) => {
               'mq.bank_account_bank_name',
               'mq.term_content_id',
               'mq.term_content_directory',
+              'mq.term_content_payload',
               'mq.include_aftersales_page',
               'mq.include_msf_page',
               'mq.status',
@@ -509,6 +511,62 @@ const create = async (data, trx = db) => {
     quotationNumber = await generateQuotationNumber(trx);
   }
 
+  // Fetch external data for properties
+  let customerData = {};
+  let employeeData = {};
+  let islandData = {};
+
+  try {
+    const dblinkConnected = await ensureDblinkConnection();
+
+    if (dblinkConnected) {
+      // Fetch customer
+      if (data.customer_id) {
+        const customerQuery = `SELECT customer_name, customer_email, customer_phone, customer_address, contact_person FROM customers WHERE customer_id = ''${data.customer_id}''`;
+        const customerRes = await db.raw(`SELECT * FROM dblink('${DBLINK_NAME}', '${customerQuery}') AS t(customer_name varchar, customer_email varchar, customer_phone varchar, customer_address text, contact_person varchar)`);
+        if (customerRes.rows.length > 0) customerData = customerRes.rows[0];
+      }
+
+      // Fetch employee
+      if (data.employee_id) {
+        const employeeQuery = `SELECT employee_name, employee_phone FROM employees WHERE employee_id = ''${data.employee_id}''`;
+        const employeeRes = await db.raw(`SELECT * FROM dblink('${DBLINK_NAME}', '${employeeQuery}') AS t(employee_name varchar, employee_phone varchar)`);
+        if (employeeRes.rows.length > 0) employeeData = employeeRes.rows[0];
+      }
+
+      // Fetch island
+      if (data.island_id) {
+        const islandQuery = `SELECT island_name FROM islands WHERE island_id = ''${data.island_id}''`;
+        const islandRes = await db.raw(`SELECT * FROM dblink('${DBLINK_NAME}', '${islandQuery}') AS t(island_name varchar)`);
+        if (islandRes.rows.length > 0) islandData = islandRes.rows[0];
+      }
+    }
+  } catch (err) {
+    console.error('[manage-quotation:create] Failed to fetch external data via dblink for properties', err);
+  }
+
+  // Construct properties JSONB object
+  const properties = {
+    customer_id: data.customer_id || null,
+    customer_name: customerData.customer_name || null,
+    customer_email: customerData.customer_email || null,
+    customer_phone: customerData.customer_phone || null,
+    customer_address: customerData.customer_address || null,
+    contact_person: customerData.contact_person || null,
+    employee_id: data.employee_id || null,
+    employee_name: employeeData.employee_name || null,
+    employee_phone: employeeData.employee_phone || null,
+    island_id: data.island_id || null,
+    island_name: islandData.island_name || null,
+    bank_account_id: data.bank_account_id || null,
+    bank_account_name: data.bank_account_name || null,
+    bank_account_number: data.bank_account_number || null,
+    bank_account_bank_name: data.bank_account_bank_name || null,
+    term_content_id: data.term_content_id || null,
+    term_content_directory: data.term_content_directory || null,
+    term_content_payload: data.term_content_payload || null
+  };
+
   // Build fields object - include all expected fields
   const fields = {
     manage_quotation_no: quotationNumber,
@@ -529,11 +587,14 @@ const create = async (data, trx = db) => {
     manage_quotation_shipping_term: data.manage_quotation_shipping_term || null,
     manage_quotation_franco: data.manage_quotation_franco || null,
     manage_quotation_lead_time: data.manage_quotation_lead_time || null,
+    bank_account_id: data.bank_account_id || null,
     bank_account_name: data.bank_account_name || null,
     bank_account_number: data.bank_account_number || null,
     bank_account_bank_name: data.bank_account_bank_name || null,
     term_content_id: data.term_content_id || null,
-    term_content_directory: data.term_content_directory || null,
+    term_content_directory: null,
+    term_content_payload: data.term_content_payload || null,
+    properties: JSON.stringify(properties),
     status: data.status || 'submit',
     include_aftersales_page: data.include_aftersales_page ?? false,
     include_msf_page: data.include_msf_page ?? false,
@@ -565,6 +626,126 @@ const update = async (id, data, trx = db) => {
     }
   }
 
+  // Get existing record to access current IDs if not provided in update data
+  const existingRecord = await findById(id);
+  if (!existingRecord) return null;
+
+  // Determine effective IDs (newly updated or existing)
+  const effectiveCustomerId = data.customer_id !== undefined ? data.customer_id : existingRecord.customer_id;
+  const effectiveEmployeeId = data.employee_id !== undefined ? data.employee_id : existingRecord.employee_id;
+  const effectiveIslandId = data.island_id !== undefined ? data.island_id : existingRecord.island_id;
+
+  // Fetch external data for properties if any change might affect them
+  let customerData = {};
+  let employeeData = {};
+  let islandData = {};
+
+  // Parse existing properties or default to empty object
+  let existingProperties = existingRecord.properties || {};
+  if (typeof existingProperties === 'string') {
+    try {
+      existingProperties = JSON.parse(existingProperties);
+    } catch (e) {
+      existingProperties = {};
+    }
+  }
+
+  try {
+    const dblinkConnected = await ensureDblinkConnection();
+
+    if (dblinkConnected) {
+      // Fetch customer if ID is present
+      if (effectiveCustomerId) {
+        const customerQuery = `SELECT customer_name, customer_email, customer_phone, customer_address, contact_person FROM customers WHERE customer_id = ''${effectiveCustomerId}''`;
+        const customerRes = await db.raw(`SELECT * FROM dblink('${DBLINK_NAME}', '${customerQuery}') AS t(customer_name varchar, customer_email varchar, customer_phone varchar, customer_address text, contact_person varchar)`);
+        if (customerRes.rows.length > 0) customerData = customerRes.rows[0];
+      }
+
+      // Fetch employee if ID is present
+      if (effectiveEmployeeId) {
+        const employeeQuery = `SELECT employee_name, employee_phone FROM employees WHERE employee_id = ''${effectiveEmployeeId}''`;
+        const employeeRes = await db.raw(`SELECT * FROM dblink('${DBLINK_NAME}', '${employeeQuery}') AS t(employee_name varchar, employee_phone varchar)`);
+        if (employeeRes.rows.length > 0) employeeData = employeeRes.rows[0];
+      }
+
+      // Fetch island if ID is present
+      if (effectiveIslandId) {
+        const islandQuery = `SELECT island_name FROM islands WHERE island_id = ''${effectiveIslandId}''`;
+        const islandRes = await db.raw(`SELECT * FROM dblink('${DBLINK_NAME}', '${islandQuery}') AS t(island_name varchar)`);
+        if (islandRes.rows.length > 0) islandData = islandRes.rows[0];
+      }
+    }
+  } catch (err) {
+    console.error('[manage-quotation:update] Failed to fetch external data via dblink for properties', err);
+    // If dblink fails, try to use existing properties for fallback data if IDs haven't changed
+    if (effectiveCustomerId === existingRecord.customer_id) {
+      customerData = {
+        customer_name: existingProperties.customer_name,
+        customer_email: existingProperties.customer_email,
+        customer_phone: existingProperties.customer_phone,
+        customer_address: existingProperties.customer_address,
+        contact_person: existingProperties.contact_person
+      };
+    }
+    if (effectiveEmployeeId === existingRecord.employee_id) {
+      employeeData = {
+        employee_name: existingProperties.employee_name,
+        employee_phone: existingProperties.employee_phone
+      };
+    }
+    if (effectiveIslandId === existingRecord.island_id) {
+      islandData = {
+        island_name: existingProperties.island_name
+      };
+    }
+  }
+
+  // Determine values for other property fields
+  const effectiveBankAccountName = data.bank_account_name !== undefined ? data.bank_account_name : existingRecord.bank_account_name;
+  const effectiveBankAccountNumber = data.bank_account_number !== undefined ? data.bank_account_number : existingRecord.bank_account_number;
+  const effectiveBankAccountBankName = data.bank_account_bank_name !== undefined ? data.bank_account_bank_name : existingRecord.bank_account_bank_name;
+  const effectiveBankAccountId = data.bank_account_id !== undefined ? data.bank_account_id : existingRecord.bank_account_id;
+  const effectiveTermContentId = data.term_content_id !== undefined ? data.term_content_id : existingRecord.term_content_id;
+
+  // For term_content_directory (HTML content), prefer update data, else use what we had (but we only store content in properties if passed explicitly in data)
+  // If data.term_content_directory is passed (even if path), it might be used here. 
+  // However, usually Handler passes the path here after writing file.
+  // BUT the requirement said: "term_content_directory ambil dari body request (ini bisa berisi halaman html jadi sesuaiakan formatnya)"
+  // So if handler passes the original content in a separate field or if we use valid data.
+  // In Handler update, we are setting `quotationData.term_content_directory` to the new path (string) OR null.
+  // The original HTML content is in `req.body.term_content_directory` before handler processes it.
+  // Determine effective term_content_directory for properties
+  // Use properties_term_content_directory if provided (original content from handler),
+  // otherwise use term_content_directory (which might be path) or existing.
+  let effectiveTermContentDirectory = data.properties_term_content_directory;
+  if (effectiveTermContentDirectory === undefined) {
+    effectiveTermContentDirectory = data.term_content_directory !== undefined ? data.term_content_directory : existingRecord.term_content_directory;
+  }
+
+  let effectiveTermContentPayload = data.term_content_payload !== undefined ? data.term_content_payload : existingRecord.term_content_payload;
+
+  // Construct properties JSONB object
+  const properties = {
+    customer_id: effectiveCustomerId || null,
+    customer_name: customerData.customer_name || null,
+    customer_email: customerData.customer_email || null,
+    customer_phone: customerData.customer_phone || null,
+    customer_address: customerData.customer_address || null,
+    contact_person: customerData.contact_person || null,
+    employee_id: effectiveEmployeeId || null,
+    employee_name: employeeData.employee_name || null,
+    employee_phone: employeeData.employee_phone || null,
+    island_id: effectiveIslandId || null,
+    island_name: islandData.island_name || null,
+    bank_account_id: effectiveBankAccountId || null,
+    bank_account_name: effectiveBankAccountName || null,
+    bank_account_number: effectiveBankAccountNumber || null,
+    bank_account_bank_name: effectiveBankAccountBankName || null,
+    term_content_id: effectiveTermContentId || null,
+    term_content_directory: effectiveTermContentDirectory || null,
+    term_content_payload: effectiveTermContentPayload || null
+  };
+
   const updateFields = {};
   if (data.manage_quotation_no !== undefined) updateFields.manage_quotation_no = data.manage_quotation_no;
   if (data.customer_id !== undefined) updateFields.customer_id = data.customer_id;
@@ -584,11 +765,13 @@ const update = async (id, data, trx = db) => {
   if (data.manage_quotation_shipping_term !== undefined) updateFields.manage_quotation_shipping_term = data.manage_quotation_shipping_term;
   if (data.manage_quotation_franco !== undefined) updateFields.manage_quotation_franco = data.manage_quotation_franco;
   if (data.manage_quotation_lead_time !== undefined) updateFields.manage_quotation_lead_time = data.manage_quotation_lead_time;
+  if (data.bank_account_id !== undefined) updateFields.bank_account_id = data.bank_account_id;
   if (data.bank_account_name !== undefined) updateFields.bank_account_name = data.bank_account_name;
   if (data.bank_account_number !== undefined) updateFields.bank_account_number = data.bank_account_number;
   if (data.bank_account_bank_name !== undefined) updateFields.bank_account_bank_name = data.bank_account_bank_name;
   if (data.term_content_id !== undefined) updateFields.term_content_id = data.term_content_id;
   if (data.term_content_directory !== undefined) updateFields.term_content_directory = data.term_content_directory;
+  if (data.term_content_payload !== undefined) updateFields.term_content_payload = data.term_content_payload;
   if (data.include_aftersales_page !== undefined) updateFields.include_aftersales_page = data.include_aftersales_page;
   if (data.include_msf_page !== undefined) updateFields.include_msf_page = data.include_msf_page;
   if (data.status !== undefined) updateFields.status = data.status;
@@ -599,6 +782,9 @@ const update = async (id, data, trx = db) => {
   if (data.star !== undefined) updateFields.star = data.star !== null && data.star !== '' ? String(data.star) : '0';
   if (data.updated_by !== undefined) updateFields.updated_by = data.updated_by;
   if (data.deleted_by !== undefined) updateFields.deleted_by = data.deleted_by;
+
+  // Always update properties
+  updateFields.properties = JSON.stringify(properties);
 
   if (Object.keys(updateFields).length === 0) {
     return null;
@@ -759,7 +945,18 @@ const createItems = async (manage_quotation_id, items, created_by, trx = db) => 
       price: item.price ?? null,
       total: item.total ?? null,
       description: item.description ?? null,
+      description: item.description ?? null,
       order_number: orderNumber,
+      specification_properties: item.specification_properties
+        ? JSON.stringify(Array.isArray(item.specification_properties)
+          ? item.specification_properties.map(p => ({ ...p, manage_quotation_id: manage_quotation_id || null }))
+          : item.specification_properties)
+        : '{}',
+      accesories_properties: item.accesories_properties
+        ? JSON.stringify(Array.isArray(item.accesories_properties)
+          ? item.accesories_properties.map(p => ({ ...p, manage_quotation_id: manage_quotation_id || null }))
+          : item.accesories_properties)
+        : '{}',
       created_by: created_by || null
     };
 
@@ -808,6 +1005,8 @@ const getItemsByQuotationId = async (manage_quotation_id) => {
       'mqi.updated_at',
       'mqi.deleted_at',
       'mqi.is_delete',
+      'mqi.specification_properties',
+      'mqi.accesories_properties',
       // Data from componen_products - using db.raw for aliases
       db.raw('cp.code_unique as cp_code_unique'),
       db.raw('cp.segment as cp_segment'),
@@ -843,11 +1042,8 @@ const deleteItemsByQuotationId = async (manage_quotation_id) => {
   }
 
   const result = await db(ITEMS_TABLE_NAME)
-    .where({ manage_quotation_id: manage_quotation_id, is_delete: false })
-    .update({
-      is_delete: true,
-      deleted_at: db.fn.now()
-    });
+    .where({ manage_quotation_id: manage_quotation_id })
+    .del();
 
   return result > 0;
 };
@@ -869,8 +1065,10 @@ const replaceItems = async (manage_quotation_id, items, updated_by) => {
  * ACCESSORY FUNCTIONS
  */
 
-const ACCESSORIES_TABLE_NAME = 'manage_quotation_item_accessories';
-const SPECIFICATIONS_TABLE_NAME = 'manage_quotation_item_specifications';
+// DISABLED: Tabel manage_quotation_item_accessories dan manage_quotation_item_specifications sudah dihapus
+// Data sekarang disimpan di kolom accesories_properties dan specification_properties (JSONB) di tabel manage_quotation_items
+// const ACCESSORIES_TABLE_NAME = 'manage_quotation_item_accessories';
+// const SPECIFICATIONS_TABLE_NAME = 'manage_quotation_item_specifications';
 
 /**
  * Validate accessory_id exists
@@ -902,6 +1100,21 @@ const validateAccessoryIds = async (accessories) => {
 };
 
 /**
+ * Get multiple accessories by IDs
+ */
+const getAccessoriesByIds = async (ids) => {
+  if (!ids || ids.length === 0) {
+    return [];
+  }
+
+  const result = await db('accessories')
+    .whereIn('accessory_id', ids)
+    .where('is_delete', false);
+
+  return result;
+};
+
+/**
  * Validate componen_product_id for specification payload
  */
 const validateSpecificationComponenProductIds = async (specifications) => {
@@ -930,199 +1143,91 @@ const validateSpecificationComponenProductIds = async (specifications) => {
 
 /**
  * Create quotation accessories
+ * DISABLED: Tabel manage_quotation_item_accessories sudah dihapus.
+ * Data accessories sekarang disimpan di kolom accesories_properties (JSONB) di tabel manage_quotation_items.
  */
 const createAccessories = async (manage_quotation_id, accessories, created_by, trx = db) => {
-  if (!accessories || accessories.length === 0) {
-    return [];
-  }
-
-  const results = [];
-
-  for (const accessory of accessories) {
-    // Only store accessory_id and quantity, data will be fetched from accessories table via join
-    const fields = {
-      manage_quotation_id: manage_quotation_id || null,
-      accessory_id: accessory.accessory_id || null,
-      componen_product_id: accessory.componen_product_id || null,
-      quantity: accessory.quantity ?? 1,
-      description: accessory.description ?? null,
-      created_by: created_by || null
-    };
-
-    const result = await trx(ACCESSORIES_TABLE_NAME)
-      .insert(fields)
-      .returning('*');
-
-    results.push(result[0]);
-  }
-
-  return results;
+  // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
+  console.warn('[DEPRECATED] createAccessories() is disabled. Use accesories_properties in manage_quotation_items instead.');
+  return [];
 };
 
 /**
  * Get accessories by quotation ID with JOIN to accessories
+ * DISABLED: Tabel manage_quotation_item_accessories sudah dihapus.
+ * Data accessories sekarang diambil dari kolom accesories_properties (JSONB) di tabel manage_quotation_items.
  */
 const getAccessoriesByQuotationId = async (manage_quotation_id) => {
-  if (!manage_quotation_id) {
-    return [];
-  }
-
-  const result = await db(`${ACCESSORIES_TABLE_NAME} as mqia`)
-    .select(
-      'mqia.manage_quotation_item_accessory_id',
-      'mqia.manage_quotation_id',
-      'mqia.accessory_id',
-      'mqia.componen_product_id',
-      'mqia.quantity',
-      'mqia.description',
-      'mqia.created_by',
-      'mqia.updated_by',
-      'mqia.deleted_by',
-      'mqia.created_at',
-      'mqia.updated_at',
-      'mqia.deleted_at',
-      'mqia.is_delete',
-      // Data from accessories table (use these as primary data)
-      'a.accessory_part_number',
-      'a.accessory_part_name',
-      'a.accessory_specification',
-      'a.accessory_brand',
-      'a.accessory_remark',
-      'a.accessory_region',
-      'a.accessory_description'
-    )
-    .leftJoin('accessories as a', function () {
-      this.on('mqia.accessory_id', '=', 'a.accessory_id')
-        .andOn(db.raw('a.is_delete = false'));
-    })
-    .where('mqia.manage_quotation_id', manage_quotation_id)
-    .where('mqia.is_delete', false)
-    .orderBy('mqia.created_at', 'asc');
-
-  return result || [];
+  // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
+  console.warn('[DEPRECATED] getAccessoriesByQuotationId() is disabled. Use accesories_properties from manage_quotation_items instead.');
+  return [];
 };
 
 /**
  * Delete accessories by quotation ID
+ * DISABLED: Tabel manage_quotation_item_accessories sudah dihapus.
+ * Data accessories sekarang dihapus dengan mengupdate kolom accesories_properties di tabel manage_quotation_items.
  */
 const deleteAccessoriesByQuotationId = async (manage_quotation_id) => {
-  if (!manage_quotation_id) {
-    return false;
-  }
-
-  const result = await db(ACCESSORIES_TABLE_NAME)
-    .where({ manage_quotation_id: manage_quotation_id, is_delete: false })
-    .update({
-      is_delete: true,
-      deleted_at: db.fn.now()
-    });
-
-  return result > 0;
+  // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
+  console.warn('[DEPRECATED] deleteAccessoriesByQuotationId() is disabled. Update accesories_properties in manage_quotation_items instead.');
+  return false;
 };
 
 /**
  * Delete all accessories and recreate for quotation
+ * DISABLED: Tabel manage_quotation_item_accessories sudah dihapus.
+ * Data accessories sekarang diupdate melalui kolom accesories_properties di tabel manage_quotation_items.
  */
 const replaceAccessories = async (manage_quotation_id, accessories, updated_by) => {
-  // Soft delete all existing accessories
-  await deleteAccessoriesByQuotationId(manage_quotation_id);
-
-  // Create new accessories
-  const newAccessories = await createAccessories(manage_quotation_id, accessories, updated_by);
-
-  return newAccessories;
+  // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
+  console.warn('[DEPRECATED] replaceAccessories() is disabled. Update accesories_properties in manage_quotation_items instead.');
+  return [];
 };
 
 /**
  * SPECIFICATION FUNCTIONS
+ * DISABLED: Tabel manage_quotation_item_specifications sudah dihapus.
+ * Data specifications sekarang disimpan di kolom specification_properties (JSONB) di tabel manage_quotation_items.
  */
 
 const createSpecifications = async (manage_quotation_id, specifications, created_by, trx = db) => {
-  if (!specifications || specifications.length === 0) {
-    return [];
-  }
-
-  const results = [];
-
-  for (const spec of specifications) {
-    const fields = {
-      manage_quotation_id: manage_quotation_id || null,
-      componen_product_id: spec.componen_product_id || null,
-      manage_quotation_item_specification_label: spec.manage_quotation_item_specification_label ?? null,
-      manage_quotation_item_specification_value: spec.manage_quotation_item_specification_value ?? null,
-      created_by: created_by || null
-    };
-
-    const result = await trx(SPECIFICATIONS_TABLE_NAME)
-      .insert(fields)
-      .returning('*');
-
-    results.push(result[0]);
-  }
-
-  return results;
+  // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
+  console.warn('[DEPRECATED] createSpecifications() is disabled. Use specification_properties in manage_quotation_items instead.');
+  return [];
 };
 
+/**
+ * Get specifications by quotation ID
+ * DISABLED: Tabel manage_quotation_item_specifications sudah dihapus.
+ * Data specifications sekarang diambil dari kolom specification_properties (JSONB) di tabel manage_quotation_items.
+ */
 const getSpecificationsByQuotationId = async (manage_quotation_id) => {
-  if (!manage_quotation_id) {
-    return [];
-  }
-
-  const result = await db(`${SPECIFICATIONS_TABLE_NAME} as mqis`)
-    .select(
-      'mqis.manage_quotation_item_specification_id',
-      'mqis.manage_quotation_id',
-      'mqis.componen_product_id',
-      'mqis.manage_quotation_item_specification_label',
-      'mqis.manage_quotation_item_specification_value',
-      'mqis.created_by',
-      'mqis.updated_by',
-      'mqis.deleted_by',
-      'mqis.created_at',
-      'mqis.updated_at',
-      'mqis.deleted_at',
-      'mqis.is_delete',
-      db.raw('cp.code_unique as cp_code_unique'),
-      db.raw('cp.componen_product_name as cp_componen_product_name'),
-      db.raw('cp.segment as cp_segment'),
-      db.raw('cp.msi_model as cp_msi_model'),
-      db.raw('cp.msi_product as cp_msi_product'),
-      db.raw('cp.wheel_no as cp_wheel_no'),
-      db.raw('cp.engine as cp_engine'),
-      db.raw('cp.volume as cp_volume'),
-      db.raw('cp.horse_power as cp_horse_power'),
-      db.raw('cp.market_price as cp_market_price')
-    )
-    .leftJoin('componen_products as cp', function () {
-      this.on('mqis.componen_product_id', '=', 'cp.componen_product_id')
-        .andOn(db.raw('cp.is_delete = false'));
-    })
-    .where('mqis.manage_quotation_id', manage_quotation_id)
-    .where('mqis.is_delete', false)
-    .orderBy('mqis.created_at', 'asc');
-
-  return result || [];
+  // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
+  console.warn('[DEPRECATED] getSpecificationsByQuotationId() is disabled. Use specification_properties from manage_quotation_items instead.');
+  return [];
 };
 
+/**
+ * Delete specifications by quotation ID
+ * DISABLED: Tabel manage_quotation_item_specifications sudah dihapus.
+ * Data specifications sekarang dihapus dengan mengupdate kolom specification_properties di tabel manage_quotation_items.
+ */
 const deleteSpecificationsByQuotationId = async (manage_quotation_id) => {
-  if (!manage_quotation_id) {
-    return false;
-  }
-
-  const result = await db(SPECIFICATIONS_TABLE_NAME)
-    .where({ manage_quotation_id: manage_quotation_id, is_delete: false })
-    .update({
-      is_delete: true,
-      deleted_at: db.fn.now()
-    });
-
-  return result > 0;
+  // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
+  console.warn('[DEPRECATED] deleteSpecificationsByQuotationId() is disabled. Update specification_properties in manage_quotation_items instead.');
+  return false;
 };
 
+/**
+ * Replace specifications for quotation
+ * DISABLED: Tabel manage_quotation_item_specifications sudah dihapus.
+ * Data specifications sekarang diupdate melalui kolom specification_properties di tabel manage_quotation_items.
+ */
 const replaceSpecifications = async (manage_quotation_id, specifications, updated_by) => {
-  await deleteSpecificationsByQuotationId(manage_quotation_id);
-  const newSpecifications = await createSpecifications(manage_quotation_id, specifications, updated_by);
-  return newSpecifications;
+  // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
+  console.warn('[DEPRECATED] replaceSpecifications() is disabled. Update specification_properties in manage_quotation_items instead.');
+  return [];
 };
 
 /**
@@ -1141,8 +1246,6 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
 
   // Get all related data
   const sourceItems = await getItemsByQuotationId(sourceQuotationId);
-  const sourceAccessories = await getAccessoriesByQuotationId(sourceQuotationId);
-  const sourceSpecifications = await getSpecificationsByQuotationId(sourceQuotationId);
 
   // Generate new quotation number
   const newQuotationNo = await generateQuotationNumber(trx);
@@ -1181,6 +1284,7 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
     bank_account_bank_name: sourceQuotation.bank_account_bank_name,
     term_content_id: sourceQuotation.term_content_id,
     term_content_directory: sourceQuotation.term_content_directory,
+    term_content_payload: sourceQuotation.term_content_payload,
     status: 'draft',
     include_aftersales_page: sourceQuotation.include_aftersales_page ?? false,
     include_msf_page: sourceQuotation.include_msf_page ?? false,
@@ -1218,75 +1322,28 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
       cp_componen_type,
       ...rest
     } = item;
-    return rest;
-  });
 
-  // Prepare accessories for duplication
-  const accessoriesForInsert = sourceAccessories.map(accessory => {
-    const {
-      manage_quotation_item_accessory_id,
-      manage_quotation_id,
-      created_at,
-      updated_at,
-      deleted_at,
-      created_by: acc_created_by,
-      updated_by: acc_updated_by,
-      deleted_by: acc_deleted_by,
-      is_delete,
-      // Remove fields from JOIN with accessories
-      accessory_part_number_source,
-      accessory_part_name_source,
-      accessory_specification_source,
-      accessory_brand_source,
-      accessory_remark_source,
-      accessory_region_source,
-      accessory_description_source,
-      ...rest
-    } = accessory;
-    return rest;
-  });
+    // Parse properties if they are strings (they should be JSONB, so objects, but just in case)
+    let specProps = item.specification_properties;
+    if (typeof specProps === 'string') {
+      try { specProps = JSON.parse(specProps); } catch (e) { specProps = []; }
+    }
 
-  // Prepare specifications for duplication
-  const specificationsForInsert = sourceSpecifications.map(spec => {
-    const {
-      manage_quotation_item_specification_id,
-      manage_quotation_id,
-      created_at,
-      updated_at,
-      deleted_at,
-      created_by: spec_created_by,
-      updated_by: spec_updated_by,
-      deleted_by: spec_deleted_by,
-      is_delete,
-      // Remove fields from JOIN with componen_products
-      cp_code_unique,
-      cp_componen_product_name,
-      cp_segment,
-      cp_msi_model,
-      cp_msi_product,
-      cp_wheel_no,
-      cp_engine,
-      cp_volume,
-      cp_horse_power,
-      cp_market_price,
-      ...rest
-    } = spec;
-    return rest;
+    let accProps = item.accesories_properties;
+    if (typeof accProps === 'string') {
+      try { accProps = JSON.parse(accProps); } catch (e) { accProps = []; }
+    }
+
+    return {
+      ...rest,
+      specification_properties: specProps,
+      accesories_properties: accProps
+    };
   });
 
   // Create items
   if (itemsForInsert.length > 0) {
     await createItems(newQuotation.manage_quotation_id, itemsForInsert, created_by, trx);
-  }
-
-  // Create accessories
-  if (accessoriesForInsert.length > 0) {
-    await createAccessories(newQuotation.manage_quotation_id, accessoriesForInsert, created_by, trx);
-  }
-
-  // Create specifications
-  if (specificationsForInsert.length > 0) {
-    await createSpecifications(newQuotation.manage_quotation_id, specificationsForInsert, created_by, trx);
   }
 
   return newQuotation;
@@ -1308,6 +1365,7 @@ module.exports = {
   deleteItemsByQuotationId,
   replaceItems,
   validateAccessoryIds,
+  getAccessoriesByIds,
   createAccessories,
   getAccessoriesByQuotationId,
   deleteAccessoriesByQuotationId,

@@ -1,26 +1,9 @@
-const path = require('path');
-const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const repository = require('./postgre_repository');
 const { baseResponse, mappingError, mappingSuccess } = require('../../utils');
 const { decodeToken } = require('../../utils/auth');
 
-const ROOT_DIR = path.join(__dirname, '../../..');
-const TERM_CONTENT_FOLDER = path.join(ROOT_DIR, 'uploads/term_contents');
 
-const ensureDirectory = async (dirPath) => {
-  await fs.promises.mkdir(dirPath, { recursive: true });
-};
-
-const sanitizeFileName = (fileName) => {
-  if (!fileName) return 'term_content';
-  return fileName
-    .toString()
-    .trim()
-    .replace(/\s+/g, '_')
-    .replace(/[^a-zA-Z0-9-_]/g, '_')
-    .toLowerCase();
-};
 
 const normalizeJsonPayload = (payload) => {
   if (payload === null || payload === undefined) {
@@ -47,58 +30,7 @@ const normalizeJsonPayload = (payload) => {
   return payload;
 };
 
-const writeJsonFile = async (termContentTitle, termContentId, payload) => {
-  await ensureDirectory(TERM_CONTENT_FOLDER);
 
-  const sanitizedTitle = sanitizeFileName(termContentTitle || 'term_content');
-  const fileName = `${sanitizedTitle}_${termContentId}.json`;
-  const absolutePath = path.join(TERM_CONTENT_FOLDER, fileName);
-  const relativePath = path.relative(ROOT_DIR, absolutePath);
-
-  const dataToWrite = normalizeJsonPayload(payload);
-  const fileContent = JSON.stringify(dataToWrite, null, 2);
-
-  await fs.promises.writeFile(absolutePath, fileContent, 'utf8');
-
-  return relativePath.replace(/\\/g, '/');
-};
-
-const deleteJsonFile = async (relativePath) => {
-  if (!relativePath) {
-    return;
-  }
-
-  const absolutePath = path.join(ROOT_DIR, relativePath);
-  try {
-    await fs.promises.unlink(absolutePath);
-  } catch (error) {
-    if (error.code !== 'ENOENT') {
-      throw error;
-    }
-  }
-};
-
-const readJsonFile = async (relativePath) => {
-  if (!relativePath) {
-    return {};
-  }
-
-  const absolutePath = path.join(ROOT_DIR, relativePath);
-  try {
-    const content = await fs.promises.readFile(absolutePath, 'utf8');
-    return JSON.parse(content);
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      return {};
-    }
-
-    if (error.name === 'SyntaxError') {
-      return {};
-    }
-
-    throw error;
-  }
-};
 
 const mapSortBy = (sortBy) => {
   const mapping = {
@@ -148,8 +80,23 @@ const getById = async (req, res) => {
       return baseResponse(res, response);
     }
 
-    const payload = await readJsonFile(data.term_content_directory);
-    data.term_content_payload = payload;
+    // Parse stored payload if it's a string, or use it directly
+    const rawPayload = data.term_content_payload;
+    let parsedPayload = {};
+
+    if (rawPayload) {
+      if (typeof rawPayload === 'string') {
+        try {
+          parsedPayload = JSON.parse(rawPayload);
+        } catch (e) {
+          parsedPayload = rawPayload;
+        }
+      } else {
+        parsedPayload = rawPayload;
+      }
+    }
+
+    data.term_content_payload = parsedPayload;
 
     const response = mappingSuccess('Data berhasil diambil', data);
     return baseResponse(res, response);
@@ -160,7 +107,6 @@ const getById = async (req, res) => {
 };
 
 const create = async (req, res) => {
-  let relativePath = null;
 
   try {
     const tokenData = decodeToken('created', req);
@@ -168,94 +114,78 @@ const create = async (req, res) => {
 
     const termContentId = uuidv4();
 
-    relativePath = await writeJsonFile(
-      term_content_title || 'term_content',
-      termContentId,
-      term_content_directory
-    );
+    // Process payload from term_content_directory (input) to be stored in DB
+    const processedPayload = normalizeJsonPayload(term_content_directory);
+    const payloadString = JSON.stringify(processedPayload);
 
     const payload = {
       term_content_id: termContentId,
       term_content_title: term_content_title || null,
-      term_content_directory: relativePath,
+      term_content_directory: null, // No longer using file path
+      term_content_payload: payloadString,
       created_by: tokenData.created_by
     };
 
     await repository.create(payload);
     const data = await repository.findById(termContentId);
-    if (data) {
-      data.term_content_payload = await readJsonFile(data.term_content_directory);
-    }
-    const response = mappingSuccess('Data berhasil dibuat', data, 201);
-    return baseResponse(res, response);
-  } catch (error) {
-    if (relativePath) {
+
+    // Format response
+    if (data && data.term_content_payload) {
       try {
-        await deleteJsonFile(relativePath);
-      } catch (cleanupError) {
-        console.error('Gagal menghapus file term content saat rollback create:', cleanupError);
+        data.term_content_payload = JSON.parse(data.term_content_payload);
+      } catch (e) {
+        // keep as string if parse fails
       }
     }
 
+    const response = mappingSuccess('Data berhasil dibuat', data, 201);
+    return baseResponse(res, response);
+  } catch (error) {
     const response = mappingError(error);
     return baseResponse(res, response);
   }
 };
 
 const update = async (req, res) => {
-  let newRelativePath = null;
-  let existing = null;
 
   try {
     const { id } = req.params;
     const tokenData = decodeToken('updated', req);
     const { term_content_title, term_content_directory } = req.body;
 
-    existing = await repository.findById(id);
+    const existing = await repository.findById(id);
     if (!existing) {
       const response = mappingError('Data tidak ditemukan', 404);
       return baseResponse(res, response);
     }
 
-    const payloadSource = term_content_directory !== undefined
-      ? term_content_directory
-      : await readJsonFile(existing.term_content_directory);
-
-    const titleToUse = term_content_title !== undefined ? term_content_title : existing.term_content_title;
-
-    newRelativePath = await writeJsonFile(
-      titleToUse || 'term_content',
-      existing.term_content_id,
-      payloadSource
-    );
-
     const payload = {
       term_content_title: term_content_title !== undefined ? term_content_title : existing.term_content_title,
-      term_content_directory: newRelativePath,
       updated_by: tokenData.updated_by
     };
 
+    if (term_content_directory !== undefined) {
+      const processedPayload = normalizeJsonPayload(term_content_directory);
+      payload.term_content_payload = JSON.stringify(processedPayload);
+      payload.term_content_directory = null; // Ensure directory is cleared if updating content
+    }
+
     await repository.update(id, payload);
 
-    if (existing.term_content_directory && existing.term_content_directory !== newRelativePath) {
-      await deleteJsonFile(existing.term_content_directory);
-    }
-
     const data = await repository.findById(id);
-    if (data) {
-      data.term_content_payload = await readJsonFile(data.term_content_directory);
-    }
-    const response = mappingSuccess('Data berhasil diperbarui', data);
-    return baseResponse(res, response);
-  } catch (error) {
-    if (newRelativePath && existing && existing.term_content_directory !== newRelativePath) {
+
+    // Format response
+    if (data && data.term_content_payload) {
       try {
-        await deleteJsonFile(newRelativePath);
-      } catch (cleanupError) {
-        console.error('Gagal menghapus file term content saat rollback update:', cleanupError);
+        data.term_content_payload = JSON.parse(data.term_content_payload);
+      } catch (e) {
+        // keep as string
       }
     }
 
+    const response = mappingSuccess('Data berhasil diperbarui', data);
+    return baseResponse(res, response);
+  } catch (error) {
     const response = mappingError(error);
     return baseResponse(res, response);
   }
@@ -281,13 +211,12 @@ const remove = async (req, res) => {
       return baseResponse(res, response);
     }
 
-    if (existing.term_content_directory) {
-      try {
-        await deleteJsonFile(existing.term_content_directory);
-      } catch (cleanupError) {
-        console.error('Gagal menghapus file term content saat delete:', cleanupError);
-      }
+    if (!result) {
+      const response = mappingError('Data tidak ditemukan', 404);
+      return baseResponse(res, response);
     }
+
+    // No file cleanup needed anymore
 
     const response = mappingSuccess('Data berhasil dihapus', result);
     return baseResponse(res, response);

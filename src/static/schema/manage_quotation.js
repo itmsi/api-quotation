@@ -135,6 +135,13 @@ const manageQuotationSchemas = {
         description: 'Lead time',
         example: ''
       },
+      bank_account_id: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Bank Account ID',
+        example: '123e4567-e89b-12d3-a456-426614174004'
+      },
       bank_account_name: {
         type: 'string',
         nullable: true,
@@ -390,6 +397,13 @@ const manageQuotationSchemas = {
         nullable: true,
         description: 'Lead time',
         example: ''
+      },
+      bank_account_id: {
+        type: 'string',
+        format: 'uuid',
+        nullable: true,
+        description: 'Bank Account ID',
+        example: '123e4567-e89b-12d3-a456-426614174004'
       },
       bank_account_name: {
         type: 'string',
