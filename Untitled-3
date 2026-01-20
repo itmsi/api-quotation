@@ -1,0 +1,30 @@
+curl --location --request POST 'http://localhost:9565/api/quotation/componen_product' \
+  --header 'accept: application/json' \
+  --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZjBiNTcyNTgtNWYzMy00ZTAzLTgxZjctY2Q3MGQ4MzNiNWM1IiwiZW1wbG95ZWVfaWQiOiJmMGI1NzI1OC01ZjMzLTRlMDMtODFmNy1jZDcwZDgzM2I1YzUiLCJpYXQiOjE3Njg4ODI5MDcsImV4cCI6MTc2ODk2OTMwNywiYXVkIjoic3RyaW5nIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAwIn0.txxy_9YX9rUbXJBc1rfPGZOZstVzUfPwzdGsCkxu-ok' \
+  --header 'Content-Type: multipart/form-data' \
+  --form 'componen_type="1"' \
+  --form 'engine="Engine V8"' \
+  --form 'componen_product_name="Brake Component"' \
+  --form 'horse_power="200 HP"' \
+  --form 'code_unique="CP-0014"' \
+  --form 'componen_product_description="This is a componen product description"' \
+  --form 'wheel_no="WHEEL-001"' \
+  --form 'componen_product_unit_model="Unit Model A"' \
+  --form 'market_price="10000000"' \
+  --form 'componen_product_specifications="[{\"componen_product_specification_label\":\"Horse Power\",\"componen_product_specification_value\":\"200 HP\",\"componen_product_specification_description\":\"Informasi tambahan mengenai horse power\"}]"' \
+  --form 'selling_price_star_1="9500000"' \
+  --form 'product_type="OFF ROAD REGULAR"' \
+  --form 'selling_price_star_2="9000000"' \
+  --form 'selling_price_star_3="8500000"' \
+  --form 'selling_price_star_4="8000000"' \
+  --form 'company_name="ITI"' \
+  --form 'selling_price_star_5="7500000"' \
+  --form 'msi_model="MSI-001"' \
+  --form 'msi_product="MSI-Product-001"' \
+  --form 'segment="Segment A"' \
+  --form 'volume="20 L"' \
+  --form 'images[0]=@"/path/to/file"' \
+  --form 'images[1]=@"/path/to/file"' \
+  --form 'images[2]=@"/path/to/file"' \
+  --form 'image_count="3"'
+

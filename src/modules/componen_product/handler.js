@@ -44,9 +44,8 @@ const upload = multer({
 const uploadImage = upload.single('image');
 
 // Middleware for multiple images upload
-const uploadImages = upload.fields([
-  { name: 'images', maxCount: 50 } // Support up to 50 images
-]);
+// Support both formats: 'images' (multiple with same name) and 'images[0]', 'images[1]', etc.
+const uploadImages = upload.any();
 
 // Helper function to upload image to MinIO
 const uploadImageToStorage = async (file, folderPath = 'componen_products') => {
@@ -146,6 +145,31 @@ const handleMultipleImagesUpload = (req, res, next) => {
         error: err.message
       });
     }
+    
+    // Process files to support both formats: 'images' and 'images[0]', 'images[1]', etc.
+    if (req.files && Array.isArray(req.files)) {
+      // Filter and organize image files
+      const imageFiles = req.files.filter(file => {
+        // Support both 'images' and 'images[0]', 'images[1]', etc.
+        return file.fieldname === 'images' || /^images\[\d+\]$/.test(file.fieldname);
+      });
+      
+      // Sort by fieldname if using indexed format (images[0], images[1], etc.)
+      imageFiles.sort((a, b) => {
+        const aMatch = a.fieldname.match(/\[(\d+)\]/);
+        const bMatch = b.fieldname.match(/\[(\d+)\]/);
+        if (aMatch && bMatch) {
+          return parseInt(aMatch[1]) - parseInt(bMatch[1]);
+        }
+        return 0;
+      });
+      
+      // Organize into req.files.images for backward compatibility
+      if (imageFiles.length > 0) {
+        req.files.images = imageFiles;
+      }
+    }
+    
     next();
   });
 };
