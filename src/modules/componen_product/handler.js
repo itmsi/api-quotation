@@ -295,12 +295,12 @@ const create = async (req, res) => {
       imageUrl = req.body.image || null;
     }
     
-    // Normalize company_id
-    let normalizedCompanyId = null;
-    if (req.body.company_id && req.body.company_id !== '' && req.body.company_id !== null && req.body.company_id !== undefined) {
-      const companyIdStr = String(req.body.company_id).trim();
-      if (companyIdStr !== '' && companyIdStr !== 'NaN' && companyIdStr !== 'null') {
-        normalizedCompanyId = companyIdStr;
+    // Normalize company_name
+    let normalizedCompanyName = null;
+    if (req.body.company_name && req.body.company_name !== '' && req.body.company_name !== null && req.body.company_name !== undefined) {
+      const companyNameStr = String(req.body.company_name).trim();
+      if (companyNameStr !== '') {
+        normalizedCompanyName = companyNameStr;
       }
     }
 
@@ -315,7 +315,7 @@ const create = async (req, res) => {
 
     const componenProductData = {
       componen_type: req.body.componen_type ? parseInt(req.body.componen_type) : null,
-      company_id: normalizedCompanyId,
+      company_name: normalizedCompanyName,
       product_type: normalizedProductType,
       code_unique: req.body.code_unique || null,
       segment: req.body.segment || null,
@@ -386,18 +386,18 @@ const update = async (req, res) => {
       }
     }
     
-    // Normalize company_id if provided
-    let normalizedCompanyId = undefined;
-    if (req.body.company_id !== undefined) {
-      if (req.body.company_id && req.body.company_id !== '' && req.body.company_id !== null) {
-        const companyIdStr = String(req.body.company_id).trim();
-        if (companyIdStr !== '' && companyIdStr !== 'NaN' && companyIdStr !== 'null') {
-          normalizedCompanyId = companyIdStr;
+    // Normalize company_name if provided
+    let normalizedCompanyName = undefined;
+    if (req.body.company_name !== undefined) {
+      if (req.body.company_name && req.body.company_name !== '' && req.body.company_name !== null) {
+        const companyNameStr = String(req.body.company_name).trim();
+        if (companyNameStr !== '') {
+          normalizedCompanyName = companyNameStr;
         } else {
-          normalizedCompanyId = null;
+          normalizedCompanyName = null;
         }
       } else {
-        normalizedCompanyId = null;
+        normalizedCompanyName = null;
       }
     }
 
@@ -418,7 +418,7 @@ const update = async (req, res) => {
 
     const componenProductData = {
       componen_type: req.body.componen_type !== undefined ? (req.body.componen_type ? parseInt(req.body.componen_type) : null) : undefined,
-      company_id: normalizedCompanyId,
+      company_name: normalizedCompanyName,
       product_type: normalizedProductType,
       code_unique: req.body.code_unique,
       segment: req.body.segment,
