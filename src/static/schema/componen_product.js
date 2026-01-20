@@ -25,17 +25,10 @@ const componenProductSchemas = {
         description: 'Componen type (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR)',
         example: 1
       },
-      company_id: {
-        type: 'string',
-        format: 'uuid',
-        nullable: true,
-        description: 'Company ID',
-        example: '123e4567-e89b-12d3-a456-426614174000'
-      },
       company_name: {
         type: 'string',
         nullable: true,
-        description: 'Company name (from gate_sso.companies)',
+        description: 'Company name',
         example: 'PT Example Company'
       },
       product_type: {
@@ -268,11 +261,10 @@ const componenProductSchemas = {
         description: 'Componen type (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR)',
         example: 1
       },
-      company_id: {
+      company_name: {
         type: 'string',
-        format: 'uuid',
-        description: 'Company ID',
-        example: '123e4567-e89b-12d3-a456-426614174000'
+        description: 'Company name',
+        example: 'PT Example Company'
       },
       product_type: {
         type: 'string',

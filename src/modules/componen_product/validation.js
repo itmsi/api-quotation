@@ -370,7 +370,26 @@ const listValidation = [
   body('sort_order')
     .optional()
     .isIn(['asc', 'desc'])
-    .withMessage('Sort order harus asc atau desc')
+    .withMessage('Sort order harus asc atau desc'),
+  body('company_name')
+    .optional()
+    .custom((value) => {
+      if (value === null || value === undefined || value === '') {
+        return true;
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
+          return true;
+        }
+        if (trimmed.length > 255) {
+          throw new Error('Company name maksimal 255 karakter');
+        }
+        return true;
+      }
+      return false;
+    })
+    .withMessage('Company name harus berupa string, string kosong, null, atau NaN (maksimal 255 karakter)')
 ];
 
 module.exports = {

@@ -42,6 +42,12 @@ const componenProductPaths = {
                   enum: ['asc', 'desc'],
                   default: 'desc',
                   example: 'desc'
+                },
+                company_name: {
+                  type: 'string',
+                  nullable: true,
+                  description: 'Filter by company name (bisa NaN, nullable, string kosong, null)',
+                  example: 'ITI edit'
                 }
               }
             }

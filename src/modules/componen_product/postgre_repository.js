@@ -117,7 +117,7 @@ const buildSearchWhere = (search) => {
  * Find all componen products with pagination, search, and sort
  */
 const findAll = async (params) => {
-  const { page, limit, offset, search, sortBy, sortOrder } = params;
+  const { page, limit, offset, search, sortBy, sortOrder, companyName } = params;
 
   const sortOrderSafe = ['asc', 'desc'].includes((sortOrder || '').toLowerCase())
     ? sortOrder.toLowerCase()
@@ -142,6 +142,11 @@ const findAll = async (params) => {
     .select(`${TABLE_NAME}.*`, db.raw('updater_data.employee_name as updated_by_name'))
     .leftJoin(updaterJoin, `${TABLE_NAME}.updated_by`, 'updater_data.employee_id')
     .where(`${TABLE_NAME}.is_delete`, false);
+
+  // Apply company_name filter
+  if (companyName !== undefined && companyName !== null && companyName !== '') {
+    query = query.where(`${TABLE_NAME}.company_name`, companyName);
+  }
 
   // Apply search
   if (search && search.trim() !== '') {
@@ -177,6 +182,10 @@ const findAll = async (params) => {
             .leftJoin(updaterJoin, `${TABLE_NAME}.updated_by`, 'updater_data.employee_id')
             .where(`${TABLE_NAME}.is_delete`, false);
 
+          if (companyName !== undefined && companyName !== null && companyName !== '') {
+            query = query.where(`${TABLE_NAME}.company_name`, companyName);
+          }
+
           if (search && search.trim() !== '') {
             const searchWhere = buildSearchWhere(search);
             query = query.where(searchWhere);
@@ -189,6 +198,10 @@ const findAll = async (params) => {
           query = db(TABLE_NAME)
             .select(`${TABLE_NAME}.*`)
             .where(`${TABLE_NAME}.is_delete`, false);
+
+          if (companyName !== undefined && companyName !== null && companyName !== '') {
+            query = query.where(`${TABLE_NAME}.company_name`, companyName);
+          }
 
           if (search && search.trim() !== '') {
             const searchWhere = buildSearchWhere(search);
@@ -204,6 +217,10 @@ const findAll = async (params) => {
         query = db(TABLE_NAME)
           .select(`${TABLE_NAME}.*`)
           .where(`${TABLE_NAME}.is_delete`, false);
+
+        if (companyName !== undefined && companyName !== null && companyName !== '') {
+          query = query.where(`${TABLE_NAME}.company_name`, companyName);
+        }
 
         if (search && search.trim() !== '') {
           const searchWhere = buildSearchWhere(search);
@@ -233,6 +250,10 @@ const findAll = async (params) => {
     .leftJoin(updaterJoin, `${TABLE_NAME}.updated_by`, 'updater_data.employee_id')
     .where(`${TABLE_NAME}.is_delete`, false);
 
+  if (companyName !== undefined && companyName !== null && companyName !== '') {
+    countQuery = countQuery.where(`${TABLE_NAME}.company_name`, companyName);
+  }
+
   if (search && search.trim() !== '') {
     const searchWhere = buildSearchWhere(search);
     countQuery = countQuery.where(searchWhere);
@@ -245,6 +266,9 @@ const findAll = async (params) => {
     if (error.message && (error.message.includes('could not establish connection') || error.message.includes('dblink'))) {
       countQuery = db(TABLE_NAME)
         .where(`${TABLE_NAME}.is_delete`, false);
+      if (companyName !== undefined && companyName !== null && companyName !== '') {
+        countQuery = countQuery.where(`${TABLE_NAME}.company_name`, companyName);
+      }
       if (search && search.trim() !== '') {
         const searchWhere = buildSearchWhere(search);
         countQuery = countQuery.where(searchWhere);
