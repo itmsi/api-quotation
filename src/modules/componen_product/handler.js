@@ -40,8 +40,13 @@ const upload = multer({
   }
 });
 
-// Middleware for single image upload
+// Middleware for single image upload (backward compatibility)
 const uploadImage = upload.single('image');
+
+// Middleware for multiple images upload
+const uploadImages = upload.fields([
+  { name: 'images', maxCount: 50 } // Support up to 50 images
+]);
 
 // Helper function to upload image to MinIO
 const uploadImageToStorage = async (file, folderPath = 'componen_products') => {
@@ -71,7 +76,20 @@ const uploadImageToStorage = async (file, folderPath = 'componen_products') => {
   }
 };
 
-// Middleware wrapper to handle multer errors
+// Helper function to upload multiple images to MinIO
+const uploadMultipleImagesToStorage = async (files, folderPath = 'componen_products') => {
+  if (!files || !Array.isArray(files) || files.length === 0 || !isMinioEnabled) {
+    return [];
+  }
+
+  const uploadPromises = files.map((file) => uploadImageToStorage(file, folderPath));
+  const results = await Promise.all(uploadPromises);
+  
+  // Filter out null results (failed uploads)
+  return results.filter(url => url !== null);
+};
+
+// Middleware wrapper to handle multer errors for single image
 const handleImageUpload = (req, res, next) => {
   uploadImage(req, res, (err) => {
     if (err instanceof multer.MulterError) {
@@ -79,6 +97,40 @@ const handleImageUpload = (req, res, next) => {
         return res.status(400).json({
           success: false,
           message: 'File terlalu besar. Maksimal 5MB.',
+          error: err.message
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: 'Error upload file',
+        error: err.message
+      });
+    } else if (err) {
+      return res.status(400).json({
+        success: false,
+        message: err.message || 'Error validasi file',
+        error: err.message
+      });
+    }
+    next();
+  });
+};
+
+// Middleware wrapper to handle multer errors for multiple images
+const handleMultipleImagesUpload = (req, res, next) => {
+  uploadImages(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+          success: false,
+          message: 'File terlalu besar. Maksimal 5MB per file.',
+          error: err.message
+        });
+      }
+      if (err.code === 'LIMIT_FILE_COUNT') {
+        return res.status(400).json({
+          success: false,
+          message: 'Terlalu banyak file. Maksimal 50 file.',
           error: err.message
         });
       }
@@ -290,19 +342,54 @@ const create = async (req, res) => {
     // Get user info from token
     const tokenData = decodeToken('created', req);
     
-    // Upload image if provided
-    let imageUrl = null;
-    if (req.file) {
-      console.log('Uploading image to MinIO...');
-      imageUrl = await uploadImageToStorage(req.file);
-      if (!imageUrl) {
-        console.warn('Failed to upload image to MinIO, but continuing with create');
+    // Handle multiple images upload
+    let imageUrls = null;
+    
+    // Check for multiple images (new format)
+    if (req.files && req.files.images && Array.isArray(req.files.images) && req.files.images.length > 0) {
+      console.log(`Uploading ${req.files.images.length} images to MinIO...`);
+      const uploadedUrls = await uploadMultipleImagesToStorage(req.files.images);
+      
+      if (uploadedUrls.length > 0) {
+        imageUrls = uploadedUrls;
+        console.log(`${uploadedUrls.length} images uploaded successfully`);
       } else {
-        console.log('Image uploaded successfully:', imageUrl);
+        console.warn('Failed to upload images to MinIO, but continuing with create');
       }
-    } else if (req.body.image !== undefined) {
-      // If image URL is provided directly (optional)
-      imageUrl = req.body.image || null;
+      
+      // Validate image_count if provided
+      if (req.body.image_count !== undefined) {
+        const expectedCount = parseInt(req.body.image_count, 10);
+        if (!isNaN(expectedCount) && uploadedUrls.length !== expectedCount) {
+          console.warn(`Image count mismatch: expected ${expectedCount}, uploaded ${uploadedUrls.length}`);
+        }
+      }
+    }
+    // Backward compatibility: check for single image (old format)
+    else if (req.file) {
+      console.log('Uploading single image to MinIO...');
+      const imageUrl = await uploadImageToStorage(req.file);
+      if (imageUrl) {
+        imageUrls = [imageUrl];
+        console.log('Image uploaded successfully:', imageUrl);
+      } else {
+        console.warn('Failed to upload image to MinIO, but continuing with create');
+      }
+    }
+    // If image URL(s) provided directly as string or JSON array
+    else if (req.body.image !== undefined) {
+      try {
+        // Try to parse as JSON array
+        const parsed = typeof req.body.image === 'string' ? JSON.parse(req.body.image) : req.body.image;
+        if (Array.isArray(parsed)) {
+          imageUrls = parsed;
+        } else {
+          imageUrls = [req.body.image];
+        }
+      } catch (e) {
+        // If not JSON, treat as single URL string
+        imageUrls = [req.body.image];
+      }
     }
     
     // Normalize company_name
@@ -323,6 +410,9 @@ const create = async (req, res) => {
       }
     }
 
+    // Convert imageUrls array to JSON string for database storage
+    const imageData = imageUrls && imageUrls.length > 0 ? JSON.stringify(imageUrls) : null;
+    
     const componenProductData = {
       componen_type: req.body.componen_type ? parseInt(req.body.componen_type) : null,
       company_name: normalizedCompanyName,
@@ -342,7 +432,7 @@ const create = async (req, res) => {
       selling_price_star_3: req.body.selling_price_star_3 || null,
       selling_price_star_4: req.body.selling_price_star_4 || null,
       selling_price_star_5: req.body.selling_price_star_5 || null,
-      image: imageUrl,
+      image: imageData,
       componen_product_description: req.body.componen_product_description || null,
       created_by: tokenData.created_by
     };
@@ -383,16 +473,55 @@ const update = async (req, res) => {
       return baseResponse(res, response);
     }
     
-    // Upload new image if provided
-    let imageUrl = undefined;
-    if (req.file) {
-      console.log('Uploading new image to MinIO...');
-      imageUrl = await uploadImageToStorage(req.file);
-      if (!imageUrl) {
-        console.warn('Failed to upload image to MinIO, keeping existing image');
-        imageUrl = undefined;
+    // Handle multiple images upload
+    let imageUrls = undefined;
+    
+    // Check for multiple images (new format)
+    if (req.files && req.files.images && Array.isArray(req.files.images) && req.files.images.length > 0) {
+      console.log(`Uploading ${req.files.images.length} new images to MinIO...`);
+      const uploadedUrls = await uploadMultipleImagesToStorage(req.files.images);
+      
+      if (uploadedUrls.length > 0) {
+        imageUrls = uploadedUrls;
+        console.log(`${uploadedUrls.length} images uploaded successfully`);
       } else {
+        console.warn('Failed to upload images to MinIO, keeping existing images');
+        imageUrls = undefined;
+      }
+      
+      // Validate image_count if provided
+      if (req.body.image_count !== undefined) {
+        const expectedCount = parseInt(req.body.image_count, 10);
+        if (!isNaN(expectedCount) && uploadedUrls.length !== expectedCount) {
+          console.warn(`Image count mismatch: expected ${expectedCount}, uploaded ${uploadedUrls.length}`);
+        }
+      }
+    }
+    // Backward compatibility: check for single image (old format)
+    else if (req.file) {
+      console.log('Uploading new single image to MinIO...');
+      const imageUrl = await uploadImageToStorage(req.file);
+      if (imageUrl) {
+        imageUrls = [imageUrl];
         console.log('New image uploaded successfully:', imageUrl);
+      } else {
+        console.warn('Failed to upload image to MinIO, keeping existing image');
+        imageUrls = undefined;
+      }
+    }
+    // If image URL(s) provided directly as string or JSON array
+    else if (req.body.image !== undefined) {
+      try {
+        // Try to parse as JSON array
+        const parsed = typeof req.body.image === 'string' ? JSON.parse(req.body.image) : req.body.image;
+        if (Array.isArray(parsed)) {
+          imageUrls = parsed;
+        } else {
+          imageUrls = [req.body.image];
+        }
+      } catch (e) {
+        // If not JSON, treat as single URL string
+        imageUrls = [req.body.image];
       }
     }
     
@@ -426,6 +555,12 @@ const update = async (req, res) => {
       }
     }
 
+    // Convert imageUrls array to JSON string for database storage if provided
+    let imageData = undefined;
+    if (imageUrls !== undefined) {
+      imageData = imageUrls && imageUrls.length > 0 ? JSON.stringify(imageUrls) : null;
+    }
+    
     const componenProductData = {
       componen_type: req.body.componen_type !== undefined ? (req.body.componen_type ? parseInt(req.body.componen_type) : null) : undefined,
       company_name: normalizedCompanyName,
@@ -489,8 +624,8 @@ const update = async (req, res) => {
     }
     
     // Hanya masukkan image jika ada file baru yang berhasil diupload
-    if (imageUrl !== undefined && imageUrl !== null) {
-      componenProductData.image = imageUrl;
+    if (imageData !== undefined) {
+      componenProductData.image = imageData;
     }
 
     const specificationsPayload = parseSpecificationsInput(req.body.componen_product_specifications);
@@ -821,6 +956,7 @@ module.exports = {
   remove,
   importCSV,
   handleImageUpload,
+  handleMultipleImagesUpload,
   handleCSVUpload
 };
 

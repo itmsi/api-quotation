@@ -128,10 +128,14 @@ const componenProductSchemas = {
         example: '7500000'
       },
       image: {
-        type: 'string',
-        nullable: true,
-        description: 'Product image URL',
-        example: 'https://example.com/image.jpg'
+        type: 'array',
+        description: 'Product image URLs (array of strings)',
+        items: {
+          type: 'string',
+          format: 'uri',
+          example: 'https://example.com/image.jpg'
+        },
+        example: ['https://example.com/image1.jpg', 'https://example.com/image2.jpg']
       },
       componen_product_description: {
         type: 'string',
@@ -371,7 +375,20 @@ const componenProductSchemas = {
       image: {
         type: 'string',
         format: 'binary',
-        description: 'Product image file (jpg, jpeg, png, gif, webp)'
+        description: 'Product image file (jpg, jpeg, png, gif, webp) - DEPRECATED: Use images[] instead'
+      },
+      images: {
+        type: 'array',
+        description: 'Multiple product image files (jpg, jpeg, png, gif, webp). Format: images[0], images[1], etc.',
+        items: {
+          type: 'string',
+          format: 'binary'
+        }
+      },
+      image_count: {
+        type: 'integer',
+        description: 'Number of images being uploaded (optional, for validation)',
+        example: 3
       },
       componen_product_description: {
         type: 'string',

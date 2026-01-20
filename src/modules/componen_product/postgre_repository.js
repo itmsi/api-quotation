@@ -50,6 +50,39 @@ const mapSpecificationResponse = (specifications = []) => {
 };
 
 /**
+ * Normalize image untuk response API
+ * Convert JSON string to array, or keep as array, or convert single string to array
+ */
+const mapImageResponse = (image) => {
+  if (!image) {
+    return [];
+  }
+
+  // If already an array, return as is
+  if (Array.isArray(image)) {
+    return image;
+  }
+
+  // If string, try to parse as JSON
+  if (typeof image === 'string') {
+    try {
+      const parsed = JSON.parse(image);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+      // If parsed is not array, treat as single URL
+      return [parsed];
+    } catch (e) {
+      // If not JSON, treat as single URL string
+      return [image];
+    }
+  }
+
+  // Fallback: return empty array
+  return [];
+};
+
+/**
  * Map product_type from database to response
  * Note: product_type is now a direct column, but we still map from componen_type for backward compatibility
  */
@@ -241,7 +274,8 @@ const findAll = async (params) => {
     const { specification_properties, ...itemWithoutSpecs } = item;
     return {
       ...itemWithoutSpecs,
-      product_type: mapProductTypeResponse(item.product_type, item.componen_type)
+      product_type: mapProductTypeResponse(item.product_type, item.componen_type),
+      image: mapImageResponse(item.image)
     };
   });
 
@@ -316,7 +350,8 @@ const findById = async (id) => {
   return {
     ...productWithoutSpecs,
     componen_product_specifications: normalizedSpecs,
-    product_type: mapProductTypeResponse(componenProduct.product_type, componenProduct.componen_type)
+    product_type: mapProductTypeResponse(componenProduct.product_type, componenProduct.componen_type),
+    image: mapImageResponse(componenProduct.image)
   };
 };
 
@@ -430,7 +465,8 @@ const create = async (data, specifications = []) => {
     return {
       ...productWithoutSpecs,
       componen_product_specifications: normalizedSpecs,
-      product_type: mapProductTypeResponse(product.product_type, product.componen_type)
+      product_type: mapProductTypeResponse(product.product_type, product.componen_type),
+      image: mapImageResponse(product.image)
     };
   });
 };
@@ -532,7 +568,8 @@ const update = async (id, data, options = {}) => {
     return {
       ...productWithoutSpecs,
       componen_product_specifications: normalizedSpecs,
-      product_type: mapProductTypeResponse(product.product_type, product.componen_type)
+      product_type: mapProductTypeResponse(product.product_type, product.componen_type),
+      image: mapImageResponse(product.image)
     };
   });
 };
