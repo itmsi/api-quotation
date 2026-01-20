@@ -8,27 +8,11 @@ const createValidation = [
     .optional()
     .isInt({ min: 1, max: 3 })
     .withMessage('Componen type harus berupa angka 1, 2, atau 3 (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR)'),
-  body('company_id')
+  body('company_name')
     .optional()
-    .custom((value) => {
-      if (value === null || value === undefined || value === '') {
-        return true;
-      }
-      if (typeof value === 'string') {
-        const trimmed = value.trim();
-        if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
-          return true;
-        }
-        // If it's a valid UUID, validate it
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (uuidRegex.test(trimmed)) {
-          return true;
-        }
-        return false;
-      }
-      return false;
-    })
-    .withMessage('Company ID harus berupa UUID yang valid, string kosong, null, atau NaN'),
+    .isLength({ max: 255 })
+    .withMessage('Company name maksimal 255 karakter')
+    .trim(),
   body('product_type')
     .optional()
     .custom((value) => {
@@ -187,7 +171,7 @@ const updateValidation = [
     .optional()
     .isInt({ min: 1, max: 3 })
     .withMessage('Componen type harus berupa angka 1, 2, atau 3 (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR)'),
-  body('company_id')
+  body('company_name')
     .optional()
     .custom((value) => {
       if (value === null || value === undefined || value === '') {
@@ -198,16 +182,14 @@ const updateValidation = [
         if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
           return true;
         }
-        // If it's a valid UUID, validate it
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (uuidRegex.test(trimmed)) {
-          return true;
+        if (trimmed.length > 255) {
+          throw new Error('Company name maksimal 255 karakter');
         }
-        return false;
+        return true;
       }
       return false;
     })
-    .withMessage('Company ID harus berupa UUID yang valid, string kosong, null, atau NaN'),
+    .withMessage('Company name harus berupa string, string kosong, null, atau NaN (maksimal 255 karakter)'),
   body('product_type')
     .optional()
     .custom((value) => {
