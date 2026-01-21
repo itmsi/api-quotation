@@ -51,16 +51,30 @@ const mapSpecificationResponse = (specifications = []) => {
 
 /**
  * Normalize image untuk response API
- * Convert JSON string to array, or keep as array, or convert single string to array
+ * Convert JSON string to array of objects with image_id and image_url
+ * Supports both old format (array of strings) and new format (array of objects)
  */
 const mapImageResponse = (image) => {
   if (!image) {
     return [];
   }
 
-  // If already an array, return as is
+  // If already an array, check format and normalize
   if (Array.isArray(image)) {
-    return image;
+    // Check if it's new format (array of objects) or old format (array of strings)
+    return image.map(item => {
+      if (typeof item === 'object' && item !== null && item.image_id && item.image_url) {
+        // New format: already has image_id and image_url
+        return item;
+      } else if (typeof item === 'string') {
+        // Old format: convert string URL to object format
+        return {
+          image_id: null, // Old format doesn't have image_id
+          image_url: item
+        };
+      }
+      return item;
+    });
   }
 
   // If string, try to parse as JSON
@@ -68,13 +82,36 @@ const mapImageResponse = (image) => {
     try {
       const parsed = JSON.parse(image);
       if (Array.isArray(parsed)) {
-        return parsed;
+        // Normalize array items
+        return parsed.map(item => {
+          if (typeof item === 'object' && item !== null && item.image_id && item.image_url) {
+            return item;
+          } else if (typeof item === 'string') {
+            return {
+              image_id: null,
+              image_url: item
+            };
+          }
+          return item;
+        });
       }
-      // If parsed is not array, treat as single URL
-      return [parsed];
+      // If parsed is not array, treat as single URL (old format)
+      if (typeof parsed === 'string') {
+        return [{
+          image_id: null,
+          image_url: parsed
+        }];
+      }
+      // If parsed is object with image_id and image_url
+      if (typeof parsed === 'object' && parsed !== null && parsed.image_id && parsed.image_url) {
+        return [parsed];
+      }
     } catch (e) {
-      // If not JSON, treat as single URL string
-      return [image];
+      // If not JSON, treat as single URL string (old format)
+      return [{
+        image_id: null,
+        image_url: image
+      }];
     }
   }
 
@@ -346,12 +383,16 @@ const findById = async (id) => {
   // Remove specification_properties and image from response, only return normalized componen_product_specifications
   const { specification_properties, image, ...productWithoutSpecs } = componenProduct;
 
+  const mappedImages = mapImageResponse(componenProduct.images || componenProduct.image);
+  
   return {
     ...productWithoutSpecs,
     componen_product_specifications: normalizedSpecs,
     product_type: mapProductTypeResponse(componenProduct.product_type, componenProduct.componen_type),
-    images: mapImageResponse(componenProduct.images || componenProduct.image), // Use images column, fallback to image for backward compatibility
-    image_count: componenProduct.image_count || (componenProduct.images ? mapImageResponse(componenProduct.images).length : 0) // Use image_count or calculate from images array
+    images: mappedImages, // Array of objects with image_id and image_url
+    image_count: componenProduct.image_count !== null && componenProduct.image_count !== undefined 
+      ? componenProduct.image_count 
+      : mappedImages.length // Use image_count from DB or calculate from images array
   };
 };
 
@@ -464,13 +505,16 @@ const create = async (data, specifications = []) => {
     // Remove specification_properties from response, only return normalized componen_product_specifications
     const { specification_properties, ...productWithoutSpecs } = product;
 
+    const mappedImages = mapImageResponse(product.images || product.image);
+    
     return {
       ...productWithoutSpecs,
       componen_product_specifications: normalizedSpecs,
       product_type: mapProductTypeResponse(product.product_type, product.componen_type),
-      image: mapImageResponse(product.image || product.images), // Use images if image is not available (backward compatibility)
-      images: mapImageResponse(product.images || product.image), // Use images column, fallback to image for backward compatibility
-      image_count: product.image_count || (product.images ? mapImageResponse(product.images).length : 0) // Use image_count or calculate from images array
+      images: mappedImages, // Array of objects with image_id and image_url
+      image_count: product.image_count !== null && product.image_count !== undefined 
+        ? product.image_count 
+        : mappedImages.length // Use image_count from DB or calculate from images array
     };
   });
 };
@@ -571,13 +615,16 @@ const update = async (id, data, options = {}) => {
     // Remove specification_properties from response, only return normalized componen_product_specifications
     const { specification_properties, ...productWithoutSpecs } = product;
 
+    const mappedImages = mapImageResponse(product.images || product.image);
+    
     return {
       ...productWithoutSpecs,
       componen_product_specifications: normalizedSpecs,
       product_type: mapProductTypeResponse(product.product_type, product.componen_type),
-      image: mapImageResponse(product.image || product.images), // Use images if image is not available (backward compatibility)
-      images: mapImageResponse(product.images || product.image), // Use images column, fallback to image for backward compatibility
-      image_count: product.image_count || (product.images ? mapImageResponse(product.images).length : 0) // Use image_count or calculate from images array
+      images: mappedImages, // Array of objects with image_id and image_url
+      image_count: product.image_count !== null && product.image_count !== undefined 
+        ? product.image_count 
+        : mappedImages.length // Use image_count from DB or calculate from images array
     };
   });
 };

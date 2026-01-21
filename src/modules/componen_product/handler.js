@@ -2,6 +2,7 @@ const path = require('path');
 const multer = require('multer');
 const csv = require('csv-parser');
 const { Readable } = require('stream');
+const { v4: uuidv4 } = require('uuid');
 const repository = require('./postgre_repository');
 const { baseResponse, mappingError, mappingSuccess } = require('../../utils');
 const { decodeToken } = require('../../utils/auth');
@@ -48,6 +49,7 @@ const uploadImage = upload.single('image');
 const uploadImages = upload.any();
 
 // Helper function to upload image to MinIO
+// Returns object with image_id and image_url, or null if failed
 const uploadImageToStorage = async (file, folderPath = 'componen_products') => {
   if (!file || !isMinioEnabled) {
     return null;
@@ -65,7 +67,10 @@ const uploadImageToStorage = async (file, folderPath = 'componen_products') => {
     const uploadResult = await uploadToMinio(objectName, file.buffer, file.mimetype, bucketName);
     
     if (uploadResult.success) {
-      return uploadResult.url;
+      return {
+        image_id: uuidv4(),
+        image_url: uploadResult.url
+      };
     }
     
     return null;
@@ -455,7 +460,7 @@ const create = async (req, res) => {
       }
     }
 
-    // Convert imageUrls array to JSON string for database storage
+    // Convert imageUrls array (array of objects with image_id and image_url) to JSON string for database storage
     // Calculate image_count based on uploaded files, not just successful uploads
     let imageCount = 0;
     if (req.files && req.files.images && Array.isArray(req.files.images)) {
@@ -464,13 +469,14 @@ const create = async (req, res) => {
       // Use provided image_count if files not available but count is provided
       imageCount = parseInt(req.body.image_count, 10) || 0;
     } else if (imageUrls && imageUrls.length > 0) {
-      // Fallback to uploaded URLs count
+      // Fallback to uploaded images count
       imageCount = imageUrls.length;
     }
     
+    // imageUrls is now array of objects: [{ image_id, image_url }, ...]
     const imageData = imageUrls && imageUrls.length > 0 ? JSON.stringify(imageUrls) : null;
     
-    console.log(`Image processing summary: ${imageCount} files processed, ${imageUrls ? imageUrls.length : 0} URLs uploaded`);
+    console.log(`Image processing summary: ${imageCount} files processed, ${imageUrls ? imageUrls.length : 0} images uploaded`);
     
     const componenProductData = {
       componen_type: req.body.componen_type ? parseInt(req.body.componen_type) : null,
@@ -581,19 +587,29 @@ const update = async (req, res) => {
         imageUrls = undefined;
       }
     }
-    // If image URL(s) provided directly as string or JSON array
+    // If image URL(s) provided directly as string or JSON array (backward compatibility)
     else if (req.body.image !== undefined && req.body.image !== null && req.body.image !== '') {
       try {
         // Try to parse as JSON array
         const parsed = typeof req.body.image === 'string' ? JSON.parse(req.body.image) : req.body.image;
         if (Array.isArray(parsed)) {
-          imageUrls = parsed;
+          // Convert old format (array of strings) to new format (array of objects)
+          imageUrls = parsed.map(item => {
+            if (typeof item === 'object' && item !== null && item.image_id && item.image_url) {
+              return item; // Already new format
+            } else if (typeof item === 'string') {
+              return { image_id: uuidv4(), image_url: item }; // Convert old format
+            }
+            return item;
+          });
+        } else if (typeof parsed === 'string') {
+          imageUrls = [{ image_id: uuidv4(), image_url: parsed }];
         } else {
-          imageUrls = [req.body.image];
+          imageUrls = [{ image_id: uuidv4(), image_url: req.body.image }];
         }
       } catch (e) {
-        // If not JSON, treat as single URL string
-        imageUrls = [req.body.image];
+        // If not JSON, treat as single URL string (old format)
+        imageUrls = [{ image_id: uuidv4(), image_url: req.body.image }];
       }
     }
     
@@ -627,29 +643,111 @@ const update = async (req, res) => {
       }
     }
 
-    // Convert imageUrls array to JSON string for database storage if provided
-    // Only update images/image_count if there are valid uploaded URLs or explicit intent to clear
+    // Handle images update: append new images and/or delete existing images
     let imageData = undefined;
     let imageCount = undefined;
     
-    if (imageUrls !== undefined) {
-      // Only update if there are URLs or if explicitly set to empty array/null
-      // If imageUrls is empty array, it means user wants to clear images
-      imageData = imageUrls && imageUrls.length > 0 ? JSON.stringify(imageUrls) : null;
-      imageCount = imageUrls && imageUrls.length > 0 ? imageUrls.length : 0;
+    // Parse existing images from database and normalize to new format
+    let existingImages = [];
+    if (existing.images) {
+      try {
+        const parsed = typeof existing.images === 'string' ? JSON.parse(existing.images) : existing.images;
+        if (Array.isArray(parsed)) {
+          // Normalize to new format (array of objects with image_id and image_url)
+          existingImages = parsed.map(item => {
+            if (typeof item === 'object' && item !== null && item.image_id && item.image_url) {
+              return item; // Already new format
+            } else if (typeof item === 'string') {
+              // Old format: convert string URL to object format
+              return { image_id: uuidv4(), image_url: item };
+            }
+            return item;
+          });
+        }
+      } catch (e) {
+        console.warn('Failed to parse existing images:', e);
+        existingImages = [];
+      }
+    }
+    
+    // Handle images from body request (for delete operations)
+    let imagesFromBody = [];
+    if (req.body.images !== undefined && req.body.images !== null && req.body.images !== '') {
+      try {
+        const parsed = typeof req.body.images === 'string' ? JSON.parse(req.body.images) : req.body.images;
+        if (Array.isArray(parsed)) {
+          imagesFromBody = parsed;
+        }
+      } catch (e) {
+        console.warn('Failed to parse images from body:', e);
+      }
+    }
+    
+    // Process images: append new uploads and handle deletions
+    if (imageUrls !== undefined && imageUrls.length > 0) {
+      // New images uploaded, append to existing
+      let updatedImages = [...existingImages];
+      
+      // Remove images that are marked for deletion
+      if (imagesFromBody.length > 0) {
+        const idsToDelete = imagesFromBody
+          .map(img => img.image_id_to_delete)
+          .filter(id => id && id !== '' && id !== null);
+        
+        if (idsToDelete.length > 0) {
+          updatedImages = updatedImages.filter(img => {
+            const imgId = typeof img === 'object' && img !== null ? img.image_id : null;
+            const shouldKeep = !idsToDelete.includes(imgId);
+            if (!shouldKeep) {
+              console.log(`Removing image with image_id: ${imgId}`);
+            }
+            return shouldKeep;
+          });
+          console.log(`Removed ${idsToDelete.length} images marked for deletion, ${updatedImages.length} images remaining`);
+        }
+      }
+      
+      // Append new uploaded images
+      updatedImages = [...updatedImages, ...imageUrls];
+      console.log(`Appended ${imageUrls.length} new images to existing ${existingImages.length} images`);
+      
+      imageData = JSON.stringify(updatedImages);
+      imageCount = updatedImages.length;
+    } else if (imagesFromBody.length > 0) {
+      // No new uploads, but images array provided (for delete operations)
+      const idsToDelete = imagesFromBody
+        .map(img => img.image_id_to_delete)
+        .filter(id => id && id !== '' && id !== null);
+      
+      if (idsToDelete.length > 0) {
+        let updatedImages = existingImages.filter(img => {
+          const imgId = typeof img === 'object' && img !== null ? img.image_id : null;
+          const shouldKeep = !idsToDelete.includes(imgId);
+          if (!shouldKeep) {
+            console.log(`Removing image with image_id: ${imgId}`);
+          }
+          return shouldKeep;
+        });
+        
+        imageData = JSON.stringify(updatedImages);
+        imageCount = updatedImages.length;
+        console.log(`Removed ${idsToDelete.length} images, ${updatedImages.length} images remaining`);
+      } else {
+        // No deletions, keep existing
+        imageData = undefined;
+        imageCount = undefined;
+      }
     } else if (hasImageCountField) {
-      // If image_count is provided but no files, use the provided count
-      // This handles case where user wants to update count without uploading new images
+      // If image_count is provided but no files/images, use the provided count
       const providedCount = parseInt(req.body.image_count, 10);
       if (!isNaN(providedCount)) {
         imageCount = providedCount;
-        // Don't update imageData if no URLs were uploaded
         imageData = undefined;
       }
     }
     
     // If all image fields were empty/null, don't update images at all (keep existing)
-    if (hasEmptyImageFields && !hasImageCountField && imageUrls === undefined) {
+    if (hasEmptyImageFields && !hasImageCountField && imageUrls === undefined && imagesFromBody.length === 0) {
       console.log('No valid images or image_count provided, keeping existing images');
       imageData = undefined;
       imageCount = undefined;
