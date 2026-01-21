@@ -270,12 +270,11 @@ const findAll = async (params) => {
   }
 
   const itemsWithProductType = (data || []).map((item) => {
-    // Remove specification_properties from response
-    const { specification_properties, ...itemWithoutSpecs } = item;
+    // Remove specification_properties, image, images, and image_count from response
+    const { specification_properties, image, images, image_count, ...itemWithoutSpecs } = item;
     return {
       ...itemWithoutSpecs,
-      product_type: mapProductTypeResponse(item.product_type, item.componen_type),
-      image: mapImageResponse(item.image)
+      product_type: mapProductTypeResponse(item.product_type, item.componen_type)
     };
   });
 
@@ -344,14 +343,15 @@ const findById = async (id) => {
 
   const normalizedSpecs = mapSpecificationResponse(storedSpecs);
 
-  // Remove specification_properties from response, only return normalized componen_product_specifications
-  const { specification_properties, ...productWithoutSpecs } = componenProduct;
+  // Remove specification_properties and image from response, only return normalized componen_product_specifications
+  const { specification_properties, image, ...productWithoutSpecs } = componenProduct;
 
   return {
     ...productWithoutSpecs,
     componen_product_specifications: normalizedSpecs,
     product_type: mapProductTypeResponse(componenProduct.product_type, componenProduct.componen_type),
-    image: mapImageResponse(componenProduct.image)
+    images: mapImageResponse(componenProduct.images || componenProduct.image), // Use images column, fallback to image for backward compatibility
+    image_count: componenProduct.image_count || (componenProduct.images ? mapImageResponse(componenProduct.images).length : 0) // Use image_count or calculate from images array
   };
 };
 
@@ -427,7 +427,9 @@ const create = async (data, specifications = []) => {
       selling_price_star_3: data.selling_price_star_3 || null,
       selling_price_star_4: data.selling_price_star_4 || null,
       selling_price_star_5: data.selling_price_star_5 || null,
-      image: data.image || null,
+      image: data.image || null, // Keep for backward compatibility
+      images: data.images || null, // New column for array of image URLs
+      image_count: data.image_count || 0, // New column for image count
       componen_product_description: data.componen_product_description || null,
       created_by: data.created_by || null
     };
@@ -466,7 +468,9 @@ const create = async (data, specifications = []) => {
       ...productWithoutSpecs,
       componen_product_specifications: normalizedSpecs,
       product_type: mapProductTypeResponse(product.product_type, product.componen_type),
-      image: mapImageResponse(product.image)
+      image: mapImageResponse(product.image || product.images), // Use images if image is not available (backward compatibility)
+      images: mapImageResponse(product.images || product.image), // Use images column, fallback to image for backward compatibility
+      image_count: product.image_count || (product.images ? mapImageResponse(product.images).length : 0) // Use image_count or calculate from images array
     };
   });
 };
@@ -513,7 +517,9 @@ const update = async (id, data, options = {}) => {
     if (data.selling_price_star_3 !== undefined) updateFields.selling_price_star_3 = data.selling_price_star_3;
     if (data.selling_price_star_4 !== undefined) updateFields.selling_price_star_4 = data.selling_price_star_4;
     if (data.selling_price_star_5 !== undefined) updateFields.selling_price_star_5 = data.selling_price_star_5;
-    if (data.image !== undefined) updateFields.image = data.image;
+    if (data.image !== undefined) updateFields.image = data.image; // Keep for backward compatibility
+    if (data.images !== undefined) updateFields.images = data.images; // New column for array of image URLs
+    if (data.image_count !== undefined) updateFields.image_count = data.image_count; // New column for image count
     if (data.componen_product_description !== undefined) updateFields.componen_product_description = data.componen_product_description;
     if (data.updated_by !== undefined) updateFields.updated_by = data.updated_by;
 
@@ -569,7 +575,9 @@ const update = async (id, data, options = {}) => {
       ...productWithoutSpecs,
       componen_product_specifications: normalizedSpecs,
       product_type: mapProductTypeResponse(product.product_type, product.componen_type),
-      image: mapImageResponse(product.image)
+      image: mapImageResponse(product.image || product.images), // Use images if image is not available (backward compatibility)
+      images: mapImageResponse(product.images || product.image), // Use images column, fallback to image for backward compatibility
+      image_count: product.image_count || (product.images ? mapImageResponse(product.images).length : 0) // Use image_count or calculate from images array
     };
   });
 };

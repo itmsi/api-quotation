@@ -129,6 +129,16 @@ const componenProductSchemas = {
       },
       image: {
         type: 'array',
+        description: 'Product image URLs (array of strings) - DEPRECATED: Use images instead',
+        items: {
+          type: 'string',
+          format: 'uri',
+          example: 'https://example.com/image.jpg'
+        },
+        example: ['https://example.com/image1.jpg', 'https://example.com/image2.jpg']
+      },
+      images: {
+        type: 'array',
         description: 'Product image URLs (array of strings)',
         items: {
           type: 'string',
@@ -136,6 +146,11 @@ const componenProductSchemas = {
           example: 'https://example.com/image.jpg'
         },
         example: ['https://example.com/image1.jpg', 'https://example.com/image2.jpg']
+      },
+      image_count: {
+        type: 'integer',
+        description: 'Number of images uploaded',
+        example: 3
       },
       componen_product_description: {
         type: 'string',
@@ -375,20 +390,37 @@ const componenProductSchemas = {
       image: {
         type: 'string',
         format: 'binary',
-        description: 'Product image file (jpg, jpeg, png, gif, webp) - DEPRECATED: Use images[] instead'
+        description: 'Product image file (jpg, jpeg, png, gif, webp) - DEPRECATED: Use images[0], images[1], etc. instead'
       },
-      images: {
-        type: 'array',
-        description: 'Multiple product image files (jpg, jpeg, png, gif, webp). Format: images[0], images[1], etc.',
-        items: {
-          type: 'string',
-          format: 'binary'
-        }
+      'images[0]': {
+        type: 'string',
+        format: 'binary',
+        description: 'First product image file (jpg, jpeg, png, gif, webp)'
+      },
+      'images[1]': {
+        type: 'string',
+        format: 'binary',
+        description: 'Second product image file (jpg, jpeg, png, gif, webp)'
+      },
+      'images[2]': {
+        type: 'string',
+        format: 'binary',
+        description: 'Third product image file (jpg, jpeg, png, gif, webp)'
+      },
+      'images[3]': {
+        type: 'string',
+        format: 'binary',
+        description: 'Fourth product image file (jpg, jpeg, png, gif, webp)'
+      },
+      'images[4]': {
+        type: 'string',
+        format: 'binary',
+        description: 'Fifth product image file (jpg, jpeg, png, gif, webp). You can add more images using images[5], images[6], etc. (up to 50 images)'
       },
       image_count: {
-        type: 'integer',
-        description: 'Number of images being uploaded (optional, for validation)',
-        example: 3
+        type: 'string',
+        description: 'Number of images being uploaded. Must match the number of images[0], images[1], etc. fields sent. Format: "3" (as string)',
+        example: '3'
       },
       componen_product_description: {
         type: 'string',

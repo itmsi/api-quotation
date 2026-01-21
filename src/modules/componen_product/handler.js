@@ -151,7 +151,22 @@ const handleMultipleImagesUpload = (req, res, next) => {
       // Filter and organize image files
       const imageFiles = req.files.filter(file => {
         // Support both 'images' and 'images[0]', 'images[1]', etc.
-        return file.fieldname === 'images' || /^images\[\d+\]$/.test(file.fieldname);
+        const isImageField = file.fieldname === 'images' || /^images\[\d+\]$/.test(file.fieldname);
+        
+        // Filter out empty files (files with no buffer or zero size)
+        if (!isImageField) {
+          return false;
+        }
+        
+        // Check if file has valid content (buffer exists and has size > 0)
+        const hasValidContent = file.buffer && file.buffer.length > 0;
+        
+        if (!hasValidContent) {
+          console.log(`Skipping empty file: ${file.fieldname}`);
+          return false;
+        }
+        
+        return true;
       });
       
       // Sort by fieldname if using indexed format (images[0], images[1], etc.)
@@ -161,12 +176,18 @@ const handleMultipleImagesUpload = (req, res, next) => {
         if (aMatch && bMatch) {
           return parseInt(aMatch[1]) - parseInt(bMatch[1]);
         }
+        // If 'images' field (without index), put it first
+        if (a.fieldname === 'images') return -1;
+        if (b.fieldname === 'images') return 1;
         return 0;
       });
       
       // Organize into req.files.images for backward compatibility
       if (imageFiles.length > 0) {
         req.files.images = imageFiles;
+        console.log(`Processed ${imageFiles.length} valid image files from ${req.files.length} total files`);
+      } else {
+        console.log(`No valid image files found in ${req.files.length} total files`);
       }
     }
     
@@ -435,7 +456,21 @@ const create = async (req, res) => {
     }
 
     // Convert imageUrls array to JSON string for database storage
+    // Calculate image_count based on uploaded files, not just successful uploads
+    let imageCount = 0;
+    if (req.files && req.files.images && Array.isArray(req.files.images)) {
+      imageCount = req.files.images.length;
+    } else if (req.body.image_count !== undefined && req.body.image_count !== null && req.body.image_count !== '') {
+      // Use provided image_count if files not available but count is provided
+      imageCount = parseInt(req.body.image_count, 10) || 0;
+    } else if (imageUrls && imageUrls.length > 0) {
+      // Fallback to uploaded URLs count
+      imageCount = imageUrls.length;
+    }
+    
     const imageData = imageUrls && imageUrls.length > 0 ? JSON.stringify(imageUrls) : null;
+    
+    console.log(`Image processing summary: ${imageCount} files processed, ${imageUrls ? imageUrls.length : 0} URLs uploaded`);
     
     const componenProductData = {
       componen_type: req.body.componen_type ? parseInt(req.body.componen_type) : null,
@@ -456,7 +491,9 @@ const create = async (req, res) => {
       selling_price_star_3: req.body.selling_price_star_3 || null,
       selling_price_star_4: req.body.selling_price_star_4 || null,
       selling_price_star_5: req.body.selling_price_star_5 || null,
-      image: imageData,
+      image: imageData, // Keep for backward compatibility
+      images: imageData, // New column for array of image URLs
+      image_count: imageCount, // New column for image count
       componen_product_description: req.body.componen_product_description || null,
       created_by: tokenData.created_by
     };
@@ -500,8 +537,14 @@ const update = async (req, res) => {
     // Handle multiple images upload
     let imageUrls = undefined;
     
+    // Check if user explicitly sent image fields (even if empty)
+    const hasImageFields = req.files && req.files.images && Array.isArray(req.files.images);
+    const hasEmptyImageFields = hasImageFields && req.files.images.length === 0;
+    const hasImageCountField = req.body.image_count !== undefined && req.body.image_count !== null && req.body.image_count !== '';
+    
     // Check for multiple images (new format)
-    if (req.files && req.files.images && Array.isArray(req.files.images) && req.files.images.length > 0) {
+    // Only process if there are valid (non-empty) files
+    if (hasImageFields && req.files.images.length > 0) {
       console.log(`Uploading ${req.files.images.length} new images to MinIO...`);
       const uploadedUrls = await uploadMultipleImagesToStorage(req.files.images);
       
@@ -514,12 +557,17 @@ const update = async (req, res) => {
       }
       
       // Validate image_count if provided
-      if (req.body.image_count !== undefined) {
+      if (hasImageCountField) {
         const expectedCount = parseInt(req.body.image_count, 10);
         if (!isNaN(expectedCount) && uploadedUrls.length !== expectedCount) {
           console.warn(`Image count mismatch: expected ${expectedCount}, uploaded ${uploadedUrls.length}`);
         }
       }
+    }
+    // If all images fields are empty, don't update images (keep existing)
+    else if (hasEmptyImageFields) {
+      console.log('All image fields are empty, keeping existing images');
+      imageUrls = undefined; // Don't update, keep existing
     }
     // Backward compatibility: check for single image (old format)
     else if (req.file) {
@@ -534,7 +582,7 @@ const update = async (req, res) => {
       }
     }
     // If image URL(s) provided directly as string or JSON array
-    else if (req.body.image !== undefined) {
+    else if (req.body.image !== undefined && req.body.image !== null && req.body.image !== '') {
       try {
         // Try to parse as JSON array
         const parsed = typeof req.body.image === 'string' ? JSON.parse(req.body.image) : req.body.image;
@@ -580,9 +628,31 @@ const update = async (req, res) => {
     }
 
     // Convert imageUrls array to JSON string for database storage if provided
+    // Only update images/image_count if there are valid uploaded URLs or explicit intent to clear
     let imageData = undefined;
+    let imageCount = undefined;
+    
     if (imageUrls !== undefined) {
+      // Only update if there are URLs or if explicitly set to empty array/null
+      // If imageUrls is empty array, it means user wants to clear images
       imageData = imageUrls && imageUrls.length > 0 ? JSON.stringify(imageUrls) : null;
+      imageCount = imageUrls && imageUrls.length > 0 ? imageUrls.length : 0;
+    } else if (hasImageCountField) {
+      // If image_count is provided but no files, use the provided count
+      // This handles case where user wants to update count without uploading new images
+      const providedCount = parseInt(req.body.image_count, 10);
+      if (!isNaN(providedCount)) {
+        imageCount = providedCount;
+        // Don't update imageData if no URLs were uploaded
+        imageData = undefined;
+      }
+    }
+    
+    // If all image fields were empty/null, don't update images at all (keep existing)
+    if (hasEmptyImageFields && !hasImageCountField && imageUrls === undefined) {
+      console.log('No valid images or image_count provided, keeping existing images');
+      imageData = undefined;
+      imageCount = undefined;
     }
     
     const componenProductData = {
@@ -647,9 +717,11 @@ const update = async (req, res) => {
       // If no relevant fields updated, don't update componen_product_name
     }
     
-    // Hanya masukkan image jika ada file baru yang berhasil diupload
+    // Hanya masukkan image/images/image_count jika ada file baru yang berhasil diupload
     if (imageData !== undefined) {
-      componenProductData.image = imageData;
+      componenProductData.image = imageData; // Keep for backward compatibility
+      componenProductData.images = imageData; // New column for array of image URLs
+      componenProductData.image_count = imageCount; // New column for image count
     }
 
     const specificationsPayload = parseSpecificationsInput(req.body.componen_product_specifications);
