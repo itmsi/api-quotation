@@ -663,64 +663,100 @@ const update = async (req, res) => {
             }
             return item;
           });
+          console.log(`📦 Loaded ${existingImages.length} existing images from database`);
+          if (existingImages.length > 0) {
+            console.log(`   Existing image IDs:`, existingImages.map(img => img.image_id));
+          }
         }
       } catch (e) {
         console.warn('Failed to parse existing images:', e);
         existingImages = [];
       }
+    } else {
+      console.log('ℹ No existing images in database');
     }
     
     // Handle images from body request (for delete operations)
+    // Note: req.body.images might be a JSON string in multipart/form-data
+    // Important: This is different from images[0], images[1], etc. which are file uploads
+    // BUT: If images[0]='', images[1]='', etc. are sent, multer might convert images to an array
     let imagesFromBody = [];
-    if (req.body.images !== undefined && req.body.images !== null && req.body.images !== '') {
-      try {
-        const parsed = typeof req.body.images === 'string' ? JSON.parse(req.body.images) : req.body.images;
-        if (Array.isArray(parsed)) {
-          imagesFromBody = parsed;
+    
+    // Check for images field (JSON string for delete operations)
+    const imagesFieldValue = req.body.images;
+    console.log('Checking images field for delete operations. Type:', typeof imagesFieldValue, 'IsArray:', Array.isArray(imagesFieldValue), 'Value:', imagesFieldValue);
+    
+    if (imagesFieldValue !== undefined && imagesFieldValue !== null && imagesFieldValue !== '') {
+      // Case 1: If it's an array (because of images[0]='', images[1]='', etc.)
+      if (Array.isArray(imagesFieldValue)) {
+        // Find the non-empty string that looks like JSON
+        const jsonString = imagesFieldValue.find(item => 
+          typeof item === 'string' && 
+          item.trim() !== '' && 
+          (item.trim().startsWith('[') || item.trim().startsWith('{'))
+        );
+        
+        if (jsonString) {
+          try {
+            const parsed = JSON.parse(jsonString);
+            if (Array.isArray(parsed)) {
+              imagesFromBody = parsed;
+              console.log(`✓ Parsed ${imagesFromBody.length} images from array item for delete operations:`, imagesFromBody);
+            } else {
+              console.warn('✗ Parsed JSON is not an array:', typeof parsed, parsed);
+            }
+          } catch (e) {
+            console.warn('✗ Failed to parse JSON string from array:', e.message, 'JSON string:', jsonString);
+          }
+        } else {
+          console.warn('✗ No valid JSON string found in images array');
         }
-      } catch (e) {
-        console.warn('Failed to parse images from body:', e);
       }
+      // Case 2: If it's a string that looks like JSON
+      else if (typeof imagesFieldValue === 'string' && (imagesFieldValue.trim().startsWith('[') || imagesFieldValue.trim().startsWith('{'))) {
+        try {
+          const parsed = JSON.parse(imagesFieldValue);
+          if (Array.isArray(parsed)) {
+            imagesFromBody = parsed;
+            console.log(`✓ Parsed ${imagesFromBody.length} images from string for delete operations:`, imagesFromBody);
+          } else {
+            console.warn('✗ images from body is not an array:', typeof parsed, parsed);
+          }
+        } catch (e) {
+          console.warn('✗ Failed to parse images from body as JSON:', e.message, 'Raw value:', imagesFieldValue);
+        }
+      } else {
+        console.warn('✗ images field is not a valid JSON string or array:', typeof imagesFieldValue);
+      }
+    } else {
+      console.log('ℹ No images field in body or images field is empty/null');
     }
     
     // Process images: append new uploads and handle deletions
+    // Check if there are images to delete from body request
+    const idsToDelete = imagesFromBody.length > 0
+      ? imagesFromBody
+          .map(img => {
+            if (typeof img === 'object' && img !== null) {
+              return img.image_id_to_delete;
+            }
+            return null;
+          })
+          .filter(id => id && id !== '' && id !== null)
+      : [];
+    
+    console.log(`Images to delete: ${idsToDelete.length}`, idsToDelete);
+    console.log(`Existing images count: ${existingImages.length}`);
+    console.log(`New images to upload: ${imageUrls ? imageUrls.length : 0}`);
+    
     if (imageUrls !== undefined && imageUrls.length > 0) {
       // New images uploaded, append to existing
       let updatedImages = [...existingImages];
       
       // Remove images that are marked for deletion
-      if (imagesFromBody.length > 0) {
-        const idsToDelete = imagesFromBody
-          .map(img => img.image_id_to_delete)
-          .filter(id => id && id !== '' && id !== null);
-        
-        if (idsToDelete.length > 0) {
-          updatedImages = updatedImages.filter(img => {
-            const imgId = typeof img === 'object' && img !== null ? img.image_id : null;
-            const shouldKeep = !idsToDelete.includes(imgId);
-            if (!shouldKeep) {
-              console.log(`Removing image with image_id: ${imgId}`);
-            }
-            return shouldKeep;
-          });
-          console.log(`Removed ${idsToDelete.length} images marked for deletion, ${updatedImages.length} images remaining`);
-        }
-      }
-      
-      // Append new uploaded images
-      updatedImages = [...updatedImages, ...imageUrls];
-      console.log(`Appended ${imageUrls.length} new images to existing ${existingImages.length} images`);
-      
-      imageData = JSON.stringify(updatedImages);
-      imageCount = updatedImages.length;
-    } else if (imagesFromBody.length > 0) {
-      // No new uploads, but images array provided (for delete operations)
-      const idsToDelete = imagesFromBody
-        .map(img => img.image_id_to_delete)
-        .filter(id => id && id !== '' && id !== null);
-      
       if (idsToDelete.length > 0) {
-        let updatedImages = existingImages.filter(img => {
+        const beforeCount = updatedImages.length;
+        updatedImages = updatedImages.filter(img => {
           const imgId = typeof img === 'object' && img !== null ? img.image_id : null;
           const shouldKeep = !idsToDelete.includes(imgId);
           if (!shouldKeep) {
@@ -728,15 +764,48 @@ const update = async (req, res) => {
           }
           return shouldKeep;
         });
-        
-        imageData = JSON.stringify(updatedImages);
-        imageCount = updatedImages.length;
-        console.log(`Removed ${idsToDelete.length} images, ${updatedImages.length} images remaining`);
-      } else {
-        // No deletions, keep existing
-        imageData = undefined;
-        imageCount = undefined;
+        console.log(`Removed ${beforeCount - updatedImages.length} images marked for deletion, ${updatedImages.length} images remaining`);
       }
+      
+      // Append new uploaded images
+      updatedImages = [...updatedImages, ...imageUrls];
+      console.log(`Appended ${imageUrls.length} new images. Total images now: ${updatedImages.length}`);
+      
+      imageData = JSON.stringify(updatedImages);
+      imageCount = updatedImages.length;
+    } else if (idsToDelete.length > 0) {
+      // No new uploads, but images to delete
+      const beforeCount = existingImages.length;
+      console.log(`🗑️  Starting delete operation. Before: ${beforeCount} images`);
+      
+      let updatedImages = existingImages.filter(img => {
+        const imgId = typeof img === 'object' && img !== null ? img.image_id : null;
+        const imgIdStr = imgId ? String(imgId).trim() : null;
+        const shouldKeep = !idsToDelete.some(id => String(id).trim() === imgIdStr);
+        
+        if (!shouldKeep) {
+          console.log(`   ✗ Removing image with image_id: ${imgIdStr}`);
+        } else {
+          console.log(`   ✓ Keeping image with image_id: ${imgIdStr}`);
+        }
+        return shouldKeep;
+      });
+      
+      const removedCount = beforeCount - updatedImages.length;
+      imageData = JSON.stringify(updatedImages);
+      imageCount = updatedImages.length;
+      console.log(`✅ Delete operation complete. Removed: ${removedCount}, Remaining: ${updatedImages.length}`);
+      
+      if (removedCount === 0) {
+        console.warn(`⚠️  WARNING: No images were removed! Check if image_id matches.`);
+        console.warn(`   IDs to delete:`, idsToDelete);
+        console.warn(`   Existing IDs:`, existingImages.map(img => typeof img === 'object' && img !== null ? img.image_id : 'N/A'));
+      }
+    } else if (imagesFromBody.length > 0 && idsToDelete.length === 0) {
+      // images array provided but no valid image_id_to_delete
+      console.warn('images array provided but no valid image_id_to_delete found');
+      imageData = undefined;
+      imageCount = undefined;
     } else if (hasImageCountField) {
       // If image_count is provided but no files/images, use the provided count
       const providedCount = parseInt(req.body.image_count, 10);
@@ -746,11 +815,19 @@ const update = async (req, res) => {
       }
     }
     
-    // If all image fields were empty/null, don't update images at all (keep existing)
-    if (hasEmptyImageFields && !hasImageCountField && imageUrls === undefined && imagesFromBody.length === 0) {
+    // If all image fields were empty/null AND no delete operations, don't update images at all (keep existing)
+    // But if imageData is already set (from delete operations), don't override it
+    if (imageData === undefined && hasEmptyImageFields && !hasImageCountField && imageUrls === undefined && imagesFromBody.length === 0) {
       console.log('No valid images or image_count provided, keeping existing images');
       imageData = undefined;
       imageCount = undefined;
+    }
+    
+    // Log final state
+    if (imageData !== undefined) {
+      console.log(`Final imageData will be updated. image_count: ${imageCount}`);
+    } else {
+      console.log('imageData will NOT be updated (keeping existing)');
     }
     
     const componenProductData = {
@@ -815,11 +892,15 @@ const update = async (req, res) => {
       // If no relevant fields updated, don't update componen_product_name
     }
     
-    // Hanya masukkan image/images/image_count jika ada file baru yang berhasil diupload
+    // Hanya masukkan image/images/image_count jika ada file baru yang berhasil diupload ATAU ada delete operation
     if (imageData !== undefined) {
       componenProductData.image = imageData; // Keep for backward compatibility
       componenProductData.images = imageData; // New column for array of image URLs
-      componenProductData.image_count = imageCount; // New column for image count
+      componenProductData.image_count = imageCount !== undefined ? imageCount : 0; // New column for image count
+      console.log(`✅ Setting imageData to componenProductData. image_count: ${componenProductData.image_count}`);
+      console.log(`   imageData preview:`, imageData.substring(0, 200) + (imageData.length > 200 ? '...' : ''));
+    } else {
+      console.log(`ℹ imageData is undefined, will NOT update images in database`);
     }
 
     const specificationsPayload = parseSpecificationsInput(req.body.componen_product_specifications);

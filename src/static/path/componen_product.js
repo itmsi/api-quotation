@@ -129,7 +129,22 @@ const componenProductPaths = {
     put: {
       tags: ['Componen Products'],
       summary: 'Update componen product',
-      description: 'Update an existing componen product',
+      description: `Update an existing componen product.
+
+**Upload Images Baru:**
+- Gunakan format images[0], images[1], dll untuk upload file baru
+- Image baru akan di-append ke array existing (tidak replace)
+
+**Hapus Images yang Sudah Ada:**
+- Gunakan field images sebagai JSON string untuk menghapus image
+- Format: images=[{"image_id":"uuid-existing","image_url":"url-existing","image_id_to_delete":"uuid-to-delete"}]
+- Jika image_id_to_delete diisi dengan UUID image yang ingin dihapus, image tersebut akan dihapus
+- Jika image_id_to_delete kosong atau null, image tidak akan dihapus
+
+**Cara Mendapatkan image_id:**
+1. GET product by ID untuk melihat images yang ada
+2. Copy image_id dari response
+3. Gunakan image_id tersebut sebagai image_id_to_delete`,
       security: [{ bearerAuth: [] }],
       parameters: [
         {

@@ -422,6 +422,11 @@ const componenProductSchemas = {
         description: 'Number of images being uploaded. Must match the number of images[0], images[1], etc. fields sent. Format: "3" (as string)',
         example: '3'
       },
+      images: {
+        type: 'string',
+        description: 'JSON string array untuk menghapus images yang sudah ada. Format: [{"image_id":"uuid-existing","image_url":"url-existing","image_id_to_delete":"uuid-to-delete"}]. Jika image_id_to_delete diisi dengan UUID image yang ingin dihapus, image tersebut akan dihapus. Jika kosong atau null, image tidak akan dihapus. Contoh: [{"image_id":"123e4567-e89b-12d3-a456-426614174000","image_url":"https://example.com/image1.jpg","image_id_to_delete":"123e4567-e89b-12d3-a456-426614174000"}]',
+        example: '[{"image_id":"123e4567-e89b-12d3-a456-426614174000","image_url":"https://example.com/image1.jpg","image_id_to_delete":"123e4567-e89b-12d3-a456-426614174000"}]'
+      },
       componen_product_description: {
         type: 'string',
         description: 'Product description',
