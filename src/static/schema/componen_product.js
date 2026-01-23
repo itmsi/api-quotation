@@ -34,8 +34,8 @@ const componenProductSchemas = {
       product_type: {
         type: 'string',
         nullable: true,
-        description: 'Product type',
-        example: 'OFF ROAD REGULAR'
+        description: 'Product type (unit, non_unit)',
+        example: 'non_unit'
       },
       code_unique: {
         type: 'string',
@@ -288,8 +288,8 @@ const componenProductSchemas = {
       product_type: {
         type: 'string',
         maxLength: 255,
-        description: 'Product type',
-        example: 'OFF ROAD REGULAR'
+        description: 'Product type (unit, non_unit)',
+        example: 'non_unit'
       },
       componen_product_name: {
         type: 'string',

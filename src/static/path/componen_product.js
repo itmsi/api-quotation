@@ -48,6 +48,12 @@ const componenProductPaths = {
                   nullable: true,
                   description: 'Filter by company name (bisa NaN, nullable, string kosong, null)',
                   example: 'ITI edit'
+                },
+                product_type: {
+                  type: 'string',
+                  nullable: true,
+                  description: 'Filter by product type',
+                  example: 'non_unit'
                 }
               }
             }
