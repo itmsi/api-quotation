@@ -331,7 +331,7 @@ const parseSpecificationsInput = (rawInput) => {
  */
 const getAll = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = '', sort_by = 'created_at', sort_order = 'desc', company_name } = req.body;
+    const { page = 1, limit = 10, search = '', sort_by = 'created_at', sort_order = 'desc', company_name, product_type } = req.body;
     
     const offset = (page - 1) * limit;
     
@@ -343,6 +343,15 @@ const getAll = async (req, res) => {
         normalizedCompanyName = companyNameStr;
       }
     }
+
+    // Normalize product_type
+    let normalizedProductType = null;
+    if (product_type !== undefined && product_type !== null && product_type !== '') {
+      const productTypeStr = String(product_type).trim();
+      if (productTypeStr !== '' && productTypeStr !== 'NaN' && productTypeStr !== 'null') {
+        normalizedProductType = productTypeStr;
+      }
+    }
     
     const params = {
       page,
@@ -351,7 +360,8 @@ const getAll = async (req, res) => {
       search,
       sortBy: mapSortBy(sort_by),
       sortOrder: sort_order,
-      companyName: normalizedCompanyName
+      companyName: normalizedCompanyName,
+      productType: normalizedProductType
     };
     
     const data = await repository.findAll(params);
