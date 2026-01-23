@@ -187,7 +187,7 @@ const buildSearchWhere = (search) => {
  * Find all componen products with pagination, search, and sort
  */
 const findAll = async (params) => {
-  const { page, limit, offset, search, sortBy, sortOrder, companyName } = params;
+  const { page, limit, offset, search, sortBy, sortOrder, companyName, productType } = params;
 
   const sortOrderSafe = ['asc', 'desc'].includes((sortOrder || '').toLowerCase())
     ? sortOrder.toLowerCase()
@@ -216,6 +216,11 @@ const findAll = async (params) => {
   // Apply company_name filter
   if (companyName !== undefined && companyName !== null && companyName !== '') {
     query = query.where(`${TABLE_NAME}.company_name`, companyName);
+  }
+
+  // Apply product_type filter
+  if (productType !== undefined && productType !== null && productType !== '') {
+    query = query.where(`${TABLE_NAME}.product_type`, productType);
   }
 
   // Apply search
@@ -256,6 +261,10 @@ const findAll = async (params) => {
             query = query.where(`${TABLE_NAME}.company_name`, companyName);
           }
 
+          if (productType !== undefined && productType !== null && productType !== '') {
+            query = query.where(`${TABLE_NAME}.product_type`, productType);
+          }
+
           if (search && search.trim() !== '') {
             const searchWhere = buildSearchWhere(search);
             query = query.where(searchWhere);
@@ -271,6 +280,10 @@ const findAll = async (params) => {
 
           if (companyName !== undefined && companyName !== null && companyName !== '') {
             query = query.where(`${TABLE_NAME}.company_name`, companyName);
+          }
+
+          if (productType !== undefined && productType !== null && productType !== '') {
+            query = query.where(`${TABLE_NAME}.product_type`, productType);
           }
 
           if (search && search.trim() !== '') {
@@ -290,6 +303,10 @@ const findAll = async (params) => {
 
         if (companyName !== undefined && companyName !== null && companyName !== '') {
           query = query.where(`${TABLE_NAME}.company_name`, companyName);
+        }
+
+        if (productType !== undefined && productType !== null && productType !== '') {
+          query = query.where(`${TABLE_NAME}.product_type`, productType);
         }
 
         if (search && search.trim() !== '') {
@@ -324,6 +341,10 @@ const findAll = async (params) => {
     countQuery = countQuery.where(`${TABLE_NAME}.company_name`, companyName);
   }
 
+  if (productType !== undefined && productType !== null && productType !== '') {
+    countQuery = countQuery.where(`${TABLE_NAME}.product_type`, productType);
+  }
+
   if (search && search.trim() !== '') {
     const searchWhere = buildSearchWhere(search);
     countQuery = countQuery.where(searchWhere);
@@ -338,6 +359,10 @@ const findAll = async (params) => {
         .where(`${TABLE_NAME}.is_delete`, false);
       if (companyName !== undefined && companyName !== null && companyName !== '') {
         countQuery = countQuery.where(`${TABLE_NAME}.company_name`, companyName);
+      }
+
+      if (productType !== undefined && productType !== null && productType !== '') {
+        countQuery = countQuery.where(`${TABLE_NAME}.product_type`, productType);
       }
       if (search && search.trim() !== '') {
         const searchWhere = buildSearchWhere(search);
