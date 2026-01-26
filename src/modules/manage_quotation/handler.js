@@ -643,11 +643,10 @@ const getById = async (req, res) => {
         }
       }
 
-      const productType = mapProductType(item.cp_componen_type);
-
       return {
         ...item,
-        product_type: productType,
+        componen_type: mapProductType(item.cp_componen_type) || '', // Get directly from componen_products table
+        product_type: item.cp_product_type, // Get dir
         manage_quotation_item_accessories: itemAccessories,
         manage_quotation_item_specifications: itemSpecifications
       };
@@ -897,8 +896,6 @@ const getPdfById = async (req, res) => {
         }
       }
 
-      const productType = mapProductType(item.cp_componen_type);
-
       // Clean componen_product_name by removing "MSI[number] - " prefix and suffix
       // Get original value from item
       let cleanedProductName = item.componen_product_name;
@@ -914,7 +911,8 @@ const getPdfById = async (req, res) => {
         ...item,
         componen_product_name: cleanedProductName, // Always use cleaned value
         componen_product_unit_model: item.cp_componen_product_unit_model || null,
-        product_type: productType,
+        componen_type: mapProductType(item.cp_componen_type) || '', // Get directly from componen_products table
+        product_type: item.cp_product_type, // Get directly from componen_products.product_type, fallback to mapping
         manage_quotation_item_accessories: itemAccessories,
         manage_quotation_item_specifications: itemSpecifications
       };
