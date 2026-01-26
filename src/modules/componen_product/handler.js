@@ -265,53 +265,6 @@ const generateComponenProductName = (data) => {
 };
 
 /**
- * Generate componen_product_description based on format:
- * code_unique - msi_product wheel_no engine msi_model volume - segment
- * (Same format as componen_product_name)
- */
-const generateComponenProductDescription = (data) => {
-  const parts = [];
-  
-  // code_unique
-  const codeUnique = data.code_unique ? String(data.code_unique).trim() : null;
-  
-  // Middle parts: msi_product wheel_no engine msi_model volume
-  const middleParts = [];
-  if (data.msi_product) middleParts.push(String(data.msi_product).trim());
-  if (data.wheel_no) middleParts.push(String(data.wheel_no).trim());
-  if (data.engine) middleParts.push(String(data.engine).trim());
-  if (data.msi_model) middleParts.push(String(data.msi_model).trim());
-  if (data.volume) middleParts.push(String(data.volume).trim());
-  
-  // segment
-  const segment = data.segment ? String(data.segment).trim() : null;
-  
-  // Build the description according to format: code_unique - msi_product wheel_no engine msi_model volume - segment
-  if (codeUnique) {
-    parts.push(codeUnique);
-  }
-  
-  if (middleParts.length > 0) {
-    if (parts.length > 0) {
-      parts.push('-');
-    }
-    parts.push(middleParts.join(' '));
-  }
-  
-  if (segment) {
-    if (parts.length > 0) {
-      parts.push('-');
-    }
-    parts.push(segment);
-  }
-  
-  const result = parts.join(' ').trim();
-  
-  // Return empty string if no valid parts, otherwise return the formatted description
-  return result || null;
-};
-
-/**
  * Parse and normalize specifications payload from request body
  */
 const parseSpecificationsInput = (rawInput) => {
@@ -557,6 +510,7 @@ const create = async (req, res) => {
       image: imageData, // Keep for backward compatibility
       images: imageData, // New column for array of image URLs
       image_count: imageCount, // New column for image count
+      componen_product_description: req.body.componen_product_description || null,
       created_by: tokenData.created_by
     };
     
@@ -565,15 +519,6 @@ const create = async (req, res) => {
       componenProductData.componen_product_name = req.body.componen_product_name;
     } else {
       componenProductData.componen_product_name = generateComponenProductName(componenProductData) || null;
-    }
-
-    // Generate componen_product_description if not provided or null/empty
-    if (req.body.componen_product_description && req.body.componen_product_description.trim() !== '') {
-      // If provided from UI and not empty, use it
-      componenProductData.componen_product_description = req.body.componen_product_description.trim();
-    } else {
-      // If not provided or null/empty, generate from fields
-      componenProductData.componen_product_description = generateComponenProductDescription(componenProductData) || null;
     }
 
     const specificationsPayload = parseSpecificationsInput(req.body.componen_product_specifications);
@@ -914,6 +859,7 @@ const update = async (req, res) => {
       selling_price_star_3: req.body.selling_price_star_3,
       selling_price_star_4: req.body.selling_price_star_4,
       selling_price_star_5: req.body.selling_price_star_5,
+      componen_product_description: req.body.componen_product_description,
       updated_by: tokenData.updated_by
     };
     
@@ -954,46 +900,6 @@ const update = async (req, res) => {
         componenProductData.componen_product_name = generateComponenProductName(dataForGeneration) || null;
       }
       // If no relevant fields updated, don't update componen_product_name
-    }
-
-    // Generate componen_product_description if not provided or null/empty
-    if (req.body.componen_product_description !== undefined) {
-      // If explicitly provided
-      if (req.body.componen_product_description === null || req.body.componen_product_description === '' || req.body.componen_product_description.trim() === '') {
-        // If set to null/empty, generate from current data
-        const dataForDescriptionGeneration = {
-          code_unique: req.body.code_unique !== undefined ? req.body.code_unique : existing.code_unique,
-          msi_product: req.body.msi_product !== undefined ? req.body.msi_product : existing.msi_product,
-          wheel_no: req.body.wheel_no !== undefined ? req.body.wheel_no : existing.wheel_no,
-          engine: req.body.engine !== undefined ? req.body.engine : existing.engine,
-          msi_model: req.body.msi_model !== undefined ? req.body.msi_model : existing.msi_model,
-          volume: req.body.volume !== undefined ? req.body.volume : existing.volume,
-          segment: req.body.segment !== undefined ? req.body.segment : existing.segment
-        };
-        componenProductData.componen_product_description = generateComponenProductDescription(dataForDescriptionGeneration) || null;
-      } else {
-        // If provided from UI and not empty, use it
-        componenProductData.componen_product_description = req.body.componen_product_description.trim();
-      }
-    } else {
-      // If not provided, check if any relevant field is being updated
-      const relevantFields = ['code_unique', 'msi_product', 'wheel_no', 'engine', 'msi_model', 'volume', 'segment'];
-      const isRelevantFieldUpdated = relevantFields.some(field => req.body[field] !== undefined);
-      
-      if (isRelevantFieldUpdated) {
-        // Generate from updated data, using existing values for fields not updated
-        const dataForDescriptionGeneration = {
-          code_unique: req.body.code_unique !== undefined ? req.body.code_unique : existing.code_unique,
-          msi_product: req.body.msi_product !== undefined ? req.body.msi_product : existing.msi_product,
-          wheel_no: req.body.wheel_no !== undefined ? req.body.wheel_no : existing.wheel_no,
-          engine: req.body.engine !== undefined ? req.body.engine : existing.engine,
-          msi_model: req.body.msi_model !== undefined ? req.body.msi_model : existing.msi_model,
-          volume: req.body.volume !== undefined ? req.body.volume : existing.volume,
-          segment: req.body.segment !== undefined ? req.body.segment : existing.segment
-        };
-        componenProductData.componen_product_description = generateComponenProductDescription(dataForDescriptionGeneration) || null;
-      }
-      // If no relevant fields updated, don't update componen_product_description
     }
     
     // Hanya masukkan image/images/image_count jika ada file baru yang berhasil diupload ATAU ada delete operation
