@@ -157,8 +157,11 @@ const mapProductType = (componenType) => {
 
 /**
  * Build where clause for search
+ * @param {string} search - Search term
+ * @param {boolean} includeUpdaterData - Whether to include updater_data in search (only if JOIN exists)
+ * @param {boolean} includeCompanyData - Whether to include company_data in search (only if JOIN exists)
  */
-const buildSearchWhere = (search) => {
+const buildSearchWhere = (search, includeUpdaterData = false, includeCompanyData = false) => {
   if (!search || search.trim() === '') return null;
 
   const searchPattern = `%${search.trim().toLowerCase()}%`;
@@ -176,9 +179,15 @@ const buildSearchWhere = (search) => {
         .orWhereRaw('LOWER(componen_products.componen_product_unit_model) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(componen_products.volume) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(componen_products.componen_product_description) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(componen_products.product_type) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(updater_data.employee_name) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(company_data.company_name) LIKE ?', [searchPattern]);
+        .orWhereRaw('LOWER(componen_products.product_type) LIKE ?', [searchPattern]);
+      
+      // Only include updater_data and company_data if JOIN exists
+      if (includeUpdaterData) {
+        this.orWhereRaw('LOWER(updater_data.employee_name) LIKE ?', [searchPattern]);
+      }
+      if (includeCompanyData) {
+        this.orWhereRaw('LOWER(company_data.company_name) LIKE ?', [searchPattern]);
+      }
     });
   };
 };
@@ -225,7 +234,7 @@ const findAll = async (params) => {
 
   // Apply search
   if (search && search.trim() !== '') {
-    const searchWhere = buildSearchWhere(search);
+    const searchWhere = buildSearchWhere(search, dblinkConnected, false); // includeUpdaterData = dblinkConnected, includeCompanyData = false (no company_data JOIN)
     query = query.where(searchWhere);
   }
 
@@ -266,7 +275,7 @@ const findAll = async (params) => {
           }
 
           if (search && search.trim() !== '') {
-            const searchWhere = buildSearchWhere(search);
+            const searchWhere = buildSearchWhere(search, reconnected, false); // includeUpdaterData = reconnected, includeCompanyData = false
             query = query.where(searchWhere);
           }
 
@@ -287,7 +296,7 @@ const findAll = async (params) => {
           }
 
           if (search && search.trim() !== '') {
-            const searchWhere = buildSearchWhere(search);
+            const searchWhere = buildSearchWhere(search, false, false); // No JOINs in fallback, so both false
             query = query.where(searchWhere);
           }
 
@@ -310,7 +319,7 @@ const findAll = async (params) => {
         }
 
         if (search && search.trim() !== '') {
-          const searchWhere = buildSearchWhere(search);
+          const searchWhere = buildSearchWhere(search, false, false); // No JOINs in fallback, so both false
           query = query.where(searchWhere);
         }
 
@@ -346,7 +355,7 @@ const findAll = async (params) => {
   }
 
   if (search && search.trim() !== '') {
-    const searchWhere = buildSearchWhere(search);
+    const searchWhere = buildSearchWhere(search, dblinkConnected, false); // includeUpdaterData = dblinkConnected, includeCompanyData = false
     countQuery = countQuery.where(searchWhere);
   }
 
@@ -365,7 +374,7 @@ const findAll = async (params) => {
         countQuery = countQuery.where(`${TABLE_NAME}.product_type`, productType);
       }
       if (search && search.trim() !== '') {
-        const searchWhere = buildSearchWhere(search);
+        const searchWhere = buildSearchWhere(search, false, false); // No JOINs in fallback, so both false
         countQuery = countQuery.where(searchWhere);
       }
       totalResult = await countQuery.count('componen_product_id as count').first();
