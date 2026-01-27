@@ -6,6 +6,76 @@ const termContentRepository = require('../term_content/postgre_repository');
 const { baseResponse, mappingError, mappingSuccess, Logger } = require('../../utils');
 const { decodeToken } = require('../../utils/auth');
 
+/**
+ * Normalize image untuk response API
+ * Convert JSON string to array of objects with image_id and image_url
+ * Supports both old format (array of strings) and new format (array of objects)
+ */
+const mapImageResponse = (image) => {
+  if (!image) {
+    return [];
+  }
+
+  // If already an array, check format and normalize
+  if (Array.isArray(image)) {
+    // Check if it's new format (array of objects) or old format (array of strings)
+    return image.map(item => {
+      if (typeof item === 'object' && item !== null && item.image_id && item.image_url) {
+        // New format: already has image_id and image_url
+        return item;
+      } else if (typeof item === 'string') {
+        // Old format: convert string URL to object format
+        return {
+          image_id: null, // Old format doesn't have image_id
+          image_url: item
+        };
+      }
+      return item;
+    });
+  }
+
+  // If string, try to parse as JSON
+  if (typeof image === 'string') {
+    try {
+      const parsed = JSON.parse(image);
+      if (Array.isArray(parsed)) {
+        // Normalize array items
+        return parsed.map(item => {
+          if (typeof item === 'object' && item !== null && item.image_id && item.image_url) {
+            return item;
+          } else if (typeof item === 'string') {
+            return {
+              image_id: null,
+              image_url: item
+            };
+          }
+          return item;
+        });
+      }
+      // If parsed is not array, treat as single URL (old format)
+      if (typeof parsed === 'string') {
+        return [{
+          image_id: null,
+          image_url: parsed
+        }];
+      }
+      // If parsed is object with image_id and image_url
+      if (typeof parsed === 'object' && parsed !== null && parsed.image_id && parsed.image_url) {
+        return [parsed];
+      }
+    } catch (e) {
+      // If not JSON, treat as single URL string (old format)
+      return [{
+        image_id: null,
+        image_url: image
+      }];
+    }
+  }
+
+  // Fallback: return empty array
+  return [];
+};
+
 const DBLINK_NAME = 'gate_sso_dblink';
 const DB_LINK_CONNECTION = `dbname=${process.env.DB_GATE_SSO_NAME} user=${process.env.DB_GATE_SSO_USER} password=${process.env.DB_GATE_SSO_PASSWORD} host=${process.env.DB_GATE_SSO_HOST} port=${process.env.DB_GATE_SSO_PORT}`;
 
@@ -677,13 +747,25 @@ const getById = async (req, res) => {
         }
       }
 
-      return {
+      // Process cp_image to images and image_count
+      const mappedImages = mapImageResponse(item.cp_image || item.cp_images);
+      const itemImages = mappedImages; // Array of objects with image_id and image_url
+      const itemImageCount = mappedImages.length; // Calculate from images array
+
+      // Create new object
+      const itemWithRelations = {
         ...item,
         componen_type: mapProductType(item.cp_componen_type) || '', // Get directly from componen_products table
         product_type: item.cp_product_type, // Get dir
         manage_quotation_item_accessories: itemAccessories,
         manage_quotation_item_specifications: itemSpecifications
       };
+
+      // Insert images and image_count after cp_image
+      const itemWithImages = insertFieldAfterKey(itemWithRelations, 'cp_image', 'images', itemImages);
+      const itemWithImageCount = insertFieldAfterKey(itemWithImages, 'images', 'image_count', itemImageCount);
+
+      return itemWithImageCount;
     });
 
     data.manage_quotation_items = itemsWithRelations;
@@ -764,6 +846,17 @@ const getById = async (req, res) => {
       data.term_content_payload = data.properties.term_content_directory;
     } else {
       data.term_content_payload = null;
+    }
+
+    // Remove images and image_count from main data (only keep in items)
+    if (data.images !== undefined) {
+      delete data.images;
+    }
+    if (data.image_count !== undefined) {
+      delete data.image_count;
+    }
+    if (data.image !== undefined) {
+      delete data.image;
     }
 
     const response = mappingSuccess('Data berhasil diambil', data);
@@ -940,6 +1033,11 @@ const getPdfById = async (req, res) => {
         cleanedProductName = cleanComponenProductName(cleanedProductName);
       }
 
+      // Process cp_image to images and image_count
+      const mappedImages = mapImageResponse(item.cp_image || item.cp_images);
+      const itemImages = mappedImages; // Array of objects with image_id and image_url
+      const itemImageCount = mappedImages.length; // Calculate from images array
+
       // Create new object, explicitly setting componen_product_name to cleaned value
       const cleanedItem = {
         ...item,
@@ -951,7 +1049,11 @@ const getPdfById = async (req, res) => {
         manage_quotation_item_specifications: itemSpecifications
       };
 
-      return cleanedItem;
+      // Insert images and image_count after cp_image
+      const itemWithImages = insertFieldAfterKey(cleanedItem, 'cp_image', 'images', itemImages);
+      const itemWithImageCount = insertFieldAfterKey(itemWithImages, 'images', 'image_count', itemImageCount);
+
+      return itemWithImageCount;
     });
 
     // Final cleanup: ensure all componen_product_name in items are cleaned
@@ -976,9 +1078,11 @@ const getPdfById = async (req, res) => {
       }
 
       // Return new object with cleaned componen_product_name - MUST override original
+      // Preserve images and image_count if they exist
       return {
         ...item,
         componen_product_name: productName // Explicitly set cleaned value
+        // images and image_count are already in item from previous mapping, they will be preserved by spread operator
       };
     });
 
@@ -1096,6 +1200,17 @@ const getPdfById = async (req, res) => {
         }
       }
     });
+
+    // Remove images and image_count from main data (only keep in items)
+    if (data.images !== undefined) {
+      delete data.images;
+    }
+    if (data.image_count !== undefined) {
+      delete data.image_count;
+    }
+    if (data.image !== undefined) {
+      delete data.image;
+    }
 
     const response = mappingSuccess('Data berhasil diambil', data);
     return baseResponse(res, response);
