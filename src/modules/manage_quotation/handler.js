@@ -262,7 +262,7 @@ const mapProductType = (componenType) => {
  */
 const getAll = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = '', sort_by = 'created_at', sort_order = 'desc', status = '', island_id = '', quotation_for = '' } = req.body;
+    const { page = 1, limit = 10, search = '', sort_by = 'created_at', sort_order = 'desc', status = '', island_id = '', quotation_for = '', start_date = '', end_date = '' } = req.body;
 
     const offset = (page - 1) * limit;
 
@@ -284,6 +284,38 @@ const getAll = async (req, res) => {
       }
     }
 
+    // Validate and normalize start_date
+    let normalizedStartDate = null;
+    if (start_date !== undefined && start_date !== null && start_date !== '') {
+      const startDateStr = String(start_date).trim();
+      if (startDateStr !== '' && startDateStr !== 'NaN' && startDateStr !== 'null') {
+        // Validate date format (YYYY-MM-DD or ISO format)
+        const dateRegex = /^\d{4}-\d{2}-\d{2}/;
+        if (dateRegex.test(startDateStr)) {
+          const date = new Date(startDateStr);
+          if (!isNaN(date.getTime())) {
+            normalizedStartDate = startDateStr;
+          }
+        }
+      }
+    }
+
+    // Validate and normalize end_date
+    let normalizedEndDate = null;
+    if (end_date !== undefined && end_date !== null && end_date !== '') {
+      const endDateStr = String(end_date).trim();
+      if (endDateStr !== '' && endDateStr !== 'NaN' && endDateStr !== 'null') {
+        // Validate date format (YYYY-MM-DD or ISO format)
+        const dateRegex = /^\d{4}-\d{2}-\d{2}/;
+        if (dateRegex.test(endDateStr)) {
+          const date = new Date(endDateStr);
+          if (!isNaN(date.getTime())) {
+            normalizedEndDate = endDateStr;
+          }
+        }
+      }
+    }
+
     const params = {
       page,
       limit,
@@ -293,7 +325,9 @@ const getAll = async (req, res) => {
       sortOrder: sort_order,
       status: status && status.trim() !== '' ? status.trim() : null,
       islandId: normalizedIslandId,
-      quotationFor: normalizedQuotationFor
+      quotationFor: normalizedQuotationFor,
+      startDate: normalizedStartDate,
+      endDate: normalizedEndDate
     };
 
     let data;

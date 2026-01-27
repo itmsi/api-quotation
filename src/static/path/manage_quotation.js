@@ -30,7 +30,9 @@ const manageQuotationPaths = {
                   sort_order: 'desc',
                   status: '',
                   island_id: '',
-                  quotation_for: ''
+                  quotation_for: '',
+                  start_date: '',
+                  end_date: ''
                 }
               },
               getDraftOnly: {
@@ -44,7 +46,9 @@ const manageQuotationPaths = {
                   sort_order: 'desc',
                   status: 'draft',
                   island_id: '',
-                  quotation_for: ''
+                  quotation_for: '',
+                  start_date: '',
+                  end_date: ''
                 }
               },
               getSubmitOnly: {
@@ -58,7 +62,9 @@ const manageQuotationPaths = {
                   sort_order: 'desc',
                   status: 'submit',
                   island_id: '',
-                  quotation_for: ''
+                  quotation_for: '',
+                  start_date: '',
+                  end_date: ''
                 }
               },
               getRejectOnly: {
@@ -72,7 +78,9 @@ const manageQuotationPaths = {
                   sort_order: 'desc',
                   status: 'reject',
                   island_id: '',
-                  quotation_for: ''
+                  quotation_for: '',
+                  start_date: '',
+                  end_date: ''
                 }
               },
               getByIslandId: {
@@ -86,7 +94,9 @@ const manageQuotationPaths = {
                   sort_order: 'desc',
                   status: '',
                   island_id: '123e4567-e89b-12d3-a456-426614174003',
-                  quotation_for: ''
+                  quotation_for: '',
+                  start_date: '',
+                  end_date: ''
                 }
               },
               getAllWithEmptyIslandId: {
@@ -100,7 +110,9 @@ const manageQuotationPaths = {
                   sort_order: 'desc',
                   status: '',
                   island_id: '',
-                  quotation_for: ''
+                  quotation_for: '',
+                  start_date: '',
+                  end_date: ''
                 }
               },
               getByQuotationFor: {
@@ -114,7 +126,41 @@ const manageQuotationPaths = {
                   sort_order: 'desc',
                   status: '',
                   island_id: '',
-                  quotation_for: 'Customer Name'
+                  quotation_for: 'Customer Name',
+                  start_date: '',
+                  end_date: ''
+                }
+              },
+              getByDateRange: {
+                summary: 'Get quotations by date range',
+                description: 'Filter quotations by date range (based on created_at)',
+                value: {
+                  page: 1,
+                  limit: 10,
+                  search: '',
+                  sort_by: 'created_at',
+                  sort_order: 'desc',
+                  status: '',
+                  island_id: '',
+                  quotation_for: '',
+                  start_date: '2025-01-01',
+                  end_date: '2025-01-31'
+                }
+              },
+              getByDateRange: {
+                summary: 'Get quotations by date range',
+                description: 'Filter quotations by date range (based on created_at)',
+                value: {
+                  page: 1,
+                  limit: 10,
+                  search: '',
+                  sort_by: 'created_at',
+                  sort_order: 'desc',
+                  status: '',
+                  island_id: '',
+                  quotation_for: '',
+                  start_date: '2025-01-01',
+                  end_date: '2025-01-31'
                 }
               }
             }

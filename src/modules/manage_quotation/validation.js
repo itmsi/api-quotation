@@ -921,7 +921,7 @@ const listValidation = [
   body('island_id')
     .optional()
     .custom((value) => {
-      // Allow empty string, null, undefined, NaN, or valid UUID
+      // Allow empty string, null, undefined, NaN, or any string (not necessarily valid UUID)
       if (value === null || value === undefined || value === '') {
         return true;
       }
@@ -930,9 +930,8 @@ const listValidation = [
         if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
           return true;
         }
-        // If not empty, must be valid UUID
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        return uuidRegex.test(trimmed);
+        // Allow any string (not necessarily valid UUID)
+        return true;
       }
       // Allow NaN
       if (typeof value === 'number' && isNaN(value)) {
@@ -940,7 +939,7 @@ const listValidation = [
       }
       return false;
     })
-    .withMessage('island_id harus berupa UUID yang valid, string kosong, null, atau NaN'),
+    .withMessage('island_id harus berupa string, string kosong, null, undefined, atau NaN'),
   body('quotation_for')
     .optional()
     .custom((value) => {
@@ -963,6 +962,66 @@ const listValidation = [
       return false;
     })
     .withMessage('quotation_for harus berupa string, string kosong, null, atau NaN'),
+  body('start_date')
+    .optional()
+    .custom((value) => {
+      // Allow empty string, null, undefined, NaN, or valid date string
+      if (value === null || value === undefined || value === '') {
+        return true;
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
+          return true;
+        }
+        // If not empty, try to validate date format (but allow invalid dates too)
+        // Just check if it looks like a date string (YYYY-MM-DD or ISO format)
+        const dateRegex = /^\d{4}-\d{2}-\d{2}/;
+        if (dateRegex.test(trimmed)) {
+          const date = new Date(trimmed);
+          // Allow even if invalid date (will be filtered out in handler)
+          return true;
+        }
+        // Allow any string (invalid dates will be filtered out in handler)
+        return true;
+      }
+      // Allow NaN
+      if (typeof value === 'number' && isNaN(value)) {
+        return true;
+      }
+      return false;
+    })
+    .withMessage('start_date harus berupa string date, string kosong, null, undefined, atau NaN'),
+  body('end_date')
+    .optional()
+    .custom((value) => {
+      // Allow empty string, null, undefined, NaN, or valid date string
+      if (value === null || value === undefined || value === '') {
+        return true;
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
+          return true;
+        }
+        // If not empty, try to validate date format (but allow invalid dates too)
+        // Just check if it looks like a date string (YYYY-MM-DD or ISO format)
+        const dateRegex = /^\d{4}-\d{2}-\d{2}/;
+        if (dateRegex.test(trimmed)) {
+          const date = new Date(trimmed);
+          // Allow even if invalid date (will be filtered out in handler)
+          return true;
+        }
+        // Allow any string (invalid dates will be filtered out in handler)
+        return true;
+      }
+      // Allow NaN
+      if (typeof value === 'number' && isNaN(value)) {
+        return true;
+      }
+      return false;
+    })
+    .withMessage('end_date harus berupa string date, string kosong, null, undefined, atau NaN'),
 ];
 
 /**

@@ -1211,15 +1211,28 @@ const manageQuotationSchemas = {
       },
       island_id: {
         type: 'string',
-        format: 'uuid',
         nullable: true,
-        description: 'Filter by island_id (UUID). Leave empty, null, or NaN to get all islands',
+        description: 'Filter by island_id. Can be NaN, null, undefined, empty string, or any string (not necessarily valid UUID). Leave empty, null, or NaN to get all islands',
         example: ''
       },
       quotation_for: {
         type: 'string',
         nullable: true,
         description: 'Filter by quotation_for. Leave empty, null, or NaN to get all quotations',
+        example: ''
+      },
+      start_date: {
+        type: 'string',
+        format: 'date',
+        nullable: true,
+        description: 'Filter by start date (based on created_at). Can be NaN, null, undefined, empty string, or date string (YYYY-MM-DD). Leave empty, null, or NaN to ignore start date filter',
+        example: ''
+      },
+      end_date: {
+        type: 'string',
+        format: 'date',
+        nullable: true,
+        description: 'Filter by end date (based on created_at). Can be NaN, null, undefined, empty string, or date string (YYYY-MM-DD). Leave empty, null, or NaN to ignore end date filter',
         example: ''
       }
     }
