@@ -40,7 +40,7 @@ const ensureDblinkConnection = async (maxRetries = 3) => {
  * Find all manage quotations with pagination, search, and sort
  */
 const findAll = async (params) => {
-  const { page, limit, offset, search, sortBy, sortOrder, status, islandId, quotationFor } = params;
+  const { page, limit, offset, search, sortBy, sortOrder, status, islandId, quotationFor, startDate, endDate } = params;
 
   // Try to ensure dblink connection, but don't fail if it doesn't work
   const dblinkConnected = await ensureDblinkConnection();
@@ -157,6 +157,21 @@ const findAll = async (params) => {
     query = query.where('mq.quotation_for', quotationFor.trim());
   }
 
+  // Add date range filter condition (based on created_at)
+  if (startDate) {
+    // Start date: filter created_at >= startDate (start of day)
+    const startDateTime = new Date(startDate);
+    startDateTime.setHours(0, 0, 0, 0);
+    query = query.where('mq.created_at', '>=', startDateTime.toISOString());
+  }
+  
+  if (endDate) {
+    // End date: filter created_at <= endDate (end of day)
+    const endDateTime = new Date(endDate);
+    endDateTime.setHours(23, 59, 59, 999);
+    query = query.where('mq.created_at', '<=', endDateTime.toISOString());
+  }
+
   // Add sorting
   const sortColumnMap = {
     'created_at': 'mq.created_at',
@@ -266,6 +281,23 @@ const findAll = async (params) => {
             query = query.where('mq.island_id', islandId.trim());
           }
 
+          if (quotationFor && quotationFor.trim() !== '') {
+            query = query.where('mq.quotation_for', quotationFor.trim());
+          }
+
+          // Add date range filter condition (based on created_at)
+          if (startDate) {
+            const startDateTime = new Date(startDate);
+            startDateTime.setHours(0, 0, 0, 0);
+            query = query.where('mq.created_at', '>=', startDateTime.toISOString());
+          }
+          
+          if (endDate) {
+            const endDateTime = new Date(endDate);
+            endDateTime.setHours(23, 59, 59, 999);
+            query = query.where('mq.created_at', '<=', endDateTime.toISOString());
+          }
+
           query = query.orderBy(sortBySafe, sortOrderSafe).limit(parseInt(limit)).offset(parseInt(offset));
           data = await query;
         } catch (retryError) {
@@ -286,6 +318,23 @@ const findAll = async (params) => {
 
           if (islandId && islandId.trim() !== '') {
             query = query.where('mq.island_id', islandId.trim());
+          }
+
+          if (quotationFor && quotationFor.trim() !== '') {
+            query = query.where('mq.quotation_for', quotationFor.trim());
+          }
+
+          // Add date range filter condition (based on created_at)
+          if (startDate) {
+            const startDateTime = new Date(startDate);
+            startDateTime.setHours(0, 0, 0, 0);
+            query = query.where('mq.created_at', '>=', startDateTime.toISOString());
+          }
+          
+          if (endDate) {
+            const endDateTime = new Date(endDate);
+            endDateTime.setHours(23, 59, 59, 999);
+            query = query.where('mq.created_at', '<=', endDateTime.toISOString());
           }
 
           query = query.orderBy(sortBySafe, sortOrderSafe).limit(parseInt(limit)).offset(parseInt(offset));
@@ -319,6 +368,23 @@ const findAll = async (params) => {
 
         if (islandId && islandId.trim() !== '') {
           query = query.where('mq.island_id', islandId.trim());
+        }
+
+        if (quotationFor && quotationFor.trim() !== '') {
+          query = query.where('mq.quotation_for', quotationFor.trim());
+        }
+
+        // Add date range filter condition (based on created_at)
+        if (startDate) {
+          const startDateTime = new Date(startDate);
+          startDateTime.setHours(0, 0, 0, 0);
+          query = query.where('mq.created_at', '>=', startDateTime.toISOString());
+        }
+        
+        if (endDate) {
+          const endDateTime = new Date(endDate);
+          endDateTime.setHours(23, 59, 59, 999);
+          query = query.where('mq.created_at', '<=', endDateTime.toISOString());
         }
 
         query = query.orderBy(sortBySafe, sortOrderSafe).limit(parseInt(limit)).offset(parseInt(offset));
@@ -373,6 +439,24 @@ const findAll = async (params) => {
     countQuery = countQuery.where('mq.island_id', islandId.trim());
   }
 
+  // Add quotation_for filter condition to count query
+  if (quotationFor && quotationFor.trim() !== '') {
+    countQuery = countQuery.where('mq.quotation_for', quotationFor.trim());
+  }
+
+  // Add date range filter condition to count query (based on created_at)
+  if (startDate) {
+    const startDateTime = new Date(startDate);
+    startDateTime.setHours(0, 0, 0, 0);
+    countQuery = countQuery.where('mq.created_at', '>=', startDateTime.toISOString());
+  }
+  
+  if (endDate) {
+    const endDateTime = new Date(endDate);
+    endDateTime.setHours(23, 59, 59, 999);
+    countQuery = countQuery.where('mq.created_at', '<=', endDateTime.toISOString());
+  }
+
   let totalResult;
   try {
     totalResult = await countQuery;
@@ -395,6 +479,23 @@ const findAll = async (params) => {
 
       if (islandId && islandId.trim() !== '') {
         countQuery = countQuery.where('mq.island_id', islandId.trim());
+      }
+
+      if (quotationFor && quotationFor.trim() !== '') {
+        countQuery = countQuery.where('mq.quotation_for', quotationFor.trim());
+      }
+
+      // Add date range filter condition to count query (based on created_at)
+      if (startDate) {
+        const startDateTime = new Date(startDate);
+        startDateTime.setHours(0, 0, 0, 0);
+        countQuery = countQuery.where('mq.created_at', '>=', startDateTime.toISOString());
+      }
+      
+      if (endDate) {
+        const endDateTime = new Date(endDate);
+        endDateTime.setHours(23, 59, 59, 999);
+        countQuery = countQuery.where('mq.created_at', '<=', endDateTime.toISOString());
       }
 
       totalResult = await countQuery;
@@ -1020,7 +1121,8 @@ const getItemsByQuotationId = async (manage_quotation_id) => {
       db.raw('cp.componen_product_name as cp_componen_product_name'),
       db.raw('cp.componen_product_unit_model as cp_componen_product_unit_model'),
       db.raw('cp.image as cp_image'),
-      db.raw('cp.componen_type as cp_componen_type')
+      db.raw('cp.componen_type as cp_componen_type'),
+      db.raw('cp.product_type as cp_product_type')
     )
     .leftJoin('componen_products as cp', function () {
       this.on('mqi.componen_product_id', '=', 'cp.componen_product_id')

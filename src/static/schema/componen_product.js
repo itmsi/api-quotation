@@ -25,24 +25,17 @@ const componenProductSchemas = {
         description: 'Componen type (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR)',
         example: 1
       },
-      company_id: {
-        type: 'string',
-        format: 'uuid',
-        nullable: true,
-        description: 'Company ID',
-        example: '123e4567-e89b-12d3-a456-426614174000'
-      },
       company_name: {
         type: 'string',
         nullable: true,
-        description: 'Company name (from gate_sso.companies)',
+        description: 'Company name',
         example: 'PT Example Company'
       },
       product_type: {
         type: 'string',
         nullable: true,
-        description: 'Product type',
-        example: 'OFF ROAD REGULAR'
+        description: 'Product type (unit, non_unit)',
+        example: 'non_unit'
       },
       code_unique: {
         type: 'string',
@@ -135,10 +128,29 @@ const componenProductSchemas = {
         example: '7500000'
       },
       image: {
-        type: 'string',
-        nullable: true,
-        description: 'Product image URL',
-        example: 'https://example.com/image.jpg'
+        type: 'array',
+        description: 'Product image URLs (array of strings) - DEPRECATED: Use images instead',
+        items: {
+          type: 'string',
+          format: 'uri',
+          example: 'https://example.com/image.jpg'
+        },
+        example: ['https://example.com/image1.jpg', 'https://example.com/image2.jpg']
+      },
+      images: {
+        type: 'array',
+        description: 'Product image URLs (array of strings)',
+        items: {
+          type: 'string',
+          format: 'uri',
+          example: 'https://example.com/image.jpg'
+        },
+        example: ['https://example.com/image1.jpg', 'https://example.com/image2.jpg']
+      },
+      image_count: {
+        type: 'integer',
+        description: 'Number of images uploaded',
+        example: 3
       },
       componen_product_description: {
         type: 'string',
@@ -268,17 +280,16 @@ const componenProductSchemas = {
         description: 'Componen type (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR)',
         example: 1
       },
-      company_id: {
+      company_name: {
         type: 'string',
-        format: 'uuid',
-        description: 'Company ID',
-        example: '123e4567-e89b-12d3-a456-426614174000'
+        description: 'Company name',
+        example: 'PT Example Company'
       },
       product_type: {
         type: 'string',
         maxLength: 255,
-        description: 'Product type',
-        example: 'OFF ROAD REGULAR'
+        description: 'Product type (unit, non_unit)',
+        example: 'non_unit'
       },
       componen_product_name: {
         type: 'string',
@@ -379,7 +390,42 @@ const componenProductSchemas = {
       image: {
         type: 'string',
         format: 'binary',
-        description: 'Product image file (jpg, jpeg, png, gif, webp)'
+        description: 'Product image file (jpg, jpeg, png, gif, webp) - DEPRECATED: Use images[0], images[1], etc. instead'
+      },
+      'images[0]': {
+        type: 'string',
+        format: 'binary',
+        description: 'First product image file (jpg, jpeg, png, gif, webp)'
+      },
+      'images[1]': {
+        type: 'string',
+        format: 'binary',
+        description: 'Second product image file (jpg, jpeg, png, gif, webp)'
+      },
+      'images[2]': {
+        type: 'string',
+        format: 'binary',
+        description: 'Third product image file (jpg, jpeg, png, gif, webp)'
+      },
+      'images[3]': {
+        type: 'string',
+        format: 'binary',
+        description: 'Fourth product image file (jpg, jpeg, png, gif, webp)'
+      },
+      'images[4]': {
+        type: 'string',
+        format: 'binary',
+        description: 'Fifth product image file (jpg, jpeg, png, gif, webp). You can add more images using images[5], images[6], etc. (up to 50 images)'
+      },
+      image_count: {
+        type: 'string',
+        description: 'Number of images being uploaded. Must match the number of images[0], images[1], etc. fields sent. Format: "3" (as string)',
+        example: '3'
+      },
+      images: {
+        type: 'string',
+        description: 'JSON string array untuk menghapus images yang sudah ada. Format: [{"image_id":"uuid-existing","image_url":"url-existing","image_id_to_delete":"uuid-to-delete"}]. Jika image_id_to_delete diisi dengan UUID image yang ingin dihapus, image tersebut akan dihapus. Jika kosong atau null, image tidak akan dihapus. Contoh: [{"image_id":"123e4567-e89b-12d3-a456-426614174000","image_url":"https://example.com/image1.jpg","image_id_to_delete":"123e4567-e89b-12d3-a456-426614174000"}]',
+        example: '[{"image_id":"123e4567-e89b-12d3-a456-426614174000","image_url":"https://example.com/image1.jpg","image_id_to_delete":"123e4567-e89b-12d3-a456-426614174000"}]'
       },
       componen_product_description: {
         type: 'string',

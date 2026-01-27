@@ -44,7 +44,7 @@ router.get(
 router.post(
   '/',
   verifyToken,
-  handler.handleImageUpload,
+  handler.handleMultipleImagesUpload,
   createValidation,
   validateMiddleware,
   handler.create
@@ -58,7 +58,7 @@ router.post(
 router.put(
   '/:id',
   verifyToken,
-  handler.handleImageUpload,
+  handler.handleMultipleImagesUpload,
   updateValidation,
   validateMiddleware,
   handler.update

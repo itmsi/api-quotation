@@ -50,6 +50,76 @@ const mapSpecificationResponse = (specifications = []) => {
 };
 
 /**
+ * Normalize image untuk response API
+ * Convert JSON string to array of objects with image_id and image_url
+ * Supports both old format (array of strings) and new format (array of objects)
+ */
+const mapImageResponse = (image) => {
+  if (!image) {
+    return [];
+  }
+
+  // If already an array, check format and normalize
+  if (Array.isArray(image)) {
+    // Check if it's new format (array of objects) or old format (array of strings)
+    return image.map(item => {
+      if (typeof item === 'object' && item !== null && item.image_id && item.image_url) {
+        // New format: already has image_id and image_url
+        return item;
+      } else if (typeof item === 'string') {
+        // Old format: convert string URL to object format
+        return {
+          image_id: null, // Old format doesn't have image_id
+          image_url: item
+        };
+      }
+      return item;
+    });
+  }
+
+  // If string, try to parse as JSON
+  if (typeof image === 'string') {
+    try {
+      const parsed = JSON.parse(image);
+      if (Array.isArray(parsed)) {
+        // Normalize array items
+        return parsed.map(item => {
+          if (typeof item === 'object' && item !== null && item.image_id && item.image_url) {
+            return item;
+          } else if (typeof item === 'string') {
+            return {
+              image_id: null,
+              image_url: item
+            };
+          }
+          return item;
+        });
+      }
+      // If parsed is not array, treat as single URL (old format)
+      if (typeof parsed === 'string') {
+        return [{
+          image_id: null,
+          image_url: parsed
+        }];
+      }
+      // If parsed is object with image_id and image_url
+      if (typeof parsed === 'object' && parsed !== null && parsed.image_id && parsed.image_url) {
+        return [parsed];
+      }
+    } catch (e) {
+      // If not JSON, treat as single URL string (old format)
+      return [{
+        image_id: null,
+        image_url: image
+      }];
+    }
+  }
+
+  // Fallback: return empty array
+  return [];
+};
+
+/**
  * Map product_type from database to response
  * Note: product_type is now a direct column, but we still map from componen_type for backward compatibility
  */
@@ -87,8 +157,11 @@ const mapProductType = (componenType) => {
 
 /**
  * Build where clause for search
+ * @param {string} search - Search term
+ * @param {boolean} includeUpdaterData - Whether to include updater_data in search (only if JOIN exists)
+ * @param {boolean} includeCompanyData - Whether to include company_data in search (only if JOIN exists)
  */
-const buildSearchWhere = (search) => {
+const buildSearchWhere = (search, includeUpdaterData = false, includeCompanyData = false) => {
   if (!search || search.trim() === '') return null;
 
   const searchPattern = `%${search.trim().toLowerCase()}%`;
@@ -106,9 +179,15 @@ const buildSearchWhere = (search) => {
         .orWhereRaw('LOWER(componen_products.componen_product_unit_model) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(componen_products.volume) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(componen_products.componen_product_description) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(componen_products.product_type) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(updater_data.employee_name) LIKE ?', [searchPattern])
-        .orWhereRaw('LOWER(company_data.company_name) LIKE ?', [searchPattern]);
+        .orWhereRaw('LOWER(componen_products.product_type) LIKE ?', [searchPattern]);
+      
+      // Only include updater_data and company_data if JOIN exists
+      if (includeUpdaterData) {
+        this.orWhereRaw('LOWER(updater_data.employee_name) LIKE ?', [searchPattern]);
+      }
+      if (includeCompanyData) {
+        this.orWhereRaw('LOWER(company_data.company_name) LIKE ?', [searchPattern]);
+      }
     });
   };
 };
@@ -117,7 +196,7 @@ const buildSearchWhere = (search) => {
  * Find all componen products with pagination, search, and sort
  */
 const findAll = async (params) => {
-  const { page, limit, offset, search, sortBy, sortOrder } = params;
+  const { page, limit, offset, search, sortBy, sortOrder, companyName, productType } = params;
 
   const sortOrderSafe = ['asc', 'desc'].includes((sortOrder || '').toLowerCase())
     ? sortOrder.toLowerCase()
@@ -129,29 +208,33 @@ const findAll = async (params) => {
   // Ensure dblink connection
   const dblinkConnected = await ensureDblinkConnection();
   let updaterJoin;
-  let companyJoin;
 
   if (dblinkConnected) {
     updaterJoin = db.raw(
       `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS updater_data(employee_id uuid, employee_name varchar)`
     );
-    companyJoin = db.raw(
-      `dblink('${DBLINK_NAME}', 'SELECT company_id, company_name FROM companies WHERE company_id IS NOT NULL AND is_delete = false') AS company_data(company_id uuid, company_name varchar)`
-    );
   } else {
     updaterJoin = db.raw(`(SELECT NULL::uuid as employee_id, NULL::varchar as employee_name WHERE false) AS updater_data(employee_id uuid, employee_name varchar)`);
-    companyJoin = db.raw(`(SELECT NULL::uuid as company_id, NULL::varchar as company_name WHERE false) AS company_data(company_id uuid, company_name varchar)`);
   }
 
   let query = db(TABLE_NAME)
-    .select(`${TABLE_NAME}.*`, db.raw('updater_data.employee_name as updated_by_name'), db.raw('company_data.company_name as company_name'))
+    .select(`${TABLE_NAME}.*`, db.raw('updater_data.employee_name as updated_by_name'))
     .leftJoin(updaterJoin, `${TABLE_NAME}.updated_by`, 'updater_data.employee_id')
-    .leftJoin(companyJoin, `${TABLE_NAME}.company_id`, 'company_data.company_id')
     .where(`${TABLE_NAME}.is_delete`, false);
+
+  // Apply company_name filter
+  if (companyName !== undefined && companyName !== null && companyName !== '') {
+    query = query.where(`${TABLE_NAME}.company_name`, companyName);
+  }
+
+  // Apply product_type filter
+  if (productType !== undefined && productType !== null && productType !== '') {
+    query = query.where(`${TABLE_NAME}.product_type`, productType);
+  }
 
   // Apply search
   if (search && search.trim() !== '') {
-    const searchWhere = buildSearchWhere(search);
+    const searchWhere = buildSearchWhere(search, dblinkConnected, false); // includeUpdaterData = dblinkConnected, includeCompanyData = false (no company_data JOIN)
     query = query.where(searchWhere);
   }
 
@@ -176,19 +259,23 @@ const findAll = async (params) => {
         updaterJoin = db.raw(
           `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS updater_data(employee_id uuid, employee_name varchar)`
         );
-        companyJoin = db.raw(
-          `dblink('${DBLINK_NAME}', 'SELECT company_id, company_name FROM companies WHERE company_id IS NOT NULL AND is_delete = false') AS company_data(company_id uuid, company_name varchar)`
-        );
 
         try {
           query = db(TABLE_NAME)
-            .select(`${TABLE_NAME}.*`, db.raw('updater_data.employee_name as updated_by_name'), db.raw('company_data.company_name as company_name'))
+            .select(`${TABLE_NAME}.*`, db.raw('updater_data.employee_name as updated_by_name'))
             .leftJoin(updaterJoin, `${TABLE_NAME}.updated_by`, 'updater_data.employee_id')
-            .leftJoin(companyJoin, `${TABLE_NAME}.company_id`, 'company_data.company_id')
             .where(`${TABLE_NAME}.is_delete`, false);
 
+          if (companyName !== undefined && companyName !== null && companyName !== '') {
+            query = query.where(`${TABLE_NAME}.company_name`, companyName);
+          }
+
+          if (productType !== undefined && productType !== null && productType !== '') {
+            query = query.where(`${TABLE_NAME}.product_type`, productType);
+          }
+
           if (search && search.trim() !== '') {
-            const searchWhere = buildSearchWhere(search);
+            const searchWhere = buildSearchWhere(search, reconnected, false); // includeUpdaterData = reconnected, includeCompanyData = false
             query = query.where(searchWhere);
           }
 
@@ -200,14 +287,22 @@ const findAll = async (params) => {
             .select(`${TABLE_NAME}.*`)
             .where(`${TABLE_NAME}.is_delete`, false);
 
+          if (companyName !== undefined && companyName !== null && companyName !== '') {
+            query = query.where(`${TABLE_NAME}.company_name`, companyName);
+          }
+
+          if (productType !== undefined && productType !== null && productType !== '') {
+            query = query.where(`${TABLE_NAME}.product_type`, productType);
+          }
+
           if (search && search.trim() !== '') {
-            const searchWhere = buildSearchWhere(search);
+            const searchWhere = buildSearchWhere(search, false, false); // No JOINs in fallback, so both false
             query = query.where(searchWhere);
           }
 
           query = query.orderBy(sortBy || 'created_at', sortOrderSafe).limit(limitNumber).offset(offsetNumber);
           data = await query;
-          data = data.map(item => ({ ...item, updated_by_name: null, company_name: null }));
+          data = data.map(item => ({ ...item, updated_by_name: null }));
         }
       } else {
         // Fallback without dblink
@@ -215,14 +310,22 @@ const findAll = async (params) => {
           .select(`${TABLE_NAME}.*`)
           .where(`${TABLE_NAME}.is_delete`, false);
 
+        if (companyName !== undefined && companyName !== null && companyName !== '') {
+          query = query.where(`${TABLE_NAME}.company_name`, companyName);
+        }
+
+        if (productType !== undefined && productType !== null && productType !== '') {
+          query = query.where(`${TABLE_NAME}.product_type`, productType);
+        }
+
         if (search && search.trim() !== '') {
-          const searchWhere = buildSearchWhere(search);
+          const searchWhere = buildSearchWhere(search, false, false); // No JOINs in fallback, so both false
           query = query.where(searchWhere);
         }
 
         query = query.orderBy(sortBy || 'created_at', sortOrderSafe).limit(limitNumber).offset(offsetNumber);
         data = await query;
-        data = data.map(item => ({ ...item, updated_by_name: null, company_name: null }));
+        data = data.map(item => ({ ...item, updated_by_name: null }));
       }
     } else {
       throw error;
@@ -230,8 +333,8 @@ const findAll = async (params) => {
   }
 
   const itemsWithProductType = (data || []).map((item) => {
-    // Remove specification_properties from response
-    const { specification_properties, ...itemWithoutSpecs } = item;
+    // Remove specification_properties, image, images, and image_count from response
+    const { specification_properties, image, images, image_count, ...itemWithoutSpecs } = item;
     return {
       ...itemWithoutSpecs,
       product_type: mapProductTypeResponse(item.product_type, item.componen_type)
@@ -241,11 +344,18 @@ const findAll = async (params) => {
   // Count total
   let countQuery = db(TABLE_NAME)
     .leftJoin(updaterJoin, `${TABLE_NAME}.updated_by`, 'updater_data.employee_id')
-    .leftJoin(companyJoin, `${TABLE_NAME}.company_id`, 'company_data.company_id')
     .where(`${TABLE_NAME}.is_delete`, false);
 
+  if (companyName !== undefined && companyName !== null && companyName !== '') {
+    countQuery = countQuery.where(`${TABLE_NAME}.company_name`, companyName);
+  }
+
+  if (productType !== undefined && productType !== null && productType !== '') {
+    countQuery = countQuery.where(`${TABLE_NAME}.product_type`, productType);
+  }
+
   if (search && search.trim() !== '') {
-    const searchWhere = buildSearchWhere(search);
+    const searchWhere = buildSearchWhere(search, dblinkConnected, false); // includeUpdaterData = dblinkConnected, includeCompanyData = false
     countQuery = countQuery.where(searchWhere);
   }
 
@@ -256,8 +366,15 @@ const findAll = async (params) => {
     if (error.message && (error.message.includes('could not establish connection') || error.message.includes('dblink'))) {
       countQuery = db(TABLE_NAME)
         .where(`${TABLE_NAME}.is_delete`, false);
+      if (companyName !== undefined && companyName !== null && companyName !== '') {
+        countQuery = countQuery.where(`${TABLE_NAME}.company_name`, companyName);
+      }
+
+      if (productType !== undefined && productType !== null && productType !== '') {
+        countQuery = countQuery.where(`${TABLE_NAME}.product_type`, productType);
+      }
       if (search && search.trim() !== '') {
-        const searchWhere = buildSearchWhere(search);
+        const searchWhere = buildSearchWhere(search, false, false); // No JOINs in fallback, so both false
         countQuery = countQuery.where(searchWhere);
       }
       totalResult = await countQuery.count('componen_product_id as count').first();
@@ -283,39 +400,9 @@ const findAll = async (params) => {
  * Find single componen product by ID
  */
 const findById = async (id) => {
-  // Ensure dblink connection
-  const dblinkConnected = await ensureDblinkConnection();
-  let companyJoin;
-
-  if (dblinkConnected) {
-    companyJoin = db.raw(
-      `dblink('${DBLINK_NAME}', 'SELECT company_id, company_name FROM companies WHERE company_id IS NOT NULL AND is_delete = false') AS company_data(company_id uuid, company_name varchar)`
-    );
-  } else {
-    companyJoin = db.raw(`(SELECT NULL::uuid as company_id, NULL::varchar as company_name WHERE false) AS company_data(company_id uuid, company_name varchar)`);
-  }
-
-  let componenProduct;
-  try {
-    componenProduct = await db(TABLE_NAME)
-      .select(`${TABLE_NAME}.*`, db.raw('company_data.company_name as company_name'))
-      .leftJoin(companyJoin, `${TABLE_NAME}.company_id`, 'company_data.company_id')
-      .where({ [`${TABLE_NAME}.componen_product_id`]: id, [`${TABLE_NAME}.is_delete`]: false })
-      .first();
-  } catch (error) {
-    // Fallback without dblink
-    if (error.message && (error.message.includes('could not establish connection') || error.message.includes('dblink'))) {
-      componenProduct = await db(TABLE_NAME)
-        .where({ componen_product_id: id, is_delete: false })
-        .first();
-      
-      if (componenProduct) {
-        componenProduct.company_name = null;
-      }
-    } else {
-      throw error;
-    }
-  }
+  const componenProduct = await db(TABLE_NAME)
+    .where({ componen_product_id: id, is_delete: false })
+    .first();
 
   if (!componenProduct) {
     return null;
@@ -327,13 +414,19 @@ const findById = async (id) => {
 
   const normalizedSpecs = mapSpecificationResponse(storedSpecs);
 
-  // Remove specification_properties from response, only return normalized componen_product_specifications
-  const { specification_properties, ...productWithoutSpecs } = componenProduct;
+  // Remove specification_properties and image from response, only return normalized componen_product_specifications
+  const { specification_properties, image, ...productWithoutSpecs } = componenProduct;
 
+  const mappedImages = mapImageResponse(componenProduct.images || componenProduct.image);
+  
   return {
     ...productWithoutSpecs,
     componen_product_specifications: normalizedSpecs,
-    product_type: mapProductTypeResponse(componenProduct.product_type, componenProduct.componen_type)
+    product_type: mapProductTypeResponse(componenProduct.product_type, componenProduct.componen_type),
+    images: mappedImages, // Array of objects with image_id and image_url
+    image_count: componenProduct.image_count !== null && componenProduct.image_count !== undefined 
+      ? componenProduct.image_count 
+      : mappedImages.length // Use image_count from DB or calculate from images array
   };
 };
 
@@ -392,7 +485,7 @@ const create = async (data, specifications = []) => {
       componen_product_id: newId,
       componen_product_name: data.componen_product_name || null,
       componen_type: data.componen_type || null,
-      company_id: data.company_id || null,
+      company_name: data.company_name || null,
       product_type: data.product_type || null,
       code_unique: data.code_unique || null,
       segment: data.segment || null,
@@ -409,7 +502,9 @@ const create = async (data, specifications = []) => {
       selling_price_star_3: data.selling_price_star_3 || null,
       selling_price_star_4: data.selling_price_star_4 || null,
       selling_price_star_5: data.selling_price_star_5 || null,
-      image: data.image || null,
+      image: data.image || null, // Keep for backward compatibility
+      images: data.images || null, // New column for array of image URLs
+      image_count: data.image_count || 0, // New column for image count
       componen_product_description: data.componen_product_description || null,
       created_by: data.created_by || null
     };
@@ -444,10 +539,16 @@ const create = async (data, specifications = []) => {
     // Remove specification_properties from response, only return normalized componen_product_specifications
     const { specification_properties, ...productWithoutSpecs } = product;
 
+    const mappedImages = mapImageResponse(product.images || product.image);
+    
     return {
       ...productWithoutSpecs,
       componen_product_specifications: normalizedSpecs,
-      product_type: mapProductTypeResponse(product.product_type, product.componen_type)
+      product_type: mapProductTypeResponse(product.product_type, product.componen_type),
+      images: mappedImages, // Array of objects with image_id and image_url
+      image_count: product.image_count !== null && product.image_count !== undefined 
+        ? product.image_count 
+        : mappedImages.length // Use image_count from DB or calculate from images array
     };
   });
 };
@@ -477,7 +578,7 @@ const update = async (id, data, options = {}) => {
 
     if (data.componen_product_name !== undefined) updateFields.componen_product_name = data.componen_product_name;
     if (data.componen_type !== undefined) updateFields.componen_type = data.componen_type;
-    if (data.company_id !== undefined) updateFields.company_id = data.company_id;
+    if (data.company_name !== undefined) updateFields.company_name = data.company_name;
     if (data.product_type !== undefined) updateFields.product_type = data.product_type;
     if (data.code_unique !== undefined) updateFields.code_unique = data.code_unique;
     if (data.segment !== undefined) updateFields.segment = data.segment;
@@ -494,7 +595,9 @@ const update = async (id, data, options = {}) => {
     if (data.selling_price_star_3 !== undefined) updateFields.selling_price_star_3 = data.selling_price_star_3;
     if (data.selling_price_star_4 !== undefined) updateFields.selling_price_star_4 = data.selling_price_star_4;
     if (data.selling_price_star_5 !== undefined) updateFields.selling_price_star_5 = data.selling_price_star_5;
-    if (data.image !== undefined) updateFields.image = data.image;
+    if (data.image !== undefined) updateFields.image = data.image; // Keep for backward compatibility
+    if (data.images !== undefined) updateFields.images = data.images; // New column for array of image URLs
+    if (data.image_count !== undefined) updateFields.image_count = data.image_count; // New column for image count
     if (data.componen_product_description !== undefined) updateFields.componen_product_description = data.componen_product_description;
     if (data.updated_by !== undefined) updateFields.updated_by = data.updated_by;
 
@@ -546,10 +649,16 @@ const update = async (id, data, options = {}) => {
     // Remove specification_properties from response, only return normalized componen_product_specifications
     const { specification_properties, ...productWithoutSpecs } = product;
 
+    const mappedImages = mapImageResponse(product.images || product.image);
+    
     return {
       ...productWithoutSpecs,
       componen_product_specifications: normalizedSpecs,
-      product_type: mapProductTypeResponse(product.product_type, product.componen_type)
+      product_type: mapProductTypeResponse(product.product_type, product.componen_type),
+      images: mappedImages, // Array of objects with image_id and image_url
+      image_count: product.image_count !== null && product.image_count !== undefined 
+        ? product.image_count 
+        : mappedImages.length // Use image_count from DB or calculate from images array
     };
   });
 };

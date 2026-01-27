@@ -2,6 +2,7 @@ const path = require('path');
 const multer = require('multer');
 const csv = require('csv-parser');
 const { Readable } = require('stream');
+const { v4: uuidv4 } = require('uuid');
 const repository = require('./postgre_repository');
 const { baseResponse, mappingError, mappingSuccess } = require('../../utils');
 const { decodeToken } = require('../../utils/auth');
@@ -40,10 +41,15 @@ const upload = multer({
   }
 });
 
-// Middleware for single image upload
+// Middleware for single image upload (backward compatibility)
 const uploadImage = upload.single('image');
 
+// Middleware for multiple images upload
+// Support both formats: 'images' (multiple with same name) and 'images[0]', 'images[1]', etc.
+const uploadImages = upload.any();
+
 // Helper function to upload image to MinIO
+// Returns object with image_id and image_url, or null if failed
 const uploadImageToStorage = async (file, folderPath = 'componen_products') => {
   if (!file || !isMinioEnabled) {
     return null;
@@ -61,7 +67,10 @@ const uploadImageToStorage = async (file, folderPath = 'componen_products') => {
     const uploadResult = await uploadToMinio(objectName, file.buffer, file.mimetype, bucketName);
     
     if (uploadResult.success) {
-      return uploadResult.url;
+      return {
+        image_id: uuidv4(),
+        image_url: uploadResult.url
+      };
     }
     
     return null;
@@ -71,7 +80,20 @@ const uploadImageToStorage = async (file, folderPath = 'componen_products') => {
   }
 };
 
-// Middleware wrapper to handle multer errors
+// Helper function to upload multiple images to MinIO
+const uploadMultipleImagesToStorage = async (files, folderPath = 'componen_products') => {
+  if (!files || !Array.isArray(files) || files.length === 0 || !isMinioEnabled) {
+    return [];
+  }
+
+  const uploadPromises = files.map((file) => uploadImageToStorage(file, folderPath));
+  const results = await Promise.all(uploadPromises);
+  
+  // Filter out null results (failed uploads)
+  return results.filter(url => url !== null);
+};
+
+// Middleware wrapper to handle multer errors for single image
 const handleImageUpload = (req, res, next) => {
   uploadImage(req, res, (err) => {
     if (err instanceof multer.MulterError) {
@@ -98,6 +120,86 @@ const handleImageUpload = (req, res, next) => {
   });
 };
 
+// Middleware wrapper to handle multer errors for multiple images
+const handleMultipleImagesUpload = (req, res, next) => {
+  uploadImages(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+          success: false,
+          message: 'File terlalu besar. Maksimal 5MB per file.',
+          error: err.message
+        });
+      }
+      if (err.code === 'LIMIT_FILE_COUNT') {
+        return res.status(400).json({
+          success: false,
+          message: 'Terlalu banyak file. Maksimal 50 file.',
+          error: err.message
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: 'Error upload file',
+        error: err.message
+      });
+    } else if (err) {
+      return res.status(400).json({
+        success: false,
+        message: err.message || 'Error validasi file',
+        error: err.message
+      });
+    }
+    
+    // Process files to support both formats: 'images' and 'images[0]', 'images[1]', etc.
+    if (req.files && Array.isArray(req.files)) {
+      // Filter and organize image files
+      const imageFiles = req.files.filter(file => {
+        // Support both 'images' and 'images[0]', 'images[1]', etc.
+        const isImageField = file.fieldname === 'images' || /^images\[\d+\]$/.test(file.fieldname);
+        
+        // Filter out empty files (files with no buffer or zero size)
+        if (!isImageField) {
+          return false;
+        }
+        
+        // Check if file has valid content (buffer exists and has size > 0)
+        const hasValidContent = file.buffer && file.buffer.length > 0;
+        
+        if (!hasValidContent) {
+          console.log(`Skipping empty file: ${file.fieldname}`);
+          return false;
+        }
+        
+        return true;
+      });
+      
+      // Sort by fieldname if using indexed format (images[0], images[1], etc.)
+      imageFiles.sort((a, b) => {
+        const aMatch = a.fieldname.match(/\[(\d+)\]/);
+        const bMatch = b.fieldname.match(/\[(\d+)\]/);
+        if (aMatch && bMatch) {
+          return parseInt(aMatch[1]) - parseInt(bMatch[1]);
+        }
+        // If 'images' field (without index), put it first
+        if (a.fieldname === 'images') return -1;
+        if (b.fieldname === 'images') return 1;
+        return 0;
+      });
+      
+      // Organize into req.files.images for backward compatibility
+      if (imageFiles.length > 0) {
+        req.files.images = imageFiles;
+        console.log(`Processed ${imageFiles.length} valid image files from ${req.files.length} total files`);
+      } else {
+        console.log(`No valid image files found in ${req.files.length} total files`);
+      }
+    }
+    
+    next();
+  });
+};
+
 /**
  * Map sort_by from API format to database column format
  */
@@ -118,9 +220,29 @@ const mapSortBy = (sortBy) => {
 
 /**
  * Generate componen_product_name based on format:
- * code_unique - msi_product wheel_no engine msi_model volume - segment
+ * - If product_type = 'non_unit': code_unique + " - " + componen_product_description
+ * - If product_type = 'unit' or others: code_unique - msi_product wheel_no engine msi_model volume - segment
  */
 const generateComponenProductName = (data) => {
+  // Check product_type
+  const productType = data.product_type ? String(data.product_type).trim() : null;
+  
+  // If product_type is 'non_unit', use format: code_unique + " - " + componen_product_description
+  if (productType === 'non_unit') {
+    const codeUnique = data.code_unique ? String(data.code_unique).trim() : null;
+    const description = data.componen_product_description ? String(data.componen_product_description).trim() : null;
+    
+    if (codeUnique && description) {
+      return `${codeUnique} - ${description}`;
+    } else if (codeUnique) {
+      return codeUnique;
+    } else if (description) {
+      return description;
+    }
+    return null;
+  }
+  
+  // For 'unit' or other product_type, use existing format
   const parts = [];
   
   // code_unique
@@ -229,9 +351,27 @@ const parseSpecificationsInput = (rawInput) => {
  */
 const getAll = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = '', sort_by = 'created_at', sort_order = 'desc' } = req.body;
+    const { page = 1, limit = 10, search = '', sort_by = 'created_at', sort_order = 'desc', company_name, product_type } = req.body;
     
     const offset = (page - 1) * limit;
+    
+    // Normalize company_name
+    let normalizedCompanyName = null;
+    if (company_name !== undefined && company_name !== null && company_name !== '') {
+      const companyNameStr = String(company_name).trim();
+      if (companyNameStr !== '' && companyNameStr !== 'NaN' && companyNameStr !== 'null') {
+        normalizedCompanyName = companyNameStr;
+      }
+    }
+
+    // Normalize product_type
+    let normalizedProductType = null;
+    if (product_type !== undefined && product_type !== null && product_type !== '') {
+      const productTypeStr = String(product_type).trim();
+      if (productTypeStr !== '' && productTypeStr !== 'NaN' && productTypeStr !== 'null') {
+        normalizedProductType = productTypeStr;
+      }
+    }
     
     const params = {
       page,
@@ -239,7 +379,9 @@ const getAll = async (req, res) => {
       offset,
       search,
       sortBy: mapSortBy(sort_by),
-      sortOrder: sort_order
+      sortOrder: sort_order,
+      companyName: normalizedCompanyName,
+      productType: normalizedProductType
     };
     
     const data = await repository.findAll(params);
@@ -280,27 +422,62 @@ const create = async (req, res) => {
     // Get user info from token
     const tokenData = decodeToken('created', req);
     
-    // Upload image if provided
-    let imageUrl = null;
-    if (req.file) {
-      console.log('Uploading image to MinIO...');
-      imageUrl = await uploadImageToStorage(req.file);
-      if (!imageUrl) {
-        console.warn('Failed to upload image to MinIO, but continuing with create');
+    // Handle multiple images upload
+    let imageUrls = null;
+    
+    // Check for multiple images (new format)
+    if (req.files && req.files.images && Array.isArray(req.files.images) && req.files.images.length > 0) {
+      console.log(`Uploading ${req.files.images.length} images to MinIO...`);
+      const uploadedUrls = await uploadMultipleImagesToStorage(req.files.images);
+      
+      if (uploadedUrls.length > 0) {
+        imageUrls = uploadedUrls;
+        console.log(`${uploadedUrls.length} images uploaded successfully`);
       } else {
-        console.log('Image uploaded successfully:', imageUrl);
+        console.warn('Failed to upload images to MinIO, but continuing with create');
       }
-    } else if (req.body.image !== undefined) {
-      // If image URL is provided directly (optional)
-      imageUrl = req.body.image || null;
+      
+      // Validate image_count if provided
+      if (req.body.image_count !== undefined) {
+        const expectedCount = parseInt(req.body.image_count, 10);
+        if (!isNaN(expectedCount) && uploadedUrls.length !== expectedCount) {
+          console.warn(`Image count mismatch: expected ${expectedCount}, uploaded ${uploadedUrls.length}`);
+        }
+      }
+    }
+    // Backward compatibility: check for single image (old format)
+    else if (req.file) {
+      console.log('Uploading single image to MinIO...');
+      const imageUrl = await uploadImageToStorage(req.file);
+      if (imageUrl) {
+        imageUrls = [imageUrl];
+        console.log('Image uploaded successfully:', imageUrl);
+      } else {
+        console.warn('Failed to upload image to MinIO, but continuing with create');
+      }
+    }
+    // If image URL(s) provided directly as string or JSON array
+    else if (req.body.image !== undefined) {
+      try {
+        // Try to parse as JSON array
+        const parsed = typeof req.body.image === 'string' ? JSON.parse(req.body.image) : req.body.image;
+        if (Array.isArray(parsed)) {
+          imageUrls = parsed;
+        } else {
+          imageUrls = [req.body.image];
+        }
+      } catch (e) {
+        // If not JSON, treat as single URL string
+        imageUrls = [req.body.image];
+      }
     }
     
-    // Normalize company_id
-    let normalizedCompanyId = null;
-    if (req.body.company_id && req.body.company_id !== '' && req.body.company_id !== null && req.body.company_id !== undefined) {
-      const companyIdStr = String(req.body.company_id).trim();
-      if (companyIdStr !== '' && companyIdStr !== 'NaN' && companyIdStr !== 'null') {
-        normalizedCompanyId = companyIdStr;
+    // Normalize company_name
+    let normalizedCompanyName = null;
+    if (req.body.company_name && req.body.company_name !== '' && req.body.company_name !== null && req.body.company_name !== undefined) {
+      const companyNameStr = String(req.body.company_name).trim();
+      if (companyNameStr !== '') {
+        normalizedCompanyName = companyNameStr;
       }
     }
 
@@ -313,9 +490,27 @@ const create = async (req, res) => {
       }
     }
 
+    // Convert imageUrls array (array of objects with image_id and image_url) to JSON string for database storage
+    // Calculate image_count based on uploaded files, not just successful uploads
+    let imageCount = 0;
+    if (req.files && req.files.images && Array.isArray(req.files.images)) {
+      imageCount = req.files.images.length;
+    } else if (req.body.image_count !== undefined && req.body.image_count !== null && req.body.image_count !== '') {
+      // Use provided image_count if files not available but count is provided
+      imageCount = parseInt(req.body.image_count, 10) || 0;
+    } else if (imageUrls && imageUrls.length > 0) {
+      // Fallback to uploaded images count
+      imageCount = imageUrls.length;
+    }
+    
+    // imageUrls is now array of objects: [{ image_id, image_url }, ...]
+    const imageData = imageUrls && imageUrls.length > 0 ? JSON.stringify(imageUrls) : null;
+    
+    console.log(`Image processing summary: ${imageCount} files processed, ${imageUrls ? imageUrls.length : 0} images uploaded`);
+    
     const componenProductData = {
       componen_type: req.body.componen_type ? parseInt(req.body.componen_type) : null,
-      company_id: normalizedCompanyId,
+      company_name: normalizedCompanyName,
       product_type: normalizedProductType,
       code_unique: req.body.code_unique || null,
       segment: req.body.segment || null,
@@ -332,7 +527,9 @@ const create = async (req, res) => {
       selling_price_star_3: req.body.selling_price_star_3 || null,
       selling_price_star_4: req.body.selling_price_star_4 || null,
       selling_price_star_5: req.body.selling_price_star_5 || null,
-      image: imageUrl,
+      image: imageData, // Keep for backward compatibility
+      images: imageData, // New column for array of image URLs
+      image_count: imageCount, // New column for image count
       componen_product_description: req.body.componen_product_description || null,
       created_by: tokenData.created_by
     };
@@ -341,7 +538,13 @@ const create = async (req, res) => {
     if (req.body.componen_product_name) {
       componenProductData.componen_product_name = req.body.componen_product_name;
     } else {
-      componenProductData.componen_product_name = generateComponenProductName(componenProductData) || null;
+      // Include product_type and componen_product_description for name generation
+      const dataForGeneration = {
+        ...componenProductData,
+        product_type: normalizedProductType,
+        componen_product_description: req.body.componen_product_description || null
+      };
+      componenProductData.componen_product_name = generateComponenProductName(dataForGeneration) || null;
     }
 
     const specificationsPayload = parseSpecificationsInput(req.body.componen_product_specifications);
@@ -373,31 +576,91 @@ const update = async (req, res) => {
       return baseResponse(res, response);
     }
     
-    // Upload new image if provided
-    let imageUrl = undefined;
-    if (req.file) {
-      console.log('Uploading new image to MinIO...');
-      imageUrl = await uploadImageToStorage(req.file);
-      if (!imageUrl) {
-        console.warn('Failed to upload image to MinIO, keeping existing image');
-        imageUrl = undefined;
+    // Handle multiple images upload
+    let imageUrls = undefined;
+    
+    // Check if user explicitly sent image fields (even if empty)
+    const hasImageFields = req.files && req.files.images && Array.isArray(req.files.images);
+    const hasEmptyImageFields = hasImageFields && req.files.images.length === 0;
+    const hasImageCountField = req.body.image_count !== undefined && req.body.image_count !== null && req.body.image_count !== '';
+    
+    // Check for multiple images (new format)
+    // Only process if there are valid (non-empty) files
+    if (hasImageFields && req.files.images.length > 0) {
+      console.log(`Uploading ${req.files.images.length} new images to MinIO...`);
+      const uploadedUrls = await uploadMultipleImagesToStorage(req.files.images);
+      
+      if (uploadedUrls.length > 0) {
+        imageUrls = uploadedUrls;
+        console.log(`${uploadedUrls.length} images uploaded successfully`);
       } else {
+        console.warn('Failed to upload images to MinIO, keeping existing images');
+        imageUrls = undefined;
+      }
+      
+      // Validate image_count if provided
+      if (hasImageCountField) {
+        const expectedCount = parseInt(req.body.image_count, 10);
+        if (!isNaN(expectedCount) && uploadedUrls.length !== expectedCount) {
+          console.warn(`Image count mismatch: expected ${expectedCount}, uploaded ${uploadedUrls.length}`);
+        }
+      }
+    }
+    // If all images fields are empty, don't update images (keep existing)
+    else if (hasEmptyImageFields) {
+      console.log('All image fields are empty, keeping existing images');
+      imageUrls = undefined; // Don't update, keep existing
+    }
+    // Backward compatibility: check for single image (old format)
+    else if (req.file) {
+      console.log('Uploading new single image to MinIO...');
+      const imageUrl = await uploadImageToStorage(req.file);
+      if (imageUrl) {
+        imageUrls = [imageUrl];
         console.log('New image uploaded successfully:', imageUrl);
+      } else {
+        console.warn('Failed to upload image to MinIO, keeping existing image');
+        imageUrls = undefined;
+      }
+    }
+    // If image URL(s) provided directly as string or JSON array (backward compatibility)
+    else if (req.body.image !== undefined && req.body.image !== null && req.body.image !== '') {
+      try {
+        // Try to parse as JSON array
+        const parsed = typeof req.body.image === 'string' ? JSON.parse(req.body.image) : req.body.image;
+        if (Array.isArray(parsed)) {
+          // Convert old format (array of strings) to new format (array of objects)
+          imageUrls = parsed.map(item => {
+            if (typeof item === 'object' && item !== null && item.image_id && item.image_url) {
+              return item; // Already new format
+            } else if (typeof item === 'string') {
+              return { image_id: uuidv4(), image_url: item }; // Convert old format
+            }
+            return item;
+          });
+        } else if (typeof parsed === 'string') {
+          imageUrls = [{ image_id: uuidv4(), image_url: parsed }];
+        } else {
+          imageUrls = [{ image_id: uuidv4(), image_url: req.body.image }];
+        }
+      } catch (e) {
+        // If not JSON, treat as single URL string (old format)
+        imageUrls = [{ image_id: uuidv4(), image_url: req.body.image }];
       }
     }
     
-    // Normalize company_id if provided
-    let normalizedCompanyId = undefined;
-    if (req.body.company_id !== undefined) {
-      if (req.body.company_id && req.body.company_id !== '' && req.body.company_id !== null) {
-        const companyIdStr = String(req.body.company_id).trim();
-        if (companyIdStr !== '' && companyIdStr !== 'NaN' && companyIdStr !== 'null') {
-          normalizedCompanyId = companyIdStr;
+    // Normalize company_name if provided
+    let normalizedCompanyName = undefined;
+    if (req.body.company_name !== undefined) {
+      if (req.body.company_name && req.body.company_name !== '' && req.body.company_name !== null) {
+        const companyNameStr = String(req.body.company_name).trim();
+        if (companyNameStr !== '') {
+          normalizedCompanyName = companyNameStr;
         } else {
-          normalizedCompanyId = null;
+          normalizedCompanyName = null;
         }
       } else {
-        normalizedCompanyId = null;
+        normalizedCompanyName = null;
       }
     }
 
@@ -416,9 +679,196 @@ const update = async (req, res) => {
       }
     }
 
+    // Handle images update: append new images and/or delete existing images
+    let imageData = undefined;
+    let imageCount = undefined;
+    
+    // Parse existing images from database and normalize to new format
+    let existingImages = [];
+    if (existing.images) {
+      try {
+        const parsed = typeof existing.images === 'string' ? JSON.parse(existing.images) : existing.images;
+        if (Array.isArray(parsed)) {
+          // Normalize to new format (array of objects with image_id and image_url)
+          existingImages = parsed.map(item => {
+            if (typeof item === 'object' && item !== null && item.image_id && item.image_url) {
+              return item; // Already new format
+            } else if (typeof item === 'string') {
+              // Old format: convert string URL to object format
+              return { image_id: uuidv4(), image_url: item };
+            }
+            return item;
+          });
+          console.log(`📦 Loaded ${existingImages.length} existing images from database`);
+          if (existingImages.length > 0) {
+            console.log(`   Existing image IDs:`, existingImages.map(img => img.image_id));
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to parse existing images:', e);
+        existingImages = [];
+      }
+    } else {
+      console.log('ℹ No existing images in database');
+    }
+    
+    // Handle images from body request (for delete operations)
+    // Note: req.body.images might be a JSON string in multipart/form-data
+    // Important: This is different from images[0], images[1], etc. which are file uploads
+    // BUT: If images[0]='', images[1]='', etc. are sent, multer might convert images to an array
+    let imagesFromBody = [];
+    
+    // Check for images field (JSON string for delete operations)
+    const imagesFieldValue = req.body.images;
+    console.log('Checking images field for delete operations. Type:', typeof imagesFieldValue, 'IsArray:', Array.isArray(imagesFieldValue), 'Value:', imagesFieldValue);
+    
+    if (imagesFieldValue !== undefined && imagesFieldValue !== null && imagesFieldValue !== '') {
+      // Case 1: If it's an array (because of images[0]='', images[1]='', etc.)
+      if (Array.isArray(imagesFieldValue)) {
+        // Find the non-empty string that looks like JSON
+        const jsonString = imagesFieldValue.find(item => 
+          typeof item === 'string' && 
+          item.trim() !== '' && 
+          (item.trim().startsWith('[') || item.trim().startsWith('{'))
+        );
+        
+        if (jsonString) {
+          try {
+            const parsed = JSON.parse(jsonString);
+            if (Array.isArray(parsed)) {
+              imagesFromBody = parsed;
+              console.log(`✓ Parsed ${imagesFromBody.length} images from array item for delete operations:`, imagesFromBody);
+            } else {
+              console.warn('✗ Parsed JSON is not an array:', typeof parsed, parsed);
+            }
+          } catch (e) {
+            console.warn('✗ Failed to parse JSON string from array:', e.message, 'JSON string:', jsonString);
+          }
+        } else {
+          console.warn('✗ No valid JSON string found in images array');
+        }
+      }
+      // Case 2: If it's a string that looks like JSON
+      else if (typeof imagesFieldValue === 'string' && (imagesFieldValue.trim().startsWith('[') || imagesFieldValue.trim().startsWith('{'))) {
+        try {
+          const parsed = JSON.parse(imagesFieldValue);
+          if (Array.isArray(parsed)) {
+            imagesFromBody = parsed;
+            console.log(`✓ Parsed ${imagesFromBody.length} images from string for delete operations:`, imagesFromBody);
+          } else {
+            console.warn('✗ images from body is not an array:', typeof parsed, parsed);
+          }
+        } catch (e) {
+          console.warn('✗ Failed to parse images from body as JSON:', e.message, 'Raw value:', imagesFieldValue);
+        }
+      } else {
+        console.warn('✗ images field is not a valid JSON string or array:', typeof imagesFieldValue);
+      }
+    } else {
+      console.log('ℹ No images field in body or images field is empty/null');
+    }
+    
+    // Process images: append new uploads and handle deletions
+    // Check if there are images to delete from body request
+    const idsToDelete = imagesFromBody.length > 0
+      ? imagesFromBody
+          .map(img => {
+            if (typeof img === 'object' && img !== null) {
+              return img.image_id_to_delete;
+            }
+            return null;
+          })
+          .filter(id => id && id !== '' && id !== null)
+      : [];
+    
+    console.log(`Images to delete: ${idsToDelete.length}`, idsToDelete);
+    console.log(`Existing images count: ${existingImages.length}`);
+    console.log(`New images to upload: ${imageUrls ? imageUrls.length : 0}`);
+    
+    if (imageUrls !== undefined && imageUrls.length > 0) {
+      // New images uploaded, append to existing
+      let updatedImages = [...existingImages];
+      
+      // Remove images that are marked for deletion
+      if (idsToDelete.length > 0) {
+        const beforeCount = updatedImages.length;
+        updatedImages = updatedImages.filter(img => {
+          const imgId = typeof img === 'object' && img !== null ? img.image_id : null;
+          const shouldKeep = !idsToDelete.includes(imgId);
+          if (!shouldKeep) {
+            console.log(`Removing image with image_id: ${imgId}`);
+          }
+          return shouldKeep;
+        });
+        console.log(`Removed ${beforeCount - updatedImages.length} images marked for deletion, ${updatedImages.length} images remaining`);
+      }
+      
+      // Append new uploaded images
+      updatedImages = [...updatedImages, ...imageUrls];
+      console.log(`Appended ${imageUrls.length} new images. Total images now: ${updatedImages.length}`);
+      
+      imageData = JSON.stringify(updatedImages);
+      imageCount = updatedImages.length;
+    } else if (idsToDelete.length > 0) {
+      // No new uploads, but images to delete
+      const beforeCount = existingImages.length;
+      console.log(`🗑️  Starting delete operation. Before: ${beforeCount} images`);
+      
+      let updatedImages = existingImages.filter(img => {
+        const imgId = typeof img === 'object' && img !== null ? img.image_id : null;
+        const imgIdStr = imgId ? String(imgId).trim() : null;
+        const shouldKeep = !idsToDelete.some(id => String(id).trim() === imgIdStr);
+        
+        if (!shouldKeep) {
+          console.log(`   ✗ Removing image with image_id: ${imgIdStr}`);
+        } else {
+          console.log(`   ✓ Keeping image with image_id: ${imgIdStr}`);
+        }
+        return shouldKeep;
+      });
+      
+      const removedCount = beforeCount - updatedImages.length;
+      imageData = JSON.stringify(updatedImages);
+      imageCount = updatedImages.length;
+      console.log(`✅ Delete operation complete. Removed: ${removedCount}, Remaining: ${updatedImages.length}`);
+      
+      if (removedCount === 0) {
+        console.warn(`⚠️  WARNING: No images were removed! Check if image_id matches.`);
+        console.warn(`   IDs to delete:`, idsToDelete);
+        console.warn(`   Existing IDs:`, existingImages.map(img => typeof img === 'object' && img !== null ? img.image_id : 'N/A'));
+      }
+    } else if (imagesFromBody.length > 0 && idsToDelete.length === 0) {
+      // images array provided but no valid image_id_to_delete
+      console.warn('images array provided but no valid image_id_to_delete found');
+      imageData = undefined;
+      imageCount = undefined;
+    } else if (hasImageCountField) {
+      // If image_count is provided but no files/images, use the provided count
+      const providedCount = parseInt(req.body.image_count, 10);
+      if (!isNaN(providedCount)) {
+        imageCount = providedCount;
+        imageData = undefined;
+      }
+    }
+    
+    // If all image fields were empty/null AND no delete operations, don't update images at all (keep existing)
+    // But if imageData is already set (from delete operations), don't override it
+    if (imageData === undefined && hasEmptyImageFields && !hasImageCountField && imageUrls === undefined && imagesFromBody.length === 0) {
+      console.log('No valid images or image_count provided, keeping existing images');
+      imageData = undefined;
+      imageCount = undefined;
+    }
+    
+    // Log final state
+    if (imageData !== undefined) {
+      console.log(`Final imageData will be updated. image_count: ${imageCount}`);
+    } else {
+      console.log('imageData will NOT be updated (keeping existing)');
+    }
+    
     const componenProductData = {
       componen_type: req.body.componen_type !== undefined ? (req.body.componen_type ? parseInt(req.body.componen_type) : null) : undefined,
-      company_id: normalizedCompanyId,
+      company_name: normalizedCompanyName,
       product_type: normalizedProductType,
       code_unique: req.body.code_unique,
       segment: req.body.segment,
@@ -445,7 +895,9 @@ const update = async (req, res) => {
       if (req.body.componen_product_name === null || req.body.componen_product_name === '') {
         // If set to null/empty, generate from current data
         const dataForGeneration = {
+          product_type: normalizedProductType !== undefined ? normalizedProductType : existing.product_type,
           code_unique: req.body.code_unique !== undefined ? req.body.code_unique : existing.code_unique,
+          componen_product_description: req.body.componen_product_description !== undefined ? req.body.componen_product_description : existing.componen_product_description,
           msi_product: req.body.msi_product !== undefined ? req.body.msi_product : existing.msi_product,
           wheel_no: req.body.wheel_no !== undefined ? req.body.wheel_no : existing.wheel_no,
           engine: req.body.engine !== undefined ? req.body.engine : existing.engine,
@@ -459,13 +911,15 @@ const update = async (req, res) => {
       }
     } else {
       // If not provided, check if any relevant field is being updated
-      const relevantFields = ['code_unique', 'msi_product', 'wheel_no', 'engine', 'msi_model', 'volume', 'segment'];
+      const relevantFields = ['product_type', 'code_unique', 'componen_product_description', 'msi_product', 'wheel_no', 'engine', 'msi_model', 'volume', 'segment'];
       const isRelevantFieldUpdated = relevantFields.some(field => req.body[field] !== undefined);
       
       if (isRelevantFieldUpdated) {
         // Generate from updated data, using existing values for fields not updated
         const dataForGeneration = {
+          product_type: normalizedProductType !== undefined ? normalizedProductType : existing.product_type,
           code_unique: req.body.code_unique !== undefined ? req.body.code_unique : existing.code_unique,
+          componen_product_description: req.body.componen_product_description !== undefined ? req.body.componen_product_description : existing.componen_product_description,
           msi_product: req.body.msi_product !== undefined ? req.body.msi_product : existing.msi_product,
           wheel_no: req.body.wheel_no !== undefined ? req.body.wheel_no : existing.wheel_no,
           engine: req.body.engine !== undefined ? req.body.engine : existing.engine,
@@ -478,9 +932,15 @@ const update = async (req, res) => {
       // If no relevant fields updated, don't update componen_product_name
     }
     
-    // Hanya masukkan image jika ada file baru yang berhasil diupload
-    if (imageUrl !== undefined && imageUrl !== null) {
-      componenProductData.image = imageUrl;
+    // Hanya masukkan image/images/image_count jika ada file baru yang berhasil diupload ATAU ada delete operation
+    if (imageData !== undefined) {
+      componenProductData.image = imageData; // Keep for backward compatibility
+      componenProductData.images = imageData; // New column for array of image URLs
+      componenProductData.image_count = imageCount !== undefined ? imageCount : 0; // New column for image count
+      console.log(`✅ Setting imageData to componenProductData. image_count: ${componenProductData.image_count}`);
+      console.log(`   imageData preview:`, imageData.substring(0, 200) + (imageData.length > 200 ? '...' : ''));
+    } else {
+      console.log(`ℹ imageData is undefined, will NOT update images in database`);
     }
 
     const specificationsPayload = parseSpecificationsInput(req.body.componen_product_specifications);
@@ -811,6 +1271,7 @@ module.exports = {
   remove,
   importCSV,
   handleImageUpload,
+  handleMultipleImagesUpload,
   handleCSVUpload
 };
 
