@@ -220,9 +220,29 @@ const mapSortBy = (sortBy) => {
 
 /**
  * Generate componen_product_name based on format:
- * code_unique - msi_product wheel_no engine msi_model volume - segment
+ * - If product_type = 'non_unit': code_unique + " - " + componen_product_description
+ * - If product_type = 'unit' or others: code_unique - msi_product wheel_no engine msi_model volume - segment
  */
 const generateComponenProductName = (data) => {
+  // Check product_type
+  const productType = data.product_type ? String(data.product_type).trim() : null;
+  
+  // If product_type is 'non_unit', use format: code_unique + " - " + componen_product_description
+  if (productType === 'non_unit') {
+    const codeUnique = data.code_unique ? String(data.code_unique).trim() : null;
+    const description = data.componen_product_description ? String(data.componen_product_description).trim() : null;
+    
+    if (codeUnique && description) {
+      return `${codeUnique} - ${description}`;
+    } else if (codeUnique) {
+      return codeUnique;
+    } else if (description) {
+      return description;
+    }
+    return null;
+  }
+  
+  // For 'unit' or other product_type, use existing format
   const parts = [];
   
   // code_unique
@@ -518,7 +538,13 @@ const create = async (req, res) => {
     if (req.body.componen_product_name) {
       componenProductData.componen_product_name = req.body.componen_product_name;
     } else {
-      componenProductData.componen_product_name = generateComponenProductName(componenProductData) || null;
+      // Include product_type and componen_product_description for name generation
+      const dataForGeneration = {
+        ...componenProductData,
+        product_type: normalizedProductType,
+        componen_product_description: req.body.componen_product_description || null
+      };
+      componenProductData.componen_product_name = generateComponenProductName(dataForGeneration) || null;
     }
 
     const specificationsPayload = parseSpecificationsInput(req.body.componen_product_specifications);
@@ -869,7 +895,9 @@ const update = async (req, res) => {
       if (req.body.componen_product_name === null || req.body.componen_product_name === '') {
         // If set to null/empty, generate from current data
         const dataForGeneration = {
+          product_type: normalizedProductType !== undefined ? normalizedProductType : existing.product_type,
           code_unique: req.body.code_unique !== undefined ? req.body.code_unique : existing.code_unique,
+          componen_product_description: req.body.componen_product_description !== undefined ? req.body.componen_product_description : existing.componen_product_description,
           msi_product: req.body.msi_product !== undefined ? req.body.msi_product : existing.msi_product,
           wheel_no: req.body.wheel_no !== undefined ? req.body.wheel_no : existing.wheel_no,
           engine: req.body.engine !== undefined ? req.body.engine : existing.engine,
@@ -883,13 +911,15 @@ const update = async (req, res) => {
       }
     } else {
       // If not provided, check if any relevant field is being updated
-      const relevantFields = ['code_unique', 'msi_product', 'wheel_no', 'engine', 'msi_model', 'volume', 'segment'];
+      const relevantFields = ['product_type', 'code_unique', 'componen_product_description', 'msi_product', 'wheel_no', 'engine', 'msi_model', 'volume', 'segment'];
       const isRelevantFieldUpdated = relevantFields.some(field => req.body[field] !== undefined);
       
       if (isRelevantFieldUpdated) {
         // Generate from updated data, using existing values for fields not updated
         const dataForGeneration = {
+          product_type: normalizedProductType !== undefined ? normalizedProductType : existing.product_type,
           code_unique: req.body.code_unique !== undefined ? req.body.code_unique : existing.code_unique,
+          componen_product_description: req.body.componen_product_description !== undefined ? req.body.componen_product_description : existing.componen_product_description,
           msi_product: req.body.msi_product !== undefined ? req.body.msi_product : existing.msi_product,
           wheel_no: req.body.wheel_no !== undefined ? req.body.wheel_no : existing.wheel_no,
           engine: req.body.engine !== undefined ? req.body.engine : existing.engine,
