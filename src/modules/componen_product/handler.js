@@ -59,20 +59,20 @@ const uploadImageToStorage = async (file, folderPath = 'componen_products') => {
     const bucketName = process.env.S3_BUCKET || process.env.MINIO_BUCKET;
     const timestamp = Date.now();
     const extension = path.extname(file.originalname);
-    const fileName = `componen-product-${timestamp}${extension}`;
-    
+    const fileName = `componen-product-${timestamp}-${uuidv4()}${extension}`;
+
     const { pathForDatabase } = generateFolder(folderPath);
     const objectName = `${pathForDatabase}${fileName}`;
-    
+
     const uploadResult = await uploadToMinio(objectName, file.buffer, file.mimetype, bucketName);
-    
+
     if (uploadResult.success) {
       return {
         image_id: uuidv4(),
         image_url: uploadResult.url
       };
     }
-    
+
     return null;
   } catch (error) {
     console.error('Error uploading image:', error);
@@ -88,7 +88,7 @@ const uploadMultipleImagesToStorage = async (files, folderPath = 'componen_produ
 
   const uploadPromises = files.map((file) => uploadImageToStorage(file, folderPath));
   const results = await Promise.all(uploadPromises);
-  
+
   // Filter out null results (failed uploads)
   return results.filter(url => url !== null);
 };
@@ -150,30 +150,30 @@ const handleMultipleImagesUpload = (req, res, next) => {
         error: err.message
       });
     }
-    
+
     // Process files to support both formats: 'images' and 'images[0]', 'images[1]', etc.
     if (req.files && Array.isArray(req.files)) {
       // Filter and organize image files
       const imageFiles = req.files.filter(file => {
         // Support both 'images' and 'images[0]', 'images[1]', etc.
         const isImageField = file.fieldname === 'images' || /^images\[\d+\]$/.test(file.fieldname);
-        
+
         // Filter out empty files (files with no buffer or zero size)
         if (!isImageField) {
           return false;
         }
-        
+
         // Check if file has valid content (buffer exists and has size > 0)
         const hasValidContent = file.buffer && file.buffer.length > 0;
-        
+
         if (!hasValidContent) {
           console.log(`Skipping empty file: ${file.fieldname}`);
           return false;
         }
-        
+
         return true;
       });
-      
+
       // Sort by fieldname if using indexed format (images[0], images[1], etc.)
       imageFiles.sort((a, b) => {
         const aMatch = a.fieldname.match(/\[(\d+)\]/);
@@ -186,7 +186,7 @@ const handleMultipleImagesUpload = (req, res, next) => {
         if (b.fieldname === 'images') return 1;
         return 0;
       });
-      
+
       // Organize into req.files.images for backward compatibility
       if (imageFiles.length > 0) {
         req.files.images = imageFiles;
@@ -195,7 +195,7 @@ const handleMultipleImagesUpload = (req, res, next) => {
         console.log(`No valid image files found in ${req.files.length} total files`);
       }
     }
-    
+
     next();
   });
 };
@@ -226,12 +226,12 @@ const mapSortBy = (sortBy) => {
 const generateComponenProductName = (data) => {
   // Check product_type
   const productType = data.product_type ? String(data.product_type).trim() : null;
-  
+
   // If product_type is 'non_unit', use format: code_unique + " - " + componen_product_description
   if (productType === 'non_unit') {
     const codeUnique = data.code_unique ? String(data.code_unique).trim() : null;
     const description = data.componen_product_description ? String(data.componen_product_description).trim() : null;
-    
+
     if (codeUnique && description) {
       return `${codeUnique} - ${description}`;
     } else if (codeUnique) {
@@ -241,13 +241,13 @@ const generateComponenProductName = (data) => {
     }
     return null;
   }
-  
+
   // For 'unit' or other product_type, use existing format
   const parts = [];
-  
+
   // code_unique
   const codeUnique = data.code_unique ? String(data.code_unique).trim() : null;
-  
+
   // Middle parts: msi_product wheel_no engine msi_model volume
   const middleParts = [];
   if (data.msi_product) middleParts.push(String(data.msi_product).trim());
@@ -255,31 +255,31 @@ const generateComponenProductName = (data) => {
   if (data.engine) middleParts.push(String(data.engine).trim());
   if (data.msi_model) middleParts.push(String(data.msi_model).trim());
   if (data.volume) middleParts.push(String(data.volume).trim());
-  
+
   // segment
   const segment = data.segment ? String(data.segment).trim() : null;
-  
+
   // Build the name according to format: code_unique - msi_product wheel_no engine msi_model volume - segment
   if (codeUnique) {
     parts.push(codeUnique);
   }
-  
+
   if (middleParts.length > 0) {
     if (parts.length > 0) {
       parts.push('-');
     }
     parts.push(middleParts.join(' '));
   }
-  
+
   if (segment) {
     if (parts.length > 0) {
       parts.push('-');
     }
     parts.push(segment);
   }
-  
+
   const result = parts.join(' ').trim();
-  
+
   // Return empty string if no valid parts, otherwise return the formatted name
   return result || null;
 };
@@ -352,9 +352,9 @@ const parseSpecificationsInput = (rawInput) => {
 const getAll = async (req, res) => {
   try {
     const { page = 1, limit = 10, search = '', sort_by = 'created_at', sort_order = 'desc', company_name, product_type } = req.body;
-    
+
     const offset = (page - 1) * limit;
-    
+
     // Normalize company_name
     let normalizedCompanyName = null;
     if (company_name !== undefined && company_name !== null && company_name !== '') {
@@ -372,7 +372,7 @@ const getAll = async (req, res) => {
         normalizedProductType = productTypeStr;
       }
     }
-    
+
     const params = {
       page,
       limit,
@@ -383,7 +383,7 @@ const getAll = async (req, res) => {
       companyName: normalizedCompanyName,
       productType: normalizedProductType
     };
-    
+
     const data = await repository.findAll(params);
     const response = mappingSuccess('Data componen product berhasil diambil', data);
     return baseResponse(res, response);
@@ -400,12 +400,12 @@ const getById = async (req, res) => {
   try {
     const { id } = req.params;
     const data = await repository.findById(id);
-    
+
     if (!data) {
       const response = mappingError('Data componen product tidak ditemukan', 404);
       return baseResponse(res, response);
     }
-    
+
     const response = mappingSuccess('Data componen product berhasil diambil', data);
     return baseResponse(res, response);
   } catch (error) {
@@ -421,22 +421,22 @@ const create = async (req, res) => {
   try {
     // Get user info from token
     const tokenData = decodeToken('created', req);
-    
+
     // Handle multiple images upload
     let imageUrls = null;
-    
+
     // Check for multiple images (new format)
     if (req.files && req.files.images && Array.isArray(req.files.images) && req.files.images.length > 0) {
       console.log(`Uploading ${req.files.images.length} images to MinIO...`);
       const uploadedUrls = await uploadMultipleImagesToStorage(req.files.images);
-      
+
       if (uploadedUrls.length > 0) {
         imageUrls = uploadedUrls;
         console.log(`${uploadedUrls.length} images uploaded successfully`);
       } else {
         console.warn('Failed to upload images to MinIO, but continuing with create');
       }
-      
+
       // Validate image_count if provided
       if (req.body.image_count !== undefined) {
         const expectedCount = parseInt(req.body.image_count, 10);
@@ -471,7 +471,7 @@ const create = async (req, res) => {
         imageUrls = [req.body.image];
       }
     }
-    
+
     // Normalize company_name
     let normalizedCompanyName = null;
     if (req.body.company_name && req.body.company_name !== '' && req.body.company_name !== null && req.body.company_name !== undefined) {
@@ -502,12 +502,12 @@ const create = async (req, res) => {
       // Fallback to uploaded images count
       imageCount = imageUrls.length;
     }
-    
+
     // imageUrls is now array of objects: [{ image_id, image_url }, ...]
     const imageData = imageUrls && imageUrls.length > 0 ? JSON.stringify(imageUrls) : null;
-    
+
     console.log(`Image processing summary: ${imageCount} files processed, ${imageUrls ? imageUrls.length : 0} images uploaded`);
-    
+
     const componenProductData = {
       componen_type: req.body.componen_type ? parseInt(req.body.componen_type) : null,
       company_name: normalizedCompanyName,
@@ -533,7 +533,7 @@ const create = async (req, res) => {
       componen_product_description: req.body.componen_product_description || null,
       created_by: tokenData.created_by
     };
-    
+
     // Generate componen_product_name if not provided
     if (req.body.componen_product_name) {
       componenProductData.componen_product_name = req.body.componen_product_name;
@@ -548,7 +548,7 @@ const create = async (req, res) => {
     }
 
     const specificationsPayload = parseSpecificationsInput(req.body.componen_product_specifications);
-    
+
     const data = await repository.create(componenProductData, specificationsPayload.items);
     const response = mappingSuccess('Data componen product berhasil dibuat', data, 201);
     return baseResponse(res, response);
@@ -565,31 +565,31 @@ const create = async (req, res) => {
 const update = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Get user info from token
     const tokenData = decodeToken('updated', req);
-    
+
     // Get existing data
     const existing = await repository.findById(id);
     if (!existing) {
       const response = mappingError('Data componen product tidak ditemukan', 404);
       return baseResponse(res, response);
     }
-    
+
     // Handle multiple images upload
     let imageUrls = undefined;
-    
+
     // Check if user explicitly sent image fields (even if empty)
     const hasImageFields = req.files && req.files.images && Array.isArray(req.files.images);
     const hasEmptyImageFields = hasImageFields && req.files.images.length === 0;
     const hasImageCountField = req.body.image_count !== undefined && req.body.image_count !== null && req.body.image_count !== '';
-    
+
     // Check for multiple images (new format)
     // Only process if there are valid (non-empty) files
     if (hasImageFields && req.files.images.length > 0) {
       console.log(`Uploading ${req.files.images.length} new images to MinIO...`);
       const uploadedUrls = await uploadMultipleImagesToStorage(req.files.images);
-      
+
       if (uploadedUrls.length > 0) {
         imageUrls = uploadedUrls;
         console.log(`${uploadedUrls.length} images uploaded successfully`);
@@ -597,7 +597,7 @@ const update = async (req, res) => {
         console.warn('Failed to upload images to MinIO, keeping existing images');
         imageUrls = undefined;
       }
-      
+
       // Validate image_count if provided
       if (hasImageCountField) {
         const expectedCount = parseInt(req.body.image_count, 10);
@@ -648,7 +648,7 @@ const update = async (req, res) => {
         imageUrls = [{ image_id: uuidv4(), image_url: req.body.image }];
       }
     }
-    
+
     // Normalize company_name if provided
     let normalizedCompanyName = undefined;
     if (req.body.company_name !== undefined) {
@@ -682,7 +682,7 @@ const update = async (req, res) => {
     // Handle images update: append new images and/or delete existing images
     let imageData = undefined;
     let imageCount = undefined;
-    
+
     // Parse existing images from database and normalize to new format
     let existingImages = [];
     if (existing.images) {
@@ -711,27 +711,27 @@ const update = async (req, res) => {
     } else {
       console.log('ℹ No existing images in database');
     }
-    
+
     // Handle images from body request (for delete operations)
     // Note: req.body.images might be a JSON string in multipart/form-data
     // Important: This is different from images[0], images[1], etc. which are file uploads
     // BUT: If images[0]='', images[1]='', etc. are sent, multer might convert images to an array
     let imagesFromBody = [];
-    
+
     // Check for images field (JSON string for delete operations)
     const imagesFieldValue = req.body.images;
     console.log('Checking images field for delete operations. Type:', typeof imagesFieldValue, 'IsArray:', Array.isArray(imagesFieldValue), 'Value:', imagesFieldValue);
-    
+
     if (imagesFieldValue !== undefined && imagesFieldValue !== null && imagesFieldValue !== '') {
       // Case 1: If it's an array (because of images[0]='', images[1]='', etc.)
       if (Array.isArray(imagesFieldValue)) {
         // Find the non-empty string that looks like JSON
-        const jsonString = imagesFieldValue.find(item => 
-          typeof item === 'string' && 
-          item.trim() !== '' && 
+        const jsonString = imagesFieldValue.find(item =>
+          typeof item === 'string' &&
+          item.trim() !== '' &&
           (item.trim().startsWith('[') || item.trim().startsWith('{'))
         );
-        
+
         if (jsonString) {
           try {
             const parsed = JSON.parse(jsonString);
@@ -767,28 +767,28 @@ const update = async (req, res) => {
     } else {
       console.log('ℹ No images field in body or images field is empty/null');
     }
-    
+
     // Process images: append new uploads and handle deletions
     // Check if there are images to delete from body request
     const idsToDelete = imagesFromBody.length > 0
       ? imagesFromBody
-          .map(img => {
-            if (typeof img === 'object' && img !== null) {
-              return img.image_id_to_delete;
-            }
-            return null;
-          })
-          .filter(id => id && id !== '' && id !== null)
+        .map(img => {
+          if (typeof img === 'object' && img !== null) {
+            return img.image_id_to_delete;
+          }
+          return null;
+        })
+        .filter(id => id && id !== '' && id !== null)
       : [];
-    
+
     console.log(`Images to delete: ${idsToDelete.length}`, idsToDelete);
     console.log(`Existing images count: ${existingImages.length}`);
     console.log(`New images to upload: ${imageUrls ? imageUrls.length : 0}`);
-    
+
     if (imageUrls !== undefined && imageUrls.length > 0) {
       // New images uploaded, append to existing
       let updatedImages = [...existingImages];
-      
+
       // Remove images that are marked for deletion
       if (idsToDelete.length > 0) {
         const beforeCount = updatedImages.length;
@@ -802,23 +802,23 @@ const update = async (req, res) => {
         });
         console.log(`Removed ${beforeCount - updatedImages.length} images marked for deletion, ${updatedImages.length} images remaining`);
       }
-      
+
       // Append new uploaded images
       updatedImages = [...updatedImages, ...imageUrls];
       console.log(`Appended ${imageUrls.length} new images. Total images now: ${updatedImages.length}`);
-      
+
       imageData = JSON.stringify(updatedImages);
       imageCount = updatedImages.length;
     } else if (idsToDelete.length > 0) {
       // No new uploads, but images to delete
       const beforeCount = existingImages.length;
       console.log(`🗑️  Starting delete operation. Before: ${beforeCount} images`);
-      
+
       let updatedImages = existingImages.filter(img => {
         const imgId = typeof img === 'object' && img !== null ? img.image_id : null;
         const imgIdStr = imgId ? String(imgId).trim() : null;
         const shouldKeep = !idsToDelete.some(id => String(id).trim() === imgIdStr);
-        
+
         if (!shouldKeep) {
           console.log(`   ✗ Removing image with image_id: ${imgIdStr}`);
         } else {
@@ -826,12 +826,12 @@ const update = async (req, res) => {
         }
         return shouldKeep;
       });
-      
+
       const removedCount = beforeCount - updatedImages.length;
       imageData = JSON.stringify(updatedImages);
       imageCount = updatedImages.length;
       console.log(`✅ Delete operation complete. Removed: ${removedCount}, Remaining: ${updatedImages.length}`);
-      
+
       if (removedCount === 0) {
         console.warn(`⚠️  WARNING: No images were removed! Check if image_id matches.`);
         console.warn(`   IDs to delete:`, idsToDelete);
@@ -850,7 +850,7 @@ const update = async (req, res) => {
         imageData = undefined;
       }
     }
-    
+
     // If all image fields were empty/null AND no delete operations, don't update images at all (keep existing)
     // But if imageData is already set (from delete operations), don't override it
     if (imageData === undefined && hasEmptyImageFields && !hasImageCountField && imageUrls === undefined && imagesFromBody.length === 0) {
@@ -858,14 +858,14 @@ const update = async (req, res) => {
       imageData = undefined;
       imageCount = undefined;
     }
-    
+
     // Log final state
     if (imageData !== undefined) {
       console.log(`Final imageData will be updated. image_count: ${imageCount}`);
     } else {
       console.log('imageData will NOT be updated (keeping existing)');
     }
-    
+
     const componenProductData = {
       componen_type: req.body.componen_type !== undefined ? (req.body.componen_type ? parseInt(req.body.componen_type) : null) : undefined,
       company_name: normalizedCompanyName,
@@ -888,7 +888,7 @@ const update = async (req, res) => {
       componen_product_description: req.body.componen_product_description,
       updated_by: tokenData.updated_by
     };
-    
+
     // Generate componen_product_name if not provided or if relevant fields are updated
     if (req.body.componen_product_name !== undefined) {
       // If explicitly provided, use it
@@ -913,7 +913,7 @@ const update = async (req, res) => {
       // If not provided, check if any relevant field is being updated
       const relevantFields = ['product_type', 'code_unique', 'componen_product_description', 'msi_product', 'wheel_no', 'engine', 'msi_model', 'volume', 'segment'];
       const isRelevantFieldUpdated = relevantFields.some(field => req.body[field] !== undefined);
-      
+
       if (isRelevantFieldUpdated) {
         // Generate from updated data, using existing values for fields not updated
         const dataForGeneration = {
@@ -931,7 +931,7 @@ const update = async (req, res) => {
       }
       // If no relevant fields updated, don't update componen_product_name
     }
-    
+
     // Hanya masukkan image/images/image_count jika ada file baru yang berhasil diupload ATAU ada delete operation
     if (imageData !== undefined) {
       componenProductData.image = imageData; // Keep for backward compatibility
@@ -944,17 +944,17 @@ const update = async (req, res) => {
     }
 
     const specificationsPayload = parseSpecificationsInput(req.body.componen_product_specifications);
-    
+
     const data = await repository.update(id, componenProductData, {
       specifications: specificationsPayload.items,
       specificationsProvided: specificationsPayload.provided
     });
-    
+
     if (!data) {
       const response = mappingError('Data componen product tidak ditemukan', 404);
       return baseResponse(res, response);
     }
-    
+
     const response = mappingSuccess('Data componen product berhasil diupdate', data);
     return baseResponse(res, response);
   } catch (error) {
@@ -970,19 +970,19 @@ const update = async (req, res) => {
 const remove = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Get user info from token
     const tokenData = decodeToken('deleted', req);
-    
+
     const result = await repository.remove(id, {
       deleted_by: tokenData.deleted_by
     });
-    
+
     if (!result) {
       const response = mappingError('Data componen product tidak ditemukan', 404);
       return baseResponse(res, response);
     }
-    
+
     const response = mappingSuccess('Data componen product berhasil dihapus', result);
     return baseResponse(res, response);
   } catch (error) {
@@ -996,9 +996,9 @@ const remove = async (req, res) => {
  */
 const mapTruckTypeToComponenType = (truckType) => {
   if (!truckType) return null;
-  
+
   const normalizedType = String(truckType).trim().toUpperCase();
-  
+
   if (normalizedType === 'OFF ROAD REGULAR') {
     return 1;
   } else if (normalizedType === 'ON ROAD REGULAR') {
@@ -1006,7 +1006,7 @@ const mapTruckTypeToComponenType = (truckType) => {
   } else if (normalizedType === 'OFF ROAD IRREGULAR') {
     return 3;
   }
-  
+
   return null;
 };
 
@@ -1015,16 +1015,16 @@ const mapTruckTypeToComponenType = (truckType) => {
  */
 const cleanMarketPrice = (marketPrice) => {
   if (!marketPrice) return null;
-  
+
   // Convert to string and remove all commas and dots
   const cleaned = String(marketPrice).replace(/,/g, '').replace(/\./g, '').trim();
-  
+
   // If empty after cleaning, return null
   if (cleaned === '') return null;
-  
+
   // Convert to number
   const numericValue = parseFloat(cleaned);
-  
+
   // Return null if not a valid number, otherwise return the numeric value as string
   return isNaN(numericValue) ? null : String(numericValue);
 };
@@ -1036,7 +1036,7 @@ const parseCSV = (buffer) => {
   return new Promise((resolve, reject) => {
     const results = [];
     const stream = Readable.from(buffer.toString());
-    
+
     stream
       .pipe(csv())
       .on('data', (data) => results.push(data))
@@ -1057,10 +1057,10 @@ const importCSV = async (req, res) => {
 
     // Get user info from token
     const tokenData = decodeToken('created', req);
-    
+
     // Parse CSV file
     const csvData = await parseCSV(req.file.buffer);
-    
+
     if (!csvData || csvData.length === 0) {
       const response = mappingError('File CSV kosong atau tidak valid', 400);
       return baseResponse(res, response);
@@ -1094,7 +1094,7 @@ const importCSV = async (req, res) => {
     // Validate CSV columns (check first row)
     const firstRow = csvData[0];
     const missingColumns = expectedColumns.filter(col => !(col in firstRow));
-    
+
     if (missingColumns.length > 0) {
       const response = mappingError(
         `Kolom CSV tidak lengkap. Kolom yang hilang: ${missingColumns.join(', ')}`,
@@ -1113,14 +1113,14 @@ const importCSV = async (req, res) => {
     for (let i = 0; i < csvData.length; i++) {
       const row = csvData[i];
       const rowNumber = i + 2; // +2 because CSV has header and 0-indexed
-      
+
       try {
         // Map segment_type to componen_type
         const componenType = mapTruckTypeToComponenType(row.segment_type);
-        
+
         // Clean market_price (remove commas and dots)
         const cleanedMarketPrice = cleanMarketPrice(row.market_price);
-        
+
         // Prepare componen product data
         const componenProductData = {
           code_unique: row.msi_code || null,
@@ -1141,13 +1141,13 @@ const importCSV = async (req, res) => {
           selling_price_star_5: '0',
           created_by: tokenData.created_by
         };
-        
+
         // Generate componen_product_name based on format
         componenProductData.componen_product_name = generateComponenProductName(componenProductData) || null;
 
         // Prepare specifications data
         const specifications = [];
-        
+
         // Helper function to add specification if value exists
         const addSpecification = (label, value) => {
           if (value && String(value).trim() !== '') {
@@ -1175,7 +1175,7 @@ const importCSV = async (req, res) => {
 
         // Create componen product with specifications
         const createdProduct = await repository.create(componenProductData, specifications);
-        
+
         results.success.push({
           row: rowNumber,
           code_unique: row.msi_code,
@@ -1203,7 +1203,7 @@ const importCSV = async (req, res) => {
       },
       201
     );
-    
+
     return baseResponse(res, response);
   } catch (error) {
     console.error('Error importing CSV:', error);
@@ -1217,19 +1217,19 @@ const importCSV = async (req, res) => {
  */
 const handleCSVUpload = (req, res, next) => {
   const storage = multer.memoryStorage();
-  
+
   const csvFilter = (req, file, cb) => {
     const allowedTypes = ['text/csv', 'application/vnd.ms-excel'];
     const allowedExtensions = ['.csv'];
     const fileExtension = path.extname(file.originalname).toLowerCase();
-    
+
     if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(fileExtension)) {
       cb(null, true);
     } else {
       cb(new Error('Hanya file CSV yang diizinkan'), false);
     }
   };
-  
+
   const upload = multer({
     storage: storage,
     fileFilter: csvFilter,
@@ -1237,7 +1237,7 @@ const handleCSVUpload = (req, res, next) => {
       fileSize: 10 * 1024 * 1024 // 10MB limit
     }
   });
-  
+
   upload.single('file')(req, res, (err) => {
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
