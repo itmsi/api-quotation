@@ -40,7 +40,7 @@ const ensureDblinkConnection = async (maxRetries = 3) => {
  * Find all manage quotations with pagination, search, and sort
  */
 const findAll = async (params) => {
-  const { page, limit, offset, search, sortBy, sortOrder, status, islandId, quotationFor, startDate, endDate } = params;
+  const { page, limit, offset, search, sortBy, sortOrder, status, islandId, quotationFor, startDate, endDate, customerId } = params;
 
   // Try to ensure dblink connection, but don't fail if it doesn't work
   const dblinkConnected = await ensureDblinkConnection();
@@ -152,6 +152,11 @@ const findAll = async (params) => {
     query = query.where('mq.island_id', islandId.trim());
   }
 
+  // Add customer_id filter condition
+  if (customerId && customerId.trim() !== '') {
+    query = query.where('mq.customer_id', customerId.trim());
+  }
+
   // Add quotation_for filter condition
   if (quotationFor && quotationFor.trim() !== '') {
     query = query.where('mq.quotation_for', quotationFor.trim());
@@ -164,7 +169,7 @@ const findAll = async (params) => {
     startDateTime.setHours(0, 0, 0, 0);
     query = query.where('mq.created_at', '>=', startDateTime.toISOString());
   }
-  
+
   if (endDate) {
     // End date: filter created_at <= endDate (end of day)
     const endDateTime = new Date(endDate);
@@ -281,6 +286,10 @@ const findAll = async (params) => {
             query = query.where('mq.island_id', islandId.trim());
           }
 
+          if (customerId && customerId.trim() !== '') {
+            query = query.where('mq.customer_id', customerId.trim());
+          }
+
           if (quotationFor && quotationFor.trim() !== '') {
             query = query.where('mq.quotation_for', quotationFor.trim());
           }
@@ -291,7 +300,7 @@ const findAll = async (params) => {
             startDateTime.setHours(0, 0, 0, 0);
             query = query.where('mq.created_at', '>=', startDateTime.toISOString());
           }
-          
+
           if (endDate) {
             const endDateTime = new Date(endDate);
             endDateTime.setHours(23, 59, 59, 999);
@@ -320,6 +329,10 @@ const findAll = async (params) => {
             query = query.where('mq.island_id', islandId.trim());
           }
 
+          if (customerId && customerId.trim() !== '') {
+            query = query.where('mq.customer_id', customerId.trim());
+          }
+
           if (quotationFor && quotationFor.trim() !== '') {
             query = query.where('mq.quotation_for', quotationFor.trim());
           }
@@ -330,7 +343,7 @@ const findAll = async (params) => {
             startDateTime.setHours(0, 0, 0, 0);
             query = query.where('mq.created_at', '>=', startDateTime.toISOString());
           }
-          
+
           if (endDate) {
             const endDateTime = new Date(endDate);
             endDateTime.setHours(23, 59, 59, 999);
@@ -370,6 +383,10 @@ const findAll = async (params) => {
           query = query.where('mq.island_id', islandId.trim());
         }
 
+        if (customerId && customerId.trim() !== '') {
+          query = query.where('mq.customer_id', customerId.trim());
+        }
+
         if (quotationFor && quotationFor.trim() !== '') {
           query = query.where('mq.quotation_for', quotationFor.trim());
         }
@@ -380,7 +397,7 @@ const findAll = async (params) => {
           startDateTime.setHours(0, 0, 0, 0);
           query = query.where('mq.created_at', '>=', startDateTime.toISOString());
         }
-        
+
         if (endDate) {
           const endDateTime = new Date(endDate);
           endDateTime.setHours(23, 59, 59, 999);
@@ -439,6 +456,11 @@ const findAll = async (params) => {
     countQuery = countQuery.where('mq.island_id', islandId.trim());
   }
 
+  // Add customer_id filter condition to count query
+  if (customerId && customerId.trim() !== '') {
+    countQuery = countQuery.where('mq.customer_id', customerId.trim());
+  }
+
   // Add quotation_for filter condition to count query
   if (quotationFor && quotationFor.trim() !== '') {
     countQuery = countQuery.where('mq.quotation_for', quotationFor.trim());
@@ -450,7 +472,7 @@ const findAll = async (params) => {
     startDateTime.setHours(0, 0, 0, 0);
     countQuery = countQuery.where('mq.created_at', '>=', startDateTime.toISOString());
   }
-  
+
   if (endDate) {
     const endDateTime = new Date(endDate);
     endDateTime.setHours(23, 59, 59, 999);
@@ -481,6 +503,11 @@ const findAll = async (params) => {
         countQuery = countQuery.where('mq.island_id', islandId.trim());
       }
 
+      // Add customer_id filter condition to count query
+      if (customerId && customerId.trim() !== '') {
+        countQuery = countQuery.where('mq.customer_id', customerId.trim());
+      }
+
       if (quotationFor && quotationFor.trim() !== '') {
         countQuery = countQuery.where('mq.quotation_for', quotationFor.trim());
       }
@@ -491,7 +518,7 @@ const findAll = async (params) => {
         startDateTime.setHours(0, 0, 0, 0);
         countQuery = countQuery.where('mq.created_at', '>=', startDateTime.toISOString());
       }
-      
+
       if (endDate) {
         const endDateTime = new Date(endDate);
         endDateTime.setHours(23, 59, 59, 999);

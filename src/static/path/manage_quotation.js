@@ -32,7 +32,8 @@ const manageQuotationPaths = {
                   island_id: '',
                   quotation_for: '',
                   start_date: '',
-                  end_date: ''
+                  end_date: '',
+                  customer_id: ''
                 }
               },
               getDraftOnly: {
@@ -48,7 +49,8 @@ const manageQuotationPaths = {
                   island_id: '',
                   quotation_for: '',
                   start_date: '',
-                  end_date: ''
+                  end_date: '',
+                  customer_id: ''
                 }
               },
               getSubmitOnly: {
@@ -64,7 +66,8 @@ const manageQuotationPaths = {
                   island_id: '',
                   quotation_for: '',
                   start_date: '',
-                  end_date: ''
+                  end_date: '',
+                  customer_id: ''
                 }
               },
               getRejectOnly: {
@@ -80,7 +83,8 @@ const manageQuotationPaths = {
                   island_id: '',
                   quotation_for: '',
                   start_date: '',
-                  end_date: ''
+                  end_date: '',
+                  customer_id: ''
                 }
               },
               getByIslandId: {
@@ -96,7 +100,8 @@ const manageQuotationPaths = {
                   island_id: '123e4567-e89b-12d3-a456-426614174003',
                   quotation_for: '',
                   start_date: '',
-                  end_date: ''
+                  end_date: '',
+                  customer_id: ''
                 }
               },
               getAllWithEmptyIslandId: {
@@ -112,7 +117,8 @@ const manageQuotationPaths = {
                   island_id: '',
                   quotation_for: '',
                   start_date: '',
-                  end_date: ''
+                  end_date: '',
+                  customer_id: ''
                 }
               },
               getByQuotationFor: {
@@ -128,7 +134,8 @@ const manageQuotationPaths = {
                   island_id: '',
                   quotation_for: 'Customer Name',
                   start_date: '',
-                  end_date: ''
+                  end_date: '',
+                  customer_id: ''
                 }
               },
               getByDateRange: {
@@ -144,7 +151,8 @@ const manageQuotationPaths = {
                   island_id: '',
                   quotation_for: '',
                   start_date: '2025-01-01',
-                  end_date: '2025-01-31'
+                  end_date: '2025-01-31',
+                  customer_id: ''
                 }
               },
               getByDateRange: {
@@ -160,7 +168,8 @@ const manageQuotationPaths = {
                   island_id: '',
                   quotation_for: '',
                   start_date: '2025-01-01',
-                  end_date: '2025-01-31'
+                  end_date: '2025-01-31',
+                  customer_id: ''
                 }
               }
             }
