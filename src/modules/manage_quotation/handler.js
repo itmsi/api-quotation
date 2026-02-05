@@ -332,7 +332,7 @@ const mapProductType = (componenType) => {
  */
 const getAll = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = '', sort_by = 'created_at', sort_order = 'desc', status = '', island_id = '', quotation_for = '', start_date = '', end_date = '' } = req.body;
+    const { page = 1, limit = 10, search = '', sort_by = 'created_at', sort_order = 'desc', status = '', island_id = '', quotation_for = '', start_date = '', end_date = '', customer_id = '' } = req.body;
 
     const offset = (page - 1) * limit;
 
@@ -342,6 +342,15 @@ const getAll = async (req, res) => {
       const islandIdStr = String(island_id).trim();
       if (islandIdStr !== '' && islandIdStr !== 'NaN' && islandIdStr !== 'null') {
         normalizedIslandId = islandIdStr;
+      }
+    }
+
+    // Validate and normalize customer_id
+    let normalizedCustomerId = null;
+    if (customer_id && customer_id !== '' && customer_id !== null && customer_id !== undefined) {
+      const customerIdStr = String(customer_id).trim();
+      if (customerIdStr !== '' && customerIdStr !== 'NaN' && customerIdStr !== 'null') {
+        normalizedCustomerId = customerIdStr;
       }
     }
 
@@ -395,6 +404,7 @@ const getAll = async (req, res) => {
       sortOrder: sort_order,
       status: status && status.trim() !== '' ? status.trim() : null,
       islandId: normalizedIslandId,
+      customerId: normalizedCustomerId,
       quotationFor: normalizedQuotationFor,
       startDate: normalizedStartDate,
       endDate: normalizedEndDate

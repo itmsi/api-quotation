@@ -21,12 +21,12 @@ const listValidation = [
     .withMessage('Page harus berupa angka positif'),
   body('limit')
     .optional()
-    .isInt({ min: 1, max: 100 })
-    .withMessage('Limit harus antara 1-100'),
+    .isInt({ min: 1, max: 9999 })
+    .withMessage('Limit harus antara 1-9999'),
   body('search')
     .optional()
-    .isLength({ max: 100 })
-    .withMessage('Search maksimal 100 karakter')
+    .isLength({ max: 255 })
+    .withMessage('Search maksimal 255 karakter')
     .trim(),
   body('sort_by')
     .optional()

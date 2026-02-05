@@ -67,8 +67,8 @@ const listValidation = [
     .withMessage('Page harus berupa angka positif'),
   query('limit')
     .optional()
-    .isInt({ min: 1, max: 100 })
-    .withMessage('Limit harus antara 1-100'),
+    .isInt({ min: 1, max: 9999 })
+    .withMessage('Limit harus antara 1-9999'),
 ];
 
 module.exports = {
