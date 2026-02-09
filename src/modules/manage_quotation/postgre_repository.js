@@ -615,11 +615,16 @@ const monthToRoman = (month) => {
  * Sequence increments per year, resets to 001 when year changes
  * Month is displayed but does not affect sequence reset
  */
-const generateQuotationNumber = async (trx = db) => {
+const generateQuotationNumber = async (company, trx = db) => {
   const currentYear = moment().format('YYYY');
   const currentMonth = moment().month() + 1; // moment().month() returns 0-11, we need 1-12
   const monthRoman = monthToRoman(currentMonth);
-  const prefix = 'IEC-MSI';
+  let prefix = 'IEC-MSI';
+
+  // If company is ITI, use ITI-MSI prefix
+  if (company && typeof company === 'string' && company.toUpperCase().trim() === 'ITI') {
+    prefix = 'ITI-MSI';
+  }
 
   // Find the last quotation number for current year
   // Extract sequence number (first 3 digits before '/') and sort numerically
@@ -662,7 +667,7 @@ const create = async (data, trx = db) => {
   // Generate quotation number if status is submit and no number provided
   let quotationNumber = data.manage_quotation_no || null;
   if (data.status === 'submit' && !quotationNumber) {
-    quotationNumber = await generateQuotationNumber(trx);
+    quotationNumber = await generateQuotationNumber(data.company, trx);
   }
 
   // Fetch external data for properties
@@ -776,7 +781,8 @@ const update = async (id, data, trx = db) => {
     const existingQuotation = await findById(id);
     if (existingQuotation && !existingQuotation.manage_quotation_no) {
       // Generate quotation number if status is submit and no number exists
-      data.manage_quotation_no = await generateQuotationNumber(trx);
+      const company = data.company !== undefined ? data.company : existingQuotation.company;
+      data.manage_quotation_no = await generateQuotationNumber(company, trx);
     }
   }
 
