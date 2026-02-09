@@ -1453,6 +1453,7 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
     project_id: sourceQuotation.project_id,
     quotation_for: sourceQuotation.quotation_for,
     star: sourceQuotation.star,
+    bank_account_id: sourceQuotation.bank_account_id,
     created_by: created_by
   };
 
