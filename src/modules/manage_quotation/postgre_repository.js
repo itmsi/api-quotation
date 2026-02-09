@@ -1449,6 +1449,10 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
     status: 'submit',
     include_aftersales_page: sourceQuotation.include_aftersales_page ?? false,
     include_msf_page: sourceQuotation.include_msf_page ?? false,
+    company: sourceQuotation.company,
+    project_id: sourceQuotation.project_id,
+    quotation_for: sourceQuotation.quotation_for,
+    star: sourceQuotation.star,
     created_by: created_by
   };
 
