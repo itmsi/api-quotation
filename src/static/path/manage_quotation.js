@@ -33,7 +33,8 @@ const manageQuotationPaths = {
                   quotation_for: '',
                   start_date: '',
                   end_date: '',
-                  customer_id: ''
+                  customer_id: '',
+                  company_name: ''
                 }
               },
               getDraftOnly: {

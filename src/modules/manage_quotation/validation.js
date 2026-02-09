@@ -901,6 +901,28 @@ const listValidation = [
     .optional()
     .isIn(['asc', 'desc'])
     .withMessage('Sort order harus asc atau desc'),
+  body('company_name')
+    .optional()
+    .custom((value) => {
+      // Allow empty string, null, undefined, NaN, or any string
+      if (value === null || value === undefined || value === '') {
+        return true;
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
+          return true;
+        }
+        // Allow any non-empty string
+        return true;
+      }
+      // Allow NaN
+      if (typeof value === 'number' && isNaN(value)) {
+        return true;
+      }
+      return false;
+    })
+    .withMessage('company_name harus berupa string, string kosong, null, atau NaN'),
   body('status')
     .optional()
     .custom((value) => {
