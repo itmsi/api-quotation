@@ -1409,7 +1409,7 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
   const sourceItems = await getItemsByQuotationId(sourceQuotationId);
 
   // Generate new quotation number
-  const newQuotationNo = await generateQuotationNumber(trx);
+  const newQuotationNo = await generateQuotationNumber(sourceQuotation.company, trx);
 
   // Build description: copy from manage_quotation_no mana
   const descriptionPrefix = sourceQuotation.manage_quotation_no
