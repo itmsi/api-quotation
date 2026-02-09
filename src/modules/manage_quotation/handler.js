@@ -332,7 +332,7 @@ const mapProductType = (componenType) => {
  */
 const getAll = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = '', sort_by = 'created_at', sort_order = 'desc', status = '', island_id = '', quotation_for = '', start_date = '', end_date = '', customer_id = '' } = req.body;
+    const { page = 1, limit = 10, search = '', sort_by = 'created_at', sort_order = 'desc', status = '', island_id = '', quotation_for = '', start_date = '', end_date = '', customer_id = '', company_name = '' } = req.body;
 
     const offset = (page - 1) * limit;
 
@@ -395,6 +395,15 @@ const getAll = async (req, res) => {
       }
     }
 
+    // Validate and normalize company_name
+    let normalizedCompanyName = null;
+    if (company_name !== undefined && company_name !== null && company_name !== '') {
+      const companyNameStr = String(company_name).trim();
+      if (companyNameStr !== '' && companyNameStr !== 'NaN' && companyNameStr !== 'null') {
+        normalizedCompanyName = companyNameStr;
+      }
+    }
+
     const params = {
       page,
       limit,
@@ -407,7 +416,8 @@ const getAll = async (req, res) => {
       customerId: normalizedCustomerId,
       quotationFor: normalizedQuotationFor,
       startDate: normalizedStartDate,
-      endDate: normalizedEndDate
+      endDate: normalizedEndDate,
+      companyName: normalizedCompanyName
     };
 
     let data;

@@ -40,7 +40,7 @@ const ensureDblinkConnection = async (maxRetries = 3) => {
  * Find all manage quotations with pagination, search, and sort
  */
 const findAll = async (params) => {
-  const { page, limit, offset, search, sortBy, sortOrder, status, islandId, quotationFor, startDate, endDate, customerId } = params;
+  const { page, limit, offset, search, sortBy, sortOrder, status, islandId, quotationFor, startDate, endDate, customerId, companyName } = params;
 
   // Try to ensure dblink connection, but don't fail if it doesn't work
   const dblinkConnected = await ensureDblinkConnection();
@@ -160,6 +160,11 @@ const findAll = async (params) => {
   // Add quotation_for filter condition
   if (quotationFor && quotationFor.trim() !== '') {
     query = query.where('mq.quotation_for', quotationFor.trim());
+  }
+
+  // Add company filter condition
+  if (companyName && companyName.trim() !== '') {
+    query = query.where('mq.company', companyName.trim());
   }
 
   // Add date range filter condition (based on created_at)
@@ -294,6 +299,10 @@ const findAll = async (params) => {
             query = query.where('mq.quotation_for', quotationFor.trim());
           }
 
+          if (companyName && companyName.trim() !== '') {
+            query = query.where('mq.company', companyName.trim());
+          }
+
           // Add date range filter condition (based on created_at)
           if (startDate) {
             const startDateTime = new Date(startDate);
@@ -335,6 +344,10 @@ const findAll = async (params) => {
 
           if (quotationFor && quotationFor.trim() !== '') {
             query = query.where('mq.quotation_for', quotationFor.trim());
+          }
+
+          if (companyName && companyName.trim() !== '') {
+            query = query.where('mq.company', companyName.trim());
           }
 
           // Add date range filter condition (based on created_at)
@@ -389,6 +402,10 @@ const findAll = async (params) => {
 
         if (quotationFor && quotationFor.trim() !== '') {
           query = query.where('mq.quotation_for', quotationFor.trim());
+        }
+
+        if (companyName && companyName.trim() !== '') {
+          query = query.where('mq.company', companyName.trim());
         }
 
         // Add date range filter condition (based on created_at)
@@ -466,6 +483,11 @@ const findAll = async (params) => {
     countQuery = countQuery.where('mq.quotation_for', quotationFor.trim());
   }
 
+  // Add company filter condition to count query
+  if (companyName && companyName.trim() !== '') {
+    countQuery = countQuery.where('mq.company', companyName.trim());
+  }
+
   // Add date range filter condition to count query (based on created_at)
   if (startDate) {
     const startDateTime = new Date(startDate);
@@ -510,6 +532,10 @@ const findAll = async (params) => {
 
       if (quotationFor && quotationFor.trim() !== '') {
         countQuery = countQuery.where('mq.quotation_for', quotationFor.trim());
+      }
+
+      if (companyName && companyName.trim() !== '') {
+        countQuery = countQuery.where('mq.company', companyName.trim());
       }
 
       // Add date range filter condition to count query (based on created_at)

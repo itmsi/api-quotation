@@ -1240,6 +1240,12 @@ const manageQuotationSchemas = {
         nullable: true,
         description: 'Filter by customer_id. Can be NaN, null, undefined, empty string, or any string (not necessarily valid UUID). Leave empty, null, or NaN to get all quotations',
         example: ''
+      },
+      company_name: {
+        type: 'string',
+        nullable: true,
+        description: 'Filter by company_name. Can be NaN, null, undefined, empty string, or any string. Leave empty, null, or NaN to get all quotations',
+        example: ''
       }
     }
   },
