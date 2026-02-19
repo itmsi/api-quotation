@@ -40,7 +40,7 @@ const ensureDblinkConnection = async (maxRetries = 3) => {
  * Find all manage quotations with pagination, search, and sort
  */
 const findAll = async (params) => {
-  const { page, limit, offset, search, sortBy, sortOrder, status, islandId, quotationFor, startDate, endDate, customerId } = params;
+  const { page, limit, offset, search, sortBy, sortOrder, status, islandId, quotationFor, startDate, endDate, customerId, companyName } = params;
 
   // Try to ensure dblink connection, but don't fail if it doesn't work
   const dblinkConnected = await ensureDblinkConnection();
@@ -160,6 +160,11 @@ const findAll = async (params) => {
   // Add quotation_for filter condition
   if (quotationFor && quotationFor.trim() !== '') {
     query = query.where('mq.quotation_for', quotationFor.trim());
+  }
+
+  // Add company filter condition
+  if (companyName && companyName.trim() !== '') {
+    query = query.where('mq.company', companyName.trim());
   }
 
   // Add date range filter condition (based on created_at)
@@ -294,6 +299,10 @@ const findAll = async (params) => {
             query = query.where('mq.quotation_for', quotationFor.trim());
           }
 
+          if (companyName && companyName.trim() !== '') {
+            query = query.where('mq.company', companyName.trim());
+          }
+
           // Add date range filter condition (based on created_at)
           if (startDate) {
             const startDateTime = new Date(startDate);
@@ -335,6 +344,10 @@ const findAll = async (params) => {
 
           if (quotationFor && quotationFor.trim() !== '') {
             query = query.where('mq.quotation_for', quotationFor.trim());
+          }
+
+          if (companyName && companyName.trim() !== '') {
+            query = query.where('mq.company', companyName.trim());
           }
 
           // Add date range filter condition (based on created_at)
@@ -389,6 +402,10 @@ const findAll = async (params) => {
 
         if (quotationFor && quotationFor.trim() !== '') {
           query = query.where('mq.quotation_for', quotationFor.trim());
+        }
+
+        if (companyName && companyName.trim() !== '') {
+          query = query.where('mq.company', companyName.trim());
         }
 
         // Add date range filter condition (based on created_at)
@@ -466,6 +483,11 @@ const findAll = async (params) => {
     countQuery = countQuery.where('mq.quotation_for', quotationFor.trim());
   }
 
+  // Add company filter condition to count query
+  if (companyName && companyName.trim() !== '') {
+    countQuery = countQuery.where('mq.company', companyName.trim());
+  }
+
   // Add date range filter condition to count query (based on created_at)
   if (startDate) {
     const startDateTime = new Date(startDate);
@@ -510,6 +532,10 @@ const findAll = async (params) => {
 
       if (quotationFor && quotationFor.trim() !== '') {
         countQuery = countQuery.where('mq.quotation_for', quotationFor.trim());
+      }
+
+      if (companyName && companyName.trim() !== '') {
+        countQuery = countQuery.where('mq.company', companyName.trim());
       }
 
       // Add date range filter condition to count query (based on created_at)
@@ -589,11 +615,16 @@ const monthToRoman = (month) => {
  * Sequence increments per year, resets to 001 when year changes
  * Month is displayed but does not affect sequence reset
  */
-const generateQuotationNumber = async (trx = db) => {
+const generateQuotationNumber = async (company, trx = db) => {
   const currentYear = moment().format('YYYY');
   const currentMonth = moment().month() + 1; // moment().month() returns 0-11, we need 1-12
   const monthRoman = monthToRoman(currentMonth);
-  const prefix = 'IEC-MSI';
+  let prefix = 'IEC-MSI';
+
+  // If company is ITI, use ITI-MSI prefix
+  if (company && typeof company === 'string' && company.toUpperCase().trim() === 'ITI') {
+    prefix = 'ITI-MSI';
+  }
 
   // Find the last quotation number for current year
   // Extract sequence number (first 3 digits before '/') and sort numerically
@@ -636,7 +667,7 @@ const create = async (data, trx = db) => {
   // Generate quotation number if status is submit and no number provided
   let quotationNumber = data.manage_quotation_no || null;
   if (data.status === 'submit' && !quotationNumber) {
-    quotationNumber = await generateQuotationNumber(trx);
+    quotationNumber = await generateQuotationNumber(data.company, trx);
   }
 
   // Fetch external data for properties
@@ -750,7 +781,8 @@ const update = async (id, data, trx = db) => {
     const existingQuotation = await findById(id);
     if (existingQuotation && !existingQuotation.manage_quotation_no) {
       // Generate quotation number if status is submit and no number exists
-      data.manage_quotation_no = await generateQuotationNumber(trx);
+      const company = data.company !== undefined ? data.company : existingQuotation.company;
+      data.manage_quotation_no = await generateQuotationNumber(company, trx);
     }
   }
 
@@ -1377,7 +1409,7 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
   const sourceItems = await getItemsByQuotationId(sourceQuotationId);
 
   // Generate new quotation number
-  const newQuotationNo = await generateQuotationNumber(trx);
+  const newQuotationNo = await generateQuotationNumber(sourceQuotation.company, trx);
 
   // Build description: copy from manage_quotation_no mana
   const descriptionPrefix = sourceQuotation.manage_quotation_no
@@ -1414,9 +1446,14 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
     term_content_id: sourceQuotation.term_content_id,
     term_content_directory: sourceQuotation.term_content_directory,
     term_content_payload: sourceQuotation.term_content_payload,
-    status: 'draft',
+    status: 'submit',
     include_aftersales_page: sourceQuotation.include_aftersales_page ?? false,
     include_msf_page: sourceQuotation.include_msf_page ?? false,
+    company: sourceQuotation.company,
+    project_id: sourceQuotation.project_id,
+    quotation_for: sourceQuotation.quotation_for,
+    star: sourceQuotation.star,
+    bank_account_id: sourceQuotation.bank_account_id,
     created_by: created_by
   };
 

@@ -22,6 +22,7 @@ const termContentPaths = {
               page: 1,
               limit: 10,
               search: '',
+              company_name: '',
               sort_by: 'created_at',
               sort_order: 'desc'
             }
@@ -90,6 +91,7 @@ const termContentPaths = {
             example: {
               term_content_title: 'Template 1',
               term_content_directory: '<p>halo ini test</p>',
+              company_name: 'MSI'
             }
           }
         }
@@ -226,7 +228,8 @@ const termContentPaths = {
                 items: [
                   'Pembayaran dilakukan 7 hari setelah invoice'
                 ]
-              }
+              },
+              company_name: 'MSI'
             }
           }
         }

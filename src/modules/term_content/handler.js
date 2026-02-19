@@ -46,6 +46,7 @@ const getAll = async (req, res) => {
       page = 1,
       limit = 10,
       search = '',
+      company_name = '',
       sort_by = 'created_at',
       sort_order = 'desc'
     } = req.body;
@@ -57,6 +58,7 @@ const getAll = async (req, res) => {
       limit,
       offset,
       search,
+      company_name,
       sortBy: mapSortBy(sort_by),
       sortOrder: sort_order
     };
@@ -110,7 +112,7 @@ const create = async (req, res) => {
 
   try {
     const tokenData = decodeToken('created', req);
-    const { term_content_title, term_content_directory } = req.body;
+    const { term_content_title, term_content_directory, company_name } = req.body;
 
     const termContentId = uuidv4();
 
@@ -123,6 +125,7 @@ const create = async (req, res) => {
       term_content_title: term_content_title || null,
       term_content_directory: null, // No longer using file path
       term_content_payload: payloadString,
+      company_name: company_name || null,
       created_by: tokenData.created_by
     };
 
@@ -151,7 +154,7 @@ const update = async (req, res) => {
   try {
     const { id } = req.params;
     const tokenData = decodeToken('updated', req);
-    const { term_content_title, term_content_directory } = req.body;
+    const { term_content_title, term_content_directory, company_name } = req.body;
 
     const existing = await repository.findById(id);
     if (!existing) {
@@ -163,6 +166,10 @@ const update = async (req, res) => {
       term_content_title: term_content_title !== undefined ? term_content_title : existing.term_content_title,
       updated_by: tokenData.updated_by
     };
+
+    if (company_name !== undefined) {
+      payload.company_name = company_name;
+    }
 
     if (term_content_directory !== undefined) {
       const processedPayload = normalizeJsonPayload(term_content_directory);

@@ -40,6 +40,7 @@ const baseSelectColumns = () => (
       'term_contents.term_content_title',
       'term_contents.term_content_directory',
       'term_contents.term_content_payload',
+      'term_contents.company_name',
       'term_contents.created_by',
       'term_contents.updated_by',
       'term_contents.deleted_by',
@@ -52,7 +53,7 @@ const baseSelectColumns = () => (
 );
 
 const findAll = async (params) => {
-  const { page, limit, offset, search, sortBy, sortOrder } = params;
+  const { page, limit, offset, search, company_name, sortBy, sortOrder } = params;
 
   const sortOrderSafe = ['asc', 'desc'].includes((sortOrder || '').toLowerCase())
     ? sortOrder
@@ -79,6 +80,7 @@ const findAll = async (params) => {
       'term_contents.term_content_title',
       'term_contents.term_content_directory',
       'term_contents.term_content_payload',
+      'term_contents.company_name',
       'term_contents.created_by',
       'term_contents.updated_by',
       db.raw('updater_data.employee_name as updated_by_name'),
@@ -99,6 +101,11 @@ const findAll = async (params) => {
         .orWhereRaw('LOWER(term_contents.term_content_directory) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(updater_data.employee_name) LIKE ?', [searchPattern]);
     });
+  }
+
+  if (company_name && company_name.trim() !== '') {
+    const companyNamePattern = `%${company_name.toLowerCase()}%`;
+    query = query.andWhereRaw('LOWER(term_contents.company_name) LIKE ?', [companyNamePattern]);
   }
 
   query = query
@@ -127,6 +134,7 @@ const findAll = async (params) => {
               'term_contents.term_content_title',
               'term_contents.term_content_directory',
               'term_contents.term_content_payload',
+              'term_contents.company_name',
               'term_contents.created_by',
               'term_contents.updated_by',
               db.raw('updater_data.employee_name as updated_by_name'),
@@ -149,6 +157,11 @@ const findAll = async (params) => {
             });
           }
 
+          if (company_name && company_name.trim() !== '') {
+            const companyNamePattern = `%${company_name.toLowerCase()}%`;
+            query = query.andWhereRaw('LOWER(term_contents.company_name) LIKE ?', [companyNamePattern]);
+          }
+
           query = query.orderBy(sortBy, sortOrderSafe).limit(limitNumber).offset(offsetNumber);
           data = await query;
         } catch (retryError) {
@@ -161,6 +174,10 @@ const findAll = async (params) => {
                 .whereRaw('LOWER(term_contents.term_content_title) LIKE ?', [searchPattern])
                 .orWhereRaw('LOWER(term_contents.term_content_directory) LIKE ?', [searchPattern]);
             });
+          }
+          if (company_name && company_name.trim() !== '') {
+            const companyNamePattern = `%${company_name.toLowerCase()}%`;
+            query = query.andWhereRaw('LOWER(term_contents.company_name) LIKE ?', [companyNamePattern]);
           }
           query = query.orderBy(sortBy, sortOrderSafe).limit(limitNumber).offset(offsetNumber);
           data = await query;
@@ -176,6 +193,10 @@ const findAll = async (params) => {
               .whereRaw('LOWER(term_contents.term_content_title) LIKE ?', [searchPattern])
               .orWhereRaw('LOWER(term_contents.term_content_directory) LIKE ?', [searchPattern]);
           });
+        }
+        if (company_name && company_name.trim() !== '') {
+          const companyNamePattern = `%${company_name.toLowerCase()}%`;
+          query = query.andWhereRaw('LOWER(term_contents.company_name) LIKE ?', [companyNamePattern]);
         }
         query = query.orderBy(sortBy, sortOrderSafe).limit(limitNumber).offset(offsetNumber);
         data = await query;
@@ -201,6 +222,11 @@ const findAll = async (params) => {
     });
   }
 
+  if (company_name && company_name.trim() !== '') {
+    const companyNamePattern = `%${company_name.toLowerCase()}%`;
+    countQuery = countQuery.andWhereRaw('LOWER(term_contents.company_name) LIKE ?', [companyNamePattern]);
+  }
+
   let totalResult;
   try {
     totalResult = await countQuery;
@@ -218,6 +244,10 @@ const findAll = async (params) => {
             .whereRaw('LOWER(term_contents.term_content_title) LIKE ?', [searchPattern])
             .orWhereRaw('LOWER(term_contents.term_content_directory) LIKE ?', [searchPattern]);
         });
+      }
+      if (company_name && company_name.trim() !== '') {
+        const companyNamePattern = `%${company_name.toLowerCase()}%`;
+        countQuery = countQuery.andWhereRaw('LOWER(term_contents.company_name) LIKE ?', [companyNamePattern]);
       }
       totalResult = await countQuery;
     } else {
@@ -253,6 +283,7 @@ const create = async (data) => {
     term_content_title: data.term_content_title || null,
     term_content_directory: data.term_content_directory,
     term_content_payload: data.term_content_payload,
+    company_name: data.company_name || null,
     created_by: data.created_by || null
   };
 
@@ -274,6 +305,9 @@ const update = async (id, data) => {
   }
   if (data.term_content_payload !== undefined) {
     updateFields.term_content_payload = data.term_content_payload;
+  }
+  if (data.company_name !== undefined) {
+    updateFields.company_name = data.company_name;
   }
   if (data.updated_by !== undefined) {
     updateFields.updated_by = data.updated_by;

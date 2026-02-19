@@ -25,6 +25,13 @@ const termContentSchemas = {
         description: 'Path file JSON yang tersimpan',
         example: 'uploads/term_contents/quo-2025-001_123e4567-e89b-12d3-a456-426614174000.json'
       },
+      company_name: {
+        type: 'string',
+        nullable: true,
+        maxLength: 255,
+        description: 'Nama perusahaan',
+        example: 'PT MSI Indonesia'
+      },
       created_by: {
         type: 'string',
         format: 'uuid',
@@ -102,6 +109,13 @@ const termContentSchemas = {
             'Pengiriman dilakukan dalam 7 hari kerja'
           ]
         }
+      },
+      company_name: {
+        type: 'string',
+        nullable: true,
+        maxLength: 255,
+        description: 'Nama perusahaan',
+        example: 'PT MSI Indonesia'
       }
     }
   },
@@ -132,6 +146,13 @@ const termContentSchemas = {
             'Pembayaran dilakukan 7 hari setelah invoice'
           ]
         }
+      },
+      company_name: {
+        type: 'string',
+        nullable: true,
+        maxLength: 255,
+        description: 'Nama perusahaan',
+        example: 'PT MSI Indonesia'
       }
     }
   },
@@ -154,6 +175,11 @@ const termContentSchemas = {
         type: 'string',
         description: 'Kata kunci pencarian (title atau path)',
         example: 'Term & Condition'
+      },
+      company_name: {
+        type: 'string',
+        description: 'Filter berdasarkan nama perusahaan',
+        example: 'PT MSI Indonesia'
       },
       sort_by: {
         type: 'string',
