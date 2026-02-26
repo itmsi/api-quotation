@@ -286,7 +286,7 @@ Header CSV harus berisi kolom-kolom berikut:
 - \`msi_code\` → \`code_unique\`
 - \`truck_type\` → \`msi_model\`
 - \`segment\` → \`segment\`
-- \`segment_type\` → \`componen_type\` (OFF ROAD REGULAR=1, ON ROAD REGULAR=2, OFF ROAD IRREGULAR=3)
+- \`segment_type\` → \`componen_type\` (OFF ROAD REGULAR=1, ON ROAD REGULAR=2, OFF ROAD IRREGULAR=3, OFF ROAD REGULAR EV=4, ON ROAD REGULAR EV=5)
 - \`msi_model\` → \`msi_product\`
 - \`unit_model\` → \`componen_product_unit_model\`
 - \`engine\` → \`engine\`

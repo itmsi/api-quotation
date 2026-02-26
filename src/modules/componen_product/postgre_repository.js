@@ -128,7 +128,7 @@ const mapProductTypeResponse = (productType, componenType) => {
   if (productType && productType.trim() !== '') {
     return productType.trim();
   }
-  
+
   // Otherwise, fallback to mapping from componen_type for backward compatibility
   return mapProductType(componenType);
 };
@@ -150,6 +150,10 @@ const mapProductType = (componenType) => {
       return 'ON ROAD REGULAR';
     case 3:
       return 'OFF ROAD IRREGULAR';
+    case 4:
+      return 'OFF ROAD REGULAR EV';
+    case 5:
+      return 'ON ROAD REGULAR EV';
     default:
       return '';
   }
@@ -180,7 +184,7 @@ const buildSearchWhere = (search, includeUpdaterData = false, includeCompanyData
         .orWhereRaw('LOWER(componen_products.volume) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(componen_products.componen_product_description) LIKE ?', [searchPattern])
         .orWhereRaw('LOWER(componen_products.product_type) LIKE ?', [searchPattern]);
-      
+
       // Only include updater_data and company_data if JOIN exists
       if (includeUpdaterData) {
         this.orWhereRaw('LOWER(updater_data.employee_name) LIKE ?', [searchPattern]);
@@ -418,14 +422,14 @@ const findById = async (id) => {
   const { specification_properties, image, ...productWithoutSpecs } = componenProduct;
 
   const mappedImages = mapImageResponse(componenProduct.images || componenProduct.image);
-  
+
   return {
     ...productWithoutSpecs,
     componen_product_specifications: normalizedSpecs,
     product_type: mapProductTypeResponse(componenProduct.product_type, componenProduct.componen_type),
     images: mappedImages, // Array of objects with image_id and image_url
-    image_count: componenProduct.image_count !== null && componenProduct.image_count !== undefined 
-      ? componenProduct.image_count 
+    image_count: componenProduct.image_count !== null && componenProduct.image_count !== undefined
+      ? componenProduct.image_count
       : mappedImages.length // Use image_count from DB or calculate from images array
   };
 };
@@ -540,14 +544,14 @@ const create = async (data, specifications = []) => {
     const { specification_properties, ...productWithoutSpecs } = product;
 
     const mappedImages = mapImageResponse(product.images || product.image);
-    
+
     return {
       ...productWithoutSpecs,
       componen_product_specifications: normalizedSpecs,
       product_type: mapProductTypeResponse(product.product_type, product.componen_type),
       images: mappedImages, // Array of objects with image_id and image_url
-      image_count: product.image_count !== null && product.image_count !== undefined 
-        ? product.image_count 
+      image_count: product.image_count !== null && product.image_count !== undefined
+        ? product.image_count
         : mappedImages.length // Use image_count from DB or calculate from images array
     };
   });
@@ -650,14 +654,14 @@ const update = async (id, data, options = {}) => {
     const { specification_properties, ...productWithoutSpecs } = product;
 
     const mappedImages = mapImageResponse(product.images || product.image);
-    
+
     return {
       ...productWithoutSpecs,
       componen_product_specifications: normalizedSpecs,
       product_type: mapProductTypeResponse(product.product_type, product.componen_type),
       images: mappedImages, // Array of objects with image_id and image_url
-      image_count: product.image_count !== null && product.image_count !== undefined 
-        ? product.image_count 
+      image_count: product.image_count !== null && product.image_count !== undefined
+        ? product.image_count
         : mappedImages.length // Use image_count from DB or calculate from images array
     };
   });
