@@ -1005,6 +1005,10 @@ const mapTruckTypeToComponenType = (truckType) => {
     return 2;
   } else if (normalizedType === 'OFF ROAD IRREGULAR') {
     return 3;
+  } else if (normalizedType === 'OFF ROAD REGULAR EV') {
+    return 4;
+  } else if (normalizedType === 'ON ROAD REGULAR EV') {
+    return 5;
   }
 
   return null;

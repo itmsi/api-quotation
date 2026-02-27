@@ -322,6 +322,10 @@ const mapProductType = (componenType) => {
       return 'ON ROAD REGULAR';
     case 3:
       return 'OFF ROAD IRREGULAR';
+    case 4:
+      return 'OFF ROAD REGULAR EV';
+    case 5:
+      return 'ON ROAD REGULAR EV';
     default:
       return '';
   }

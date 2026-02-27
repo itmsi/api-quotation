@@ -6,8 +6,8 @@ const { body, param } = require('express-validator');
 const createValidation = [
   body('componen_type')
     .optional()
-    .isInt({ min: 1, max: 3 })
-    .withMessage('Componen type harus berupa angka 1, 2, atau 3 (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR)'),
+    .isInt({ min: 1, max: 5 })
+    .withMessage('Componen type harus berupa angka 1, 2, 3, 4, atau 5 (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR, 4: OFF ROAD REGULAR EV, 5: ON ROAD REGULAR EV)'),
   body('company_name')
     .optional()
     .isLength({ max: 255 })
@@ -169,8 +169,8 @@ const updateValidation = [
     .withMessage('Format ID tidak valid'),
   body('componen_type')
     .optional()
-    .isInt({ min: 1, max: 3 })
-    .withMessage('Componen type harus berupa angka 1, 2, atau 3 (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR)'),
+    .isInt({ min: 1, max: 5 })
+    .withMessage('Componen type harus berupa angka 1, 2, 3, 4, atau 5 (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR, 4: OFF ROAD REGULAR EV, 5: ON ROAD REGULAR EV)'),
   body('company_name')
     .optional()
     .custom((value) => {
