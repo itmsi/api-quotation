@@ -1,24 +1,15 @@
-FROM node:22-alpine
-
-# Set working directory
+# Build stage
+FROM node:22-alpine AS builder
 WORKDIR /app
-
-# Copy package files
 COPY package*.json ./
-
-# Install dependencies
-RUN npm install --only=production && npm cache clean --force
-
-# Copy application code
+RUN npm install --only=production --legacy-peer-deps && npm cache clean --force
 COPY . .
 
-# Create necessary directories
+# Production stage
+FROM node:22-alpine
+WORKDIR /app
+COPY --from=builder /app ./
 RUN mkdir -p logs public storages
 
-# Expose port (sesuaikan dengan APP_PORT di environment variable)
-# Default 9565 untuk production, bisa diubah via environment variable
 EXPOSE 9565
-
-# Start application
-CMD ["node", "src/server.js"]
-
+CMD ["node", "--require", "./src/instrumentation.js", "src/server.js"]

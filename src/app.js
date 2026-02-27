@@ -15,6 +15,11 @@ const {
   syntaxError,
 } = require('./utils')
 
+const pinoHttp = require('pino-http')
+const pinoLogger = require('./utils/pino_logger')
+const db = require('./config/database')
+
+
 const healthCheck = require('./routes')
 const apiV1 = require('./routes/V1')
 const { initListener } = require('./listeners')
@@ -40,6 +45,26 @@ if (process.env.NODE_ENV === 'production') {
 } else {
   app.use(morgan(MORGAN_FORMAT.DEV, { stream: process.stderr }))
 }
+
+app.use(pinoHttp({
+  logger: pinoLogger,
+  customLogLevel: function (req, res, err) {
+    if (res.statusCode >= 400 || err) {
+      return 'error';
+    }
+    return 'info';
+  }
+}))
+
+app.get('/health', async (req, res) => {
+  try {
+    await db.raw('SELECT 1');
+    res.status(200).json({ status: 'ok', service: process.env.SERVICE_NAME || 'manage-quotation-api', database: 'ok' });
+  } catch (err) {
+    req.log.error('Healthcheck DB connection failed: ' + err.message);
+    res.status(503).json({ status: 'fail', service: process.env.SERVICE_NAME || 'manage-quotation-api', database: 'fail' });
+  }
+});
 
 // Prometheus monitoring middleware
 app.use(prometheusMiddleware)

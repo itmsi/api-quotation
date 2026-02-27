@@ -23,6 +23,9 @@ services:
       # Override untuk production server
       - NODE_ENV=production
       - APP_PORT=9565
+      - SERVICE_NAME=manage-quotation-api
+      - DATABASE_URL=${DATABASE_URL}?application_name=manage-quotation-api
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4318}
       # RABBITMQ_URL akan diambil dari file .env via env_file
       # Override database host jika database di container/service lain (contoh)
       # - DB_HOST_PROD=postgres-service  # Uncomment jika DB di container lain
@@ -45,7 +48,7 @@ services:
     labels:
       - "com.centurylinklabs.watchtower.enable=false"
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:9565/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:9565/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -61,5 +64,5 @@ services:
 
 networks:
   infra_net:
-    external: true  # PENTING! Gunakan network yang sudah ada
-    name: infra_net  # Network untuk nginx dan cloudflare tunnel
+    external: true # PENTING! Gunakan network yang sudah ada
+    name: infra_net # Network untuk nginx dan cloudflare tunnel
