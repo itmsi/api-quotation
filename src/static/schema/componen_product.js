@@ -34,7 +34,7 @@ const componenProductSchemas = {
       product_type: {
         type: 'string',
         nullable: true,
-        description: 'Product type (unit, non_unit)',
+        description: 'Product type (unit, non_unit, hardware, implementation, application)',
         example: 'non_unit'
       },
       code_unique: {
@@ -288,7 +288,7 @@ const componenProductSchemas = {
       product_type: {
         type: 'string',
         maxLength: 255,
-        description: 'Product type (unit, non_unit)',
+        description: 'Product type (unit, non_unit, hardware, implementation, application)',
         example: 'non_unit'
       },
       componen_product_name: {

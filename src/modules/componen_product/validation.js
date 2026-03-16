@@ -27,11 +27,15 @@ const createValidation = [
         if (trimmed.length > 255) {
           throw new Error('Product type maksimal 255 karakter');
         }
+        const validTypes = ['unit', 'non_unit', 'hardware', 'implementation', 'application'];
+        if (!validTypes.includes(trimmed)) {
+          throw new Error('Product type harus berupa unit, non_unit, hardware, implementation, atau application');
+        }
         return true;
       }
       return false;
     })
-    .withMessage('Product type harus berupa string, string kosong, null, atau NaN (maksimal 255 karakter)'),
+    .withMessage('Product type harus berupa unit, non_unit, hardware, implementation, atau application (maksimal 255 karakter)'),
   body('componen_product_name')
     .optional()
     .isLength({ max: 255 })
@@ -204,11 +208,15 @@ const updateValidation = [
         if (trimmed.length > 255) {
           throw new Error('Product type maksimal 255 karakter');
         }
+        const validTypes = ['unit', 'non_unit', 'hardware', 'implementation', 'application'];
+        if (!validTypes.includes(trimmed)) {
+          throw new Error('Product type harus berupa unit, non_unit, hardware, implementation, atau application');
+        }
         return true;
       }
       return false;
     })
-    .withMessage('Product type harus berupa string, string kosong, null, atau NaN (maksimal 255 karakter)'),
+    .withMessage('Product type harus berupa unit, non_unit, hardware, implementation, atau application (maksimal 255 karakter)'),
   body('componen_product_name')
     .optional()
     .isLength({ max: 255 })

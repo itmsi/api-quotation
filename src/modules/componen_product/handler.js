@@ -220,15 +220,15 @@ const mapSortBy = (sortBy) => {
 
 /**
  * Generate componen_product_name based on format:
- * - If product_type = 'non_unit': code_unique + " - " + componen_product_description
+ * - If product_type = 'non_unit', 'hardware', 'implementation', 'application': code_unique + " - " + componen_product_description
  * - If product_type = 'unit' or others: code_unique - msi_product wheel_no engine msi_model volume - segment
  */
 const generateComponenProductName = (data) => {
   // Check product_type
   const productType = data.product_type ? String(data.product_type).trim() : null;
 
-  // If product_type is 'non_unit', use format: code_unique + " - " + componen_product_description
-  if (productType === 'non_unit') {
+  // If product_type is 'non_unit', 'hardware', 'implementation', or 'application', use format: code_unique + " - " + componen_product_description
+  if (['non_unit', 'hardware', 'implementation', 'application'].includes(productType)) {
     const codeUnique = data.code_unique ? String(data.code_unique).trim() : null;
     const description = data.componen_product_description ? String(data.componen_product_description).trim() : null;
 
