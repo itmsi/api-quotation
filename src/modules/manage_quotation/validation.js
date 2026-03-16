@@ -15,9 +15,7 @@ const createValidation = [
     .isUUID()
     .withMessage('Format employee_id tidak valid'),
   body('island_id')
-    .optional()
-    .isUUID()
-    .withMessage('Format island_id tidak valid'),
+    .optional(),
   body('manage_quotation_date')
     .optional()
     .isISO8601()
@@ -450,9 +448,7 @@ const updateValidation = [
     .isUUID()
     .withMessage('Format employee_id tidak valid'),
   body('island_id')
-    .optional()
-    .isUUID()
-    .withMessage('Format island_id tidak valid'),
+    .optional(),
   body('manage_quotation_date')
     .optional()
     .isISO8601()
