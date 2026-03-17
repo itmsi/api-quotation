@@ -362,30 +362,15 @@ const createValidation = [
     .withMessage('Accessory part name maksimal 255 karakter')
     .trim(),
   body('manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_specification')
-    .optional()
-    .isLength({ max: 255 })
-    .withMessage('Accessory specification maksimal 255 karakter')
-    .trim(),
+    .optional(),
   body('manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_brand')
-    .optional()
-    .isLength({ max: 255 })
-    .withMessage('Accessory brand maksimal 255 karakter')
-    .trim(),
+    .optional(),
   body('manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_remark')
-    .optional()
-    .isLength({ max: 255 })
-    .withMessage('Accessory remark maksimal 255 karakter')
-    .trim(),
+    .optional(),
   body('manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_region')
-    .optional()
-    .isLength({ max: 255 })
-    .withMessage('Accessory region maksimal 255 karakter')
-    .trim(),
+    .optional(),
   body('manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_description')
-    .optional()
-    .isLength({ max: 255 })
-    .withMessage('Accessory description maksimal 255 karakter')
-    .trim(),
+    .optional(),
   body('manage_quotation_items.*.manage_quotation_item_accessories.*.componen_product_id')
     .optional()
     .isUUID()
@@ -400,13 +385,9 @@ const createValidation = [
     .withMessage('Format componen_product_id pada specification tidak valid'),
   body('manage_quotation_items.*.manage_quotation_item_specifications.*.manage_quotation_item_specification_label')
     .optional()
-    .isLength({ max: 255 })
-    .withMessage('Label specification maksimal 255 karakter')
     .trim(),
   body('manage_quotation_items.*.manage_quotation_item_specifications.*.manage_quotation_item_specification_value')
     .optional()
-    .isLength({ max: 255 })
-    .withMessage('Value specification maksimal 255 karakter')
     .trim(),
   // Validation for manage_quotation_item_accessories at root level
   body('manage_quotation_item_accessories')
@@ -832,15 +813,9 @@ const updateValidation = [
     .isUUID()
     .withMessage('Format componen_product_id pada specification tidak valid'),
   body('manage_quotation_items.*.manage_quotation_item_specifications.*.manage_quotation_item_specification_label')
-    .optional()
-    .isLength({ max: 255 })
-    .withMessage('Label specification maksimal 255 karakter')
-    .trim(),
+    .optional(),
   body('manage_quotation_items.*.manage_quotation_item_specifications.*.manage_quotation_item_specification_value')
-    .optional()
-    .isLength({ max: 255 })
-    .withMessage('Value specification maksimal 255 karakter')
-    .trim(),
+    .optional(),
   // Validation for manage_quotation_item_accessories at root level
   body('manage_quotation_item_accessories')
     .optional()
