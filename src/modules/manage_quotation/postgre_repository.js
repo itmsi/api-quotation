@@ -1,12 +1,12 @@
-const customerRepository = require('../cutomer/postgre_repository');
-const DBLINK_NAME = 'gate_sso_dblink';
+const customerRepository = require("../cutomer/postgre_repository");
+const DBLINK_NAME = "gate_sso_dblink";
 const DB_LINK_CONNECTION = `dbname=${process.env.DB_GATE_SSO_NAME} user=${process.env.DB_GATE_SSO_USER} password=${process.env.DB_GATE_SSO_PASSWORD} host=${process.env.DB_GATE_SSO_HOST} port=${process.env.DB_GATE_SSO_PORT}`;
-const db = require('../../config/database');
-const moment = require('moment');
-const componenProductRepository = require('../componen_product/postgre_repository');
-const accessoryRepository = require('../accessory/postgre_repository');
+const db = require("../../config/database");
+const moment = require("moment");
+const componenProductRepository = require("../componen_product/postgre_repository");
+const accessoryRepository = require("../accessory/postgre_repository");
 
-const TABLE_NAME = 'manage_quotations';
+const TABLE_NAME = "manage_quotations";
 
 /**
  * Ensure dblink connection with retry mechanism
@@ -22,15 +22,20 @@ const ensureDblinkConnection = async (maxRetries = 3) => {
       }
 
       // Create new connection
-      await db.raw(`SELECT dblink_connect('${DBLINK_NAME}', '${DB_LINK_CONNECTION}')`);
+      await db.raw(
+        `SELECT dblink_connect('${DBLINK_NAME}', '${DB_LINK_CONNECTION}')`,
+      );
       return true; // Connection successful
     } catch (error) {
       if (attempt === maxRetries) {
-        console.error(`[manage-quotation:ensureDblinkConnection] Failed after ${maxRetries} attempts:`, error.message);
+        console.error(
+          `[manage-quotation:ensureDblinkConnection] Failed after ${maxRetries} attempts:`,
+          error.message,
+        );
         return false; // Connection failed after all retries
       }
       // Wait a bit before retrying (exponential backoff)
-      await new Promise(resolve => setTimeout(resolve, 100 * attempt));
+      await new Promise((resolve) => setTimeout(resolve, 100 * attempt));
     }
   }
   return false;
@@ -40,7 +45,21 @@ const ensureDblinkConnection = async (maxRetries = 3) => {
  * Find all manage quotations with pagination, search, and sort
  */
 const findAll = async (params) => {
-  const { page, limit, offset, search, sortBy, sortOrder, status, islandId, quotationFor, startDate, endDate, customerId, companyName } = params;
+  const {
+    page,
+    limit,
+    offset,
+    search,
+    sortBy,
+    sortOrder,
+    status,
+    islandId,
+    quotationFor,
+    startDate,
+    endDate,
+    customerId,
+    companyName,
+  } = params;
 
   // Try to ensure dblink connection, but don't fail if it doesn't work
   const dblinkConnected = await ensureDblinkConnection();
@@ -50,121 +69,153 @@ const findAll = async (params) => {
 
   if (dblinkConnected) {
     customerJoin = db.raw(
-      `dblink('${DBLINK_NAME}', 'SELECT customer_id, customer_name, contact_person FROM customers WHERE customer_id IS NOT NULL') AS customer_data(customer_id uuid, customer_name varchar, contact_person varchar)`
+      `dblink('${DBLINK_NAME}', 'SELECT customer_id, customer_name, contact_person FROM customers WHERE customer_id IS NOT NULL') AS customer_data(customer_id uuid, customer_name varchar, contact_person varchar)`,
     );
 
     employeeJoin = db.raw(
-      `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS employee_data(employee_id uuid, employee_name varchar)`
+      `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS employee_data(employee_id uuid, employee_name varchar)`,
     );
 
     islandJoin = db.raw(
-      `dblink('${DBLINK_NAME}', 'SELECT island_id, island_name FROM islands WHERE island_id IS NOT NULL') AS island_data(island_id uuid, island_name varchar)`
+      `dblink('${DBLINK_NAME}', 'SELECT island_id, island_name FROM islands WHERE island_id IS NOT NULL') AS island_data(island_id uuid, island_name varchar)`,
     );
 
     updaterJoin = db.raw(
-      `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS updater_data(employee_id uuid, employee_name varchar)`
+      `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS updater_data(employee_id uuid, employee_name varchar)`,
     );
   } else {
     // Create dummy joins that return empty results if dblink is not available
-    customerJoin = db.raw(`(SELECT NULL::uuid as customer_id, NULL::varchar as customer_name, NULL::varchar as contact_person WHERE false) AS customer_data(customer_id uuid, customer_name varchar, contact_person varchar)`);
-    employeeJoin = db.raw(`(SELECT NULL::uuid as employee_id, NULL::varchar as employee_name WHERE false) AS employee_data(employee_id uuid, employee_name varchar)`);
-    islandJoin = db.raw(`(SELECT NULL::uuid as island_id, NULL::varchar as island_name WHERE false) AS island_data(island_id uuid, island_name varchar)`);
-    updaterJoin = db.raw(`(SELECT NULL::uuid as employee_id, NULL::varchar as employee_name WHERE false) AS updater_data(employee_id uuid, employee_name varchar)`);
+    customerJoin = db.raw(
+      `(SELECT NULL::uuid as customer_id, NULL::varchar as customer_name, NULL::varchar as contact_person WHERE false) AS customer_data(customer_id uuid, customer_name varchar, contact_person varchar)`,
+    );
+    employeeJoin = db.raw(
+      `(SELECT NULL::uuid as employee_id, NULL::varchar as employee_name WHERE false) AS employee_data(employee_id uuid, employee_name varchar)`,
+    );
+    islandJoin = db.raw(
+      `(SELECT NULL::uuid as island_id, NULL::varchar as island_name WHERE false) AS island_data(island_id uuid, island_name varchar)`,
+    );
+    updaterJoin = db.raw(
+      `(SELECT NULL::uuid as employee_id, NULL::varchar as employee_name WHERE false) AS updater_data(employee_id uuid, employee_name varchar)`,
+    );
   }
 
   // Query data - use parameterized query with knex
   let query = db({ mq: TABLE_NAME })
     .select(
-      'mq.manage_quotation_id',
-      'mq.manage_quotation_no',
-      'mq.customer_id',
-      db.raw('customer_data.customer_name as customer_name'),
-      db.raw('customer_data.contact_person as contact_person'),
-      'mq.employee_id',
-      db.raw('employee_data.employee_name as employee_name'),
-      'mq.island_id',
-      db.raw('island_data.island_name as island_name'),
-      'mq.manage_quotation_date',
-      'mq.manage_quotation_valid_date',
-      'mq.manage_quotation_grand_total',
-      'mq.manage_quotation_grand_total_before',
-      'mq.manage_quotation_mutation_type',
-      'mq.manage_quotation_mutation_nominal',
-      'mq.manage_quotation_ppn',
-      'mq.manage_quotation_delivery_fee',
-      'mq.manage_quotation_other',
-      'mq.manage_quotation_payment_presentase',
-      'mq.manage_quotation_payment_nominal',
-      'mq.manage_quotation_description',
-      'mq.manage_quotation_shipping_term',
-      'mq.manage_quotation_franco',
-      'mq.manage_quotation_lead_time',
-      'mq.bank_account_name',
-      'mq.bank_account_number',
-      'mq.bank_account_bank_name',
-      'mq.term_content_id',
-      'mq.term_content_directory',
-      'mq.term_content_payload',
-      'mq.include_aftersales_page',
-      'mq.include_msf_page',
-      'mq.status',
-      'mq.company',
-      'mq.project_id',
-      'mq.quotation_for',
-      'mq.star',
-      'mq.created_by',
-      'mq.updated_by',
-      db.raw('updater_data.employee_name as updated_by_name'),
-      'mq.deleted_by',
-      'mq.created_at',
-      'mq.updated_at',
-      'mq.deleted_at',
-      'mq.is_delete'
+      "mq.manage_quotation_id",
+      "mq.manage_quotation_no",
+      "mq.customer_id",
+      db.raw("customer_data.customer_name as customer_name"),
+      db.raw("customer_data.contact_person as contact_person"),
+      "mq.employee_id",
+      db.raw("employee_data.employee_name as employee_name"),
+      "mq.island_id",
+      db.raw("island_data.island_name as island_name"),
+      "mq.manage_quotation_date",
+      "mq.manage_quotation_valid_date",
+      "mq.manage_quotation_grand_total",
+      "mq.manage_quotation_grand_total_before",
+      "mq.manage_quotation_mutation_type",
+      "mq.manage_quotation_mutation_nominal",
+      "mq.manage_quotation_ppn",
+      "mq.manage_quotation_delivery_fee",
+      "mq.manage_quotation_other",
+      "mq.manage_quotation_payment_presentase",
+      "mq.manage_quotation_payment_nominal",
+      "mq.manage_quotation_description",
+      "mq.manage_quotation_shipping_term",
+      "mq.manage_quotation_franco",
+      "mq.manage_quotation_lead_time",
+      "mq.bank_account_name",
+      "mq.bank_account_number",
+      "mq.bank_account_bank_name",
+      "mq.term_content_id",
+      "mq.term_content_directory",
+      "mq.term_content_payload",
+      "mq.include_aftersales_page",
+      "mq.include_msf_page",
+      "mq.status",
+      "mq.company",
+      "mq.project_id",
+      "mq.quotation_for",
+      "mq.star",
+      "mq.created_by",
+      "mq.updated_by",
+      db.raw("updater_data.employee_name as updated_by_name"),
+      "mq.deleted_by",
+      "mq.created_at",
+      "mq.updated_at",
+      "mq.deleted_at",
+      "mq.is_delete",
     )
-    .leftJoin(customerJoin, 'mq.customer_id', 'customer_data.customer_id')
-    .leftJoin(employeeJoin, 'mq.employee_id', 'employee_data.employee_id')
-    .leftJoin(islandJoin, 'mq.island_id', 'island_data.island_id')
-    .leftJoin(updaterJoin, 'mq.updated_by', 'updater_data.employee_id')
-    .where('mq.is_delete', false);
+    .leftJoin(customerJoin, "mq.customer_id", "customer_data.customer_id")
+    .leftJoin(employeeJoin, "mq.employee_id", "employee_data.employee_id")
+    .leftJoin(islandJoin, "mq.island_id", "island_data.island_id")
+    .leftJoin(updaterJoin, "mq.updated_by", "updater_data.employee_id")
+    .where("mq.is_delete", false);
 
   // Add search condition
-  if (search && search.trim() !== '') {
+  if (search && search.trim() !== "") {
     const searchLower = `%${search.toLowerCase()}%`;
     query = query.where(function () {
-      this.where('mq.manage_quotation_no', 'ILIKE', searchLower)
-        .orWhere(db.raw('LOWER(CAST(mq.customer_id AS TEXT))'), 'LIKE', searchLower)
-        .orWhere(db.raw('LOWER(CAST(mq.employee_id AS TEXT))'), 'LIKE', searchLower)
-        .orWhere(db.raw('LOWER(CAST(mq.island_id AS TEXT))'), 'LIKE', searchLower)
-        .orWhere(db.raw('LOWER(customer_data.customer_name)'), 'LIKE', searchLower)
-        .orWhere(db.raw('LOWER(employee_data.employee_name)'), 'LIKE', searchLower)
-        .orWhere(db.raw('LOWER(island_data.island_name)'), 'LIKE', searchLower)
-        .orWhere(db.raw('LOWER(updater_data.employee_name)'), 'LIKE', searchLower);
+      this.where("mq.manage_quotation_no", "ILIKE", searchLower)
+        .orWhere(
+          db.raw("LOWER(CAST(mq.customer_id AS TEXT))"),
+          "LIKE",
+          searchLower,
+        )
+        .orWhere(
+          db.raw("LOWER(CAST(mq.employee_id AS TEXT))"),
+          "LIKE",
+          searchLower,
+        )
+        .orWhere(
+          db.raw("LOWER(CAST(mq.island_id AS TEXT))"),
+          "LIKE",
+          searchLower,
+        )
+        .orWhere(
+          db.raw("LOWER(customer_data.customer_name)"),
+          "LIKE",
+          searchLower,
+        )
+        .orWhere(
+          db.raw("LOWER(employee_data.employee_name)"),
+          "LIKE",
+          searchLower,
+        )
+        .orWhere(db.raw("LOWER(island_data.island_name)"), "LIKE", searchLower)
+        .orWhere(
+          db.raw("LOWER(updater_data.employee_name)"),
+          "LIKE",
+          searchLower,
+        );
     });
   }
 
   // Add status filter condition
-  if (status && status.trim() !== '') {
-    query = query.where('mq.status', status.trim().toLowerCase());
+  if (status && status.trim() !== "") {
+    query = query.where("mq.status", status.trim().toLowerCase());
   }
 
   // Add island_id filter condition
-  if (islandId && islandId.trim() !== '') {
-    query = query.where('mq.island_id', islandId.trim());
+  if (islandId && islandId.trim() !== "") {
+    query = query.where("mq.island_id", islandId.trim());
   }
 
   // Add customer_id filter condition
-  if (customerId && customerId.trim() !== '') {
-    query = query.where('mq.customer_id', customerId.trim());
+  if (customerId && customerId.trim() !== "") {
+    query = query.where("mq.customer_id", customerId.trim());
   }
 
   // Add quotation_for filter condition
-  if (quotationFor && quotationFor.trim() !== '') {
-    query = query.where('mq.quotation_for', quotationFor.trim());
+  if (quotationFor && quotationFor.trim() !== "") {
+    query = query.where("mq.quotation_for", quotationFor.trim());
   }
 
   // Add company filter condition
-  if (companyName && companyName.trim() !== '') {
-    query = query.where('mq.company', companyName.trim());
+  if (companyName && companyName.trim() !== "") {
+    query = query.where("mq.company", companyName.trim());
   }
 
   // Add date range filter condition (based on created_at)
@@ -172,35 +223,47 @@ const findAll = async (params) => {
     // Start date: filter created_at >= startDate (start of day)
     const startDateTime = new Date(startDate);
     startDateTime.setHours(0, 0, 0, 0);
-    query = query.where('mq.created_at', '>=', startDateTime.toISOString());
+    query = query.where("mq.created_at", ">=", startDateTime.toISOString());
   }
 
   if (endDate) {
     // End date: filter created_at <= endDate (end of day)
     const endDateTime = new Date(endDate);
     endDateTime.setHours(23, 59, 59, 999);
-    query = query.where('mq.created_at', '<=', endDateTime.toISOString());
+    query = query.where("mq.created_at", "<=", endDateTime.toISOString());
   }
 
   // Add sorting
   const sortColumnMap = {
-    'created_at': 'mq.created_at',
-    'manage_quotation_no': 'mq.manage_quotation_no',
-    'manage_quotation_date': 'mq.manage_quotation_date',
-    'manage_quotation_valid_date': 'mq.manage_quotation_valid_date'
+    created_at: "mq.created_at",
+    manage_quotation_no: "mq.manage_quotation_no",
+    manage_quotation_date: "mq.manage_quotation_date",
+    manage_quotation_valid_date: "mq.manage_quotation_valid_date",
   };
   const sortBySafe = sortColumnMap[sortBy] || sortColumnMap.created_at;
-  const sortOrderSafe = ['asc', 'desc'].includes(sortOrder?.toLowerCase()) ? sortOrder : 'desc';
+  const sortOrderSafe = ["asc", "desc"].includes(sortOrder?.toLowerCase())
+    ? sortOrder
+    : "desc";
 
-  query = query.orderBy(sortBySafe, sortOrderSafe).limit(parseInt(limit)).offset(parseInt(offset));
+  query = query
+    .orderBy(sortBySafe, sortOrderSafe)
+    .limit(parseInt(limit))
+    .offset(parseInt(offset));
 
   let data;
   try {
     data = await query;
   } catch (error) {
     // If query fails due to dblink connection issue, retry with fresh connection
-    if (error.message && (error.message.includes('could not establish connection') || error.message.includes('dblink'))) {
-      console.error('[manage-quotation:findAll] Query failed due to dblink error, retrying...', error.message);
+    if (
+      error.message &&
+      (error.message.includes("could not establish connection") ||
+        error.message.includes("dblink"))
+    ) {
+      console.error(
+        "[manage-quotation:findAll] Query failed due to dblink error, retrying...",
+        error.message,
+      );
 
       // Try to reconnect
       const reconnected = await ensureDblinkConnection();
@@ -208,230 +271,284 @@ const findAll = async (params) => {
       if (reconnected) {
         // Rebuild joins with fresh connection
         customerJoin = db.raw(
-          `dblink('${DBLINK_NAME}', 'SELECT customer_id, customer_name, contact_person FROM customers WHERE customer_id IS NOT NULL') AS customer_data(customer_id uuid, customer_name varchar, contact_person varchar)`
+          `dblink('${DBLINK_NAME}', 'SELECT customer_id, customer_name, contact_person FROM customers WHERE customer_id IS NOT NULL') AS customer_data(customer_id uuid, customer_name varchar, contact_person varchar)`,
         );
         employeeJoin = db.raw(
-          `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS employee_data(employee_id uuid, employee_name varchar)`
+          `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS employee_data(employee_id uuid, employee_name varchar)`,
         );
         islandJoin = db.raw(
-          `dblink('${DBLINK_NAME}', 'SELECT island_id, island_name FROM islands WHERE island_id IS NOT NULL') AS island_data(island_id uuid, island_name varchar)`
+          `dblink('${DBLINK_NAME}', 'SELECT island_id, island_name FROM islands WHERE island_id IS NOT NULL') AS island_data(island_id uuid, island_name varchar)`,
         );
         updaterJoin = db.raw(
-          `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS updater_data(employee_id uuid, employee_name varchar)`
+          `dblink('${DBLINK_NAME}', 'SELECT employee_id, employee_name FROM employees WHERE employee_id IS NOT NULL AND is_delete = false') AS updater_data(employee_id uuid, employee_name varchar)`,
         );
 
         // Retry query without joins if still fails
         try {
           query = db({ mq: TABLE_NAME })
             .select(
-              'mq.manage_quotation_id',
-              'mq.manage_quotation_no',
-              'mq.customer_id',
-              db.raw('customer_data.customer_name as customer_name'),
-              db.raw('customer_data.contact_person as contact_person'),
-              'mq.employee_id',
-              db.raw('employee_data.employee_name as employee_name'),
-              'mq.island_id',
-              db.raw('island_data.island_name as island_name'),
-              'mq.manage_quotation_date',
-              'mq.manage_quotation_valid_date',
-              'mq.manage_quotation_grand_total',
-              'mq.manage_quotation_grand_total_before',
-              'mq.manage_quotation_mutation_type',
-              'mq.manage_quotation_mutation_nominal',
-              'mq.manage_quotation_ppn',
-              'mq.manage_quotation_delivery_fee',
-              'mq.manage_quotation_other',
-              'mq.manage_quotation_payment_presentase',
-              'mq.manage_quotation_payment_nominal',
-              'mq.manage_quotation_description',
-              'mq.manage_quotation_shipping_term',
-              'mq.manage_quotation_franco',
-              'mq.manage_quotation_lead_time',
-              'mq.bank_account_name',
-              'mq.bank_account_number',
-              'mq.bank_account_bank_name',
-              'mq.term_content_id',
-              'mq.term_content_directory',
-              'mq.term_content_payload',
-              'mq.include_aftersales_page',
-              'mq.include_msf_page',
-              'mq.status',
-              'mq.created_by',
-              'mq.updated_by',
-              db.raw('updater_data.employee_name as updated_by_name'),
-              'mq.deleted_by',
-              'mq.created_at',
-              'mq.updated_at',
-              'mq.deleted_at',
-              'mq.is_delete'
+              "mq.manage_quotation_id",
+              "mq.manage_quotation_no",
+              "mq.customer_id",
+              db.raw("customer_data.customer_name as customer_name"),
+              db.raw("customer_data.contact_person as contact_person"),
+              "mq.employee_id",
+              db.raw("employee_data.employee_name as employee_name"),
+              "mq.island_id",
+              db.raw("island_data.island_name as island_name"),
+              "mq.manage_quotation_date",
+              "mq.manage_quotation_valid_date",
+              "mq.manage_quotation_grand_total",
+              "mq.manage_quotation_grand_total_before",
+              "mq.manage_quotation_mutation_type",
+              "mq.manage_quotation_mutation_nominal",
+              "mq.manage_quotation_ppn",
+              "mq.manage_quotation_delivery_fee",
+              "mq.manage_quotation_other",
+              "mq.manage_quotation_payment_presentase",
+              "mq.manage_quotation_payment_nominal",
+              "mq.manage_quotation_description",
+              "mq.manage_quotation_shipping_term",
+              "mq.manage_quotation_franco",
+              "mq.manage_quotation_lead_time",
+              "mq.bank_account_name",
+              "mq.bank_account_number",
+              "mq.bank_account_bank_name",
+              "mq.term_content_id",
+              "mq.term_content_directory",
+              "mq.term_content_payload",
+              "mq.include_aftersales_page",
+              "mq.include_msf_page",
+              "mq.status",
+              "mq.created_by",
+              "mq.updated_by",
+              db.raw("updater_data.employee_name as updated_by_name"),
+              "mq.deleted_by",
+              "mq.created_at",
+              "mq.updated_at",
+              "mq.deleted_at",
+              "mq.is_delete",
             )
-            .leftJoin(customerJoin, 'mq.customer_id', 'customer_data.customer_id')
-            .leftJoin(employeeJoin, 'mq.employee_id', 'employee_data.employee_id')
-            .leftJoin(islandJoin, 'mq.island_id', 'island_data.island_id')
-            .leftJoin(updaterJoin, 'mq.updated_by', 'updater_data.employee_id')
-            .where('mq.is_delete', false);
+            .leftJoin(
+              customerJoin,
+              "mq.customer_id",
+              "customer_data.customer_id",
+            )
+            .leftJoin(
+              employeeJoin,
+              "mq.employee_id",
+              "employee_data.employee_id",
+            )
+            .leftJoin(islandJoin, "mq.island_id", "island_data.island_id")
+            .leftJoin(updaterJoin, "mq.updated_by", "updater_data.employee_id")
+            .where("mq.is_delete", false);
 
           // Reapply filters
-          if (search && search.trim() !== '') {
+          if (search && search.trim() !== "") {
             const searchLower = `%${search.toLowerCase()}%`;
             query = query.where(function () {
-              this.where('mq.manage_quotation_no', 'ILIKE', searchLower)
-                .orWhere(db.raw('LOWER(CAST(mq.customer_id AS TEXT))'), 'LIKE', searchLower)
-                .orWhere(db.raw('LOWER(CAST(mq.employee_id AS TEXT))'), 'LIKE', searchLower)
-                .orWhere(db.raw('LOWER(CAST(mq.island_id AS TEXT))'), 'LIKE', searchLower);
+              this.where("mq.manage_quotation_no", "ILIKE", searchLower)
+                .orWhere(
+                  db.raw("LOWER(CAST(mq.customer_id AS TEXT))"),
+                  "LIKE",
+                  searchLower,
+                )
+                .orWhere(
+                  db.raw("LOWER(CAST(mq.employee_id AS TEXT))"),
+                  "LIKE",
+                  searchLower,
+                )
+                .orWhere(
+                  db.raw("LOWER(CAST(mq.island_id AS TEXT))"),
+                  "LIKE",
+                  searchLower,
+                );
             });
           }
 
-          if (status && status.trim() !== '') {
-            query = query.where('mq.status', status.trim().toLowerCase());
+          if (status && status.trim() !== "") {
+            query = query.where("mq.status", status.trim().toLowerCase());
           }
 
-          if (islandId && islandId.trim() !== '') {
-            query = query.where('mq.island_id', islandId.trim());
+          if (islandId && islandId.trim() !== "") {
+            query = query.where("mq.island_id", islandId.trim());
           }
 
-          if (customerId && customerId.trim() !== '') {
-            query = query.where('mq.customer_id', customerId.trim());
+          if (customerId && customerId.trim() !== "") {
+            query = query.where("mq.customer_id", customerId.trim());
           }
 
-          if (quotationFor && quotationFor.trim() !== '') {
-            query = query.where('mq.quotation_for', quotationFor.trim());
+          if (quotationFor && quotationFor.trim() !== "") {
+            query = query.where("mq.quotation_for", quotationFor.trim());
           }
 
-          if (companyName && companyName.trim() !== '') {
-            query = query.where('mq.company', companyName.trim());
+          if (companyName && companyName.trim() !== "") {
+            query = query.where("mq.company", companyName.trim());
           }
 
           // Add date range filter condition (based on created_at)
           if (startDate) {
             const startDateTime = new Date(startDate);
             startDateTime.setHours(0, 0, 0, 0);
-            query = query.where('mq.created_at', '>=', startDateTime.toISOString());
+            query = query.where(
+              "mq.created_at",
+              ">=",
+              startDateTime.toISOString(),
+            );
           }
 
           if (endDate) {
             const endDateTime = new Date(endDate);
             endDateTime.setHours(23, 59, 59, 999);
-            query = query.where('mq.created_at', '<=', endDateTime.toISOString());
+            query = query.where(
+              "mq.created_at",
+              "<=",
+              endDateTime.toISOString(),
+            );
           }
 
-          query = query.orderBy(sortBySafe, sortOrderSafe).limit(parseInt(limit)).offset(parseInt(offset));
+          query = query
+            .orderBy(sortBySafe, sortOrderSafe)
+            .limit(parseInt(limit))
+            .offset(parseInt(offset));
           data = await query;
         } catch (retryError) {
           // If retry also fails, query without dblink joins
-          console.error('[manage-quotation:findAll] Retry failed, querying without dblink joins', retryError.message);
+          console.error(
+            "[manage-quotation:findAll] Retry failed, querying without dblink joins",
+            retryError.message,
+          );
           query = db({ mq: TABLE_NAME })
-            .select('mq.*')
-            .where('mq.is_delete', false);
+            .select("mq.*")
+            .where("mq.is_delete", false);
 
-          if (search && search.trim() !== '') {
+          if (search && search.trim() !== "") {
             const searchLower = `%${search.toLowerCase()}%`;
-            query = query.where('mq.manage_quotation_no', 'ILIKE', searchLower);
+            query = query.where("mq.manage_quotation_no", "ILIKE", searchLower);
           }
 
-          if (status && status.trim() !== '') {
-            query = query.where('mq.status', status.trim().toLowerCase());
+          if (status && status.trim() !== "") {
+            query = query.where("mq.status", status.trim().toLowerCase());
           }
 
-          if (islandId && islandId.trim() !== '') {
-            query = query.where('mq.island_id', islandId.trim());
+          if (islandId && islandId.trim() !== "") {
+            query = query.where("mq.island_id", islandId.trim());
           }
 
-          if (customerId && customerId.trim() !== '') {
-            query = query.where('mq.customer_id', customerId.trim());
+          if (customerId && customerId.trim() !== "") {
+            query = query.where("mq.customer_id", customerId.trim());
           }
 
-          if (quotationFor && quotationFor.trim() !== '') {
-            query = query.where('mq.quotation_for', quotationFor.trim());
+          if (quotationFor && quotationFor.trim() !== "") {
+            query = query.where("mq.quotation_for", quotationFor.trim());
           }
 
-          if (companyName && companyName.trim() !== '') {
-            query = query.where('mq.company', companyName.trim());
+          if (companyName && companyName.trim() !== "") {
+            query = query.where("mq.company", companyName.trim());
           }
 
           // Add date range filter condition (based on created_at)
           if (startDate) {
             const startDateTime = new Date(startDate);
             startDateTime.setHours(0, 0, 0, 0);
-            query = query.where('mq.created_at', '>=', startDateTime.toISOString());
+            query = query.where(
+              "mq.created_at",
+              ">=",
+              startDateTime.toISOString(),
+            );
           }
 
           if (endDate) {
             const endDateTime = new Date(endDate);
             endDateTime.setHours(23, 59, 59, 999);
-            query = query.where('mq.created_at', '<=', endDateTime.toISOString());
+            query = query.where(
+              "mq.created_at",
+              "<=",
+              endDateTime.toISOString(),
+            );
           }
 
-          query = query.orderBy(sortBySafe, sortOrderSafe).limit(parseInt(limit)).offset(parseInt(offset));
+          query = query
+            .orderBy(sortBySafe, sortOrderSafe)
+            .limit(parseInt(limit))
+            .offset(parseInt(offset));
           data = await query;
 
           // Set null values for joined fields
-          data = data.map(item => ({
+          data = data.map((item) => ({
             ...item,
             customer_name: null,
             contact_person: null,
             employee_name: null,
             island_name: null,
-            updated_by_name: null
+            updated_by_name: null,
           }));
         }
       } else {
         // If reconnection fails, query without joins
-        console.error('[manage-quotation:findAll] Could not reconnect dblink, querying without joins');
+        console.error(
+          "[manage-quotation:findAll] Could not reconnect dblink, querying without joins",
+        );
         query = db({ mq: TABLE_NAME })
-          .select('mq.*')
-          .where('mq.is_delete', false);
+          .select("mq.*")
+          .where("mq.is_delete", false);
 
-        if (search && search.trim() !== '') {
+        if (search && search.trim() !== "") {
           const searchLower = `%${search.toLowerCase()}%`;
-          query = query.where('mq.manage_quotation_no', 'ILIKE', searchLower);
+          query = query.where("mq.manage_quotation_no", "ILIKE", searchLower);
         }
 
-        if (status && status.trim() !== '') {
-          query = query.where('mq.status', status.trim().toLowerCase());
+        if (status && status.trim() !== "") {
+          query = query.where("mq.status", status.trim().toLowerCase());
         }
 
-        if (islandId && islandId.trim() !== '') {
-          query = query.where('mq.island_id', islandId.trim());
+        if (islandId && islandId.trim() !== "") {
+          query = query.where("mq.island_id", islandId.trim());
         }
 
-        if (customerId && customerId.trim() !== '') {
-          query = query.where('mq.customer_id', customerId.trim());
+        if (customerId && customerId.trim() !== "") {
+          query = query.where("mq.customer_id", customerId.trim());
         }
 
-        if (quotationFor && quotationFor.trim() !== '') {
-          query = query.where('mq.quotation_for', quotationFor.trim());
+        if (quotationFor && quotationFor.trim() !== "") {
+          query = query.where("mq.quotation_for", quotationFor.trim());
         }
 
-        if (companyName && companyName.trim() !== '') {
-          query = query.where('mq.company', companyName.trim());
+        if (companyName && companyName.trim() !== "") {
+          query = query.where("mq.company", companyName.trim());
         }
 
         // Add date range filter condition (based on created_at)
         if (startDate) {
           const startDateTime = new Date(startDate);
           startDateTime.setHours(0, 0, 0, 0);
-          query = query.where('mq.created_at', '>=', startDateTime.toISOString());
+          query = query.where(
+            "mq.created_at",
+            ">=",
+            startDateTime.toISOString(),
+          );
         }
 
         if (endDate) {
           const endDateTime = new Date(endDate);
           endDateTime.setHours(23, 59, 59, 999);
-          query = query.where('mq.created_at', '<=', endDateTime.toISOString());
+          query = query.where("mq.created_at", "<=", endDateTime.toISOString());
         }
 
-        query = query.orderBy(sortBySafe, sortOrderSafe).limit(parseInt(limit)).offset(parseInt(offset));
+        query = query
+          .orderBy(sortBySafe, sortOrderSafe)
+          .limit(parseInt(limit))
+          .offset(parseInt(offset));
         data = await query;
 
         // Set null values for joined fields
-        data = data.map(item => ({
+        data = data.map((item) => ({
           ...item,
           customer_name: null,
           contact_person: null,
           employee_name: null,
           island_name: null,
-          updated_by_name: null
+          updated_by_name: null,
         }));
       }
     } else {
@@ -442,63 +559,95 @@ const findAll = async (params) => {
 
   // Query total count
   let countQuery = db({ mq: TABLE_NAME })
-    .count('* as count')
-    .leftJoin(customerJoin, 'mq.customer_id', 'customer_data.customer_id')
-    .leftJoin(employeeJoin, 'mq.employee_id', 'employee_data.employee_id')
-    .leftJoin(islandJoin, 'mq.island_id', 'island_data.island_id')
-    .leftJoin(updaterJoin, 'mq.updated_by', 'updater_data.employee_id')
-    .where('mq.is_delete', false);
+    .count("* as count")
+    .leftJoin(customerJoin, "mq.customer_id", "customer_data.customer_id")
+    .leftJoin(employeeJoin, "mq.employee_id", "employee_data.employee_id")
+    .leftJoin(islandJoin, "mq.island_id", "island_data.island_id")
+    .leftJoin(updaterJoin, "mq.updated_by", "updater_data.employee_id")
+    .where("mq.is_delete", false);
 
-  if (search && search.trim() !== '') {
+  if (search && search.trim() !== "") {
     const searchLower = `%${search.toLowerCase()}%`;
     countQuery = countQuery.where(function () {
-      this.where('mq.manage_quotation_no', 'ILIKE', searchLower)
-        .orWhere(db.raw('LOWER(CAST(mq.customer_id AS TEXT))'), 'LIKE', searchLower)
-        .orWhere(db.raw('LOWER(CAST(mq.employee_id AS TEXT))'), 'LIKE', searchLower)
-        .orWhere(db.raw('LOWER(CAST(mq.island_id AS TEXT))'), 'LIKE', searchLower)
-        .orWhere(db.raw('LOWER(customer_data.customer_name)'), 'LIKE', searchLower)
-        .orWhere(db.raw('LOWER(employee_data.employee_name)'), 'LIKE', searchLower)
-        .orWhere(db.raw('LOWER(island_data.island_name)'), 'LIKE', searchLower)
-        .orWhere(db.raw('LOWER(updater_data.employee_name)'), 'LIKE', searchLower);
+      this.where("mq.manage_quotation_no", "ILIKE", searchLower)
+        .orWhere(
+          db.raw("LOWER(CAST(mq.customer_id AS TEXT))"),
+          "LIKE",
+          searchLower,
+        )
+        .orWhere(
+          db.raw("LOWER(CAST(mq.employee_id AS TEXT))"),
+          "LIKE",
+          searchLower,
+        )
+        .orWhere(
+          db.raw("LOWER(CAST(mq.island_id AS TEXT))"),
+          "LIKE",
+          searchLower,
+        )
+        .orWhere(
+          db.raw("LOWER(customer_data.customer_name)"),
+          "LIKE",
+          searchLower,
+        )
+        .orWhere(
+          db.raw("LOWER(employee_data.employee_name)"),
+          "LIKE",
+          searchLower,
+        )
+        .orWhere(db.raw("LOWER(island_data.island_name)"), "LIKE", searchLower)
+        .orWhere(
+          db.raw("LOWER(updater_data.employee_name)"),
+          "LIKE",
+          searchLower,
+        );
     });
   }
 
   // Add status filter condition to count query
-  if (status && status.trim() !== '') {
-    countQuery = countQuery.where('mq.status', status.trim().toLowerCase());
+  if (status && status.trim() !== "") {
+    countQuery = countQuery.where("mq.status", status.trim().toLowerCase());
   }
 
   // Add island_id filter condition to count query
-  if (islandId && islandId.trim() !== '') {
-    countQuery = countQuery.where('mq.island_id', islandId.trim());
+  if (islandId && islandId.trim() !== "") {
+    countQuery = countQuery.where("mq.island_id", islandId.trim());
   }
 
   // Add customer_id filter condition to count query
-  if (customerId && customerId.trim() !== '') {
-    countQuery = countQuery.where('mq.customer_id', customerId.trim());
+  if (customerId && customerId.trim() !== "") {
+    countQuery = countQuery.where("mq.customer_id", customerId.trim());
   }
 
   // Add quotation_for filter condition to count query
-  if (quotationFor && quotationFor.trim() !== '') {
-    countQuery = countQuery.where('mq.quotation_for', quotationFor.trim());
+  if (quotationFor && quotationFor.trim() !== "") {
+    countQuery = countQuery.where("mq.quotation_for", quotationFor.trim());
   }
 
   // Add company filter condition to count query
-  if (companyName && companyName.trim() !== '') {
-    countQuery = countQuery.where('mq.company', companyName.trim());
+  if (companyName && companyName.trim() !== "") {
+    countQuery = countQuery.where("mq.company", companyName.trim());
   }
 
   // Add date range filter condition to count query (based on created_at)
   if (startDate) {
     const startDateTime = new Date(startDate);
     startDateTime.setHours(0, 0, 0, 0);
-    countQuery = countQuery.where('mq.created_at', '>=', startDateTime.toISOString());
+    countQuery = countQuery.where(
+      "mq.created_at",
+      ">=",
+      startDateTime.toISOString(),
+    );
   }
 
   if (endDate) {
     const endDateTime = new Date(endDate);
     endDateTime.setHours(23, 59, 59, 999);
-    countQuery = countQuery.where('mq.created_at', '<=', endDateTime.toISOString());
+    countQuery = countQuery.where(
+      "mq.created_at",
+      "<=",
+      endDateTime.toISOString(),
+    );
   }
 
   let totalResult;
@@ -506,49 +655,68 @@ const findAll = async (params) => {
     totalResult = await countQuery;
   } catch (error) {
     // If count query fails due to dblink, query without joins
-    if (error.message && (error.message.includes('could not establish connection') || error.message.includes('dblink'))) {
-      console.error('[manage-quotation:findAll] Count query failed due to dblink error, querying without joins', error.message);
+    if (
+      error.message &&
+      (error.message.includes("could not establish connection") ||
+        error.message.includes("dblink"))
+    ) {
+      console.error(
+        "[manage-quotation:findAll] Count query failed due to dblink error, querying without joins",
+        error.message,
+      );
       countQuery = db({ mq: TABLE_NAME })
-        .count('* as count')
-        .where('mq.is_delete', false);
+        .count("* as count")
+        .where("mq.is_delete", false);
 
-      if (search && search.trim() !== '') {
+      if (search && search.trim() !== "") {
         const searchLower = `%${search.toLowerCase()}%`;
-        countQuery = countQuery.where('mq.manage_quotation_no', 'ILIKE', searchLower);
+        countQuery = countQuery.where(
+          "mq.manage_quotation_no",
+          "ILIKE",
+          searchLower,
+        );
       }
 
-      if (status && status.trim() !== '') {
-        countQuery = countQuery.where('mq.status', status.trim().toLowerCase());
+      if (status && status.trim() !== "") {
+        countQuery = countQuery.where("mq.status", status.trim().toLowerCase());
       }
 
-      if (islandId && islandId.trim() !== '') {
-        countQuery = countQuery.where('mq.island_id', islandId.trim());
+      if (islandId && islandId.trim() !== "") {
+        countQuery = countQuery.where("mq.island_id", islandId.trim());
       }
 
       // Add customer_id filter condition to count query
-      if (customerId && customerId.trim() !== '') {
-        countQuery = countQuery.where('mq.customer_id', customerId.trim());
+      if (customerId && customerId.trim() !== "") {
+        countQuery = countQuery.where("mq.customer_id", customerId.trim());
       }
 
-      if (quotationFor && quotationFor.trim() !== '') {
-        countQuery = countQuery.where('mq.quotation_for', quotationFor.trim());
+      if (quotationFor && quotationFor.trim() !== "") {
+        countQuery = countQuery.where("mq.quotation_for", quotationFor.trim());
       }
 
-      if (companyName && companyName.trim() !== '') {
-        countQuery = countQuery.where('mq.company', companyName.trim());
+      if (companyName && companyName.trim() !== "") {
+        countQuery = countQuery.where("mq.company", companyName.trim());
       }
 
       // Add date range filter condition to count query (based on created_at)
       if (startDate) {
         const startDateTime = new Date(startDate);
         startDateTime.setHours(0, 0, 0, 0);
-        countQuery = countQuery.where('mq.created_at', '>=', startDateTime.toISOString());
+        countQuery = countQuery.where(
+          "mq.created_at",
+          ">=",
+          startDateTime.toISOString(),
+        );
       }
 
       if (endDate) {
         const endDateTime = new Date(endDate);
         endDateTime.setHours(23, 59, 59, 999);
-        countQuery = countQuery.where('mq.created_at', '<=', endDateTime.toISOString());
+        countQuery = countQuery.where(
+          "mq.created_at",
+          "<=",
+          endDateTime.toISOString(),
+        );
       }
 
       totalResult = await countQuery;
@@ -566,8 +734,8 @@ const findAll = async (params) => {
       page: parseInt(page),
       limit: parseInt(limit),
       total: parseInt(total),
-      totalPages: Math.ceil(total / limit)
-    }
+      totalPages: Math.ceil(total / limit),
+    },
   };
 };
 
@@ -605,8 +773,22 @@ const findOne = async (conditions) => {
  * Convert month number (1-12) to Roman numeral
  */
 const monthToRoman = (month) => {
-  const romans = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
-  return romans[month] || '';
+  const romans = [
+    "",
+    "I",
+    "II",
+    "III",
+    "IV",
+    "V",
+    "VI",
+    "VII",
+    "VIII",
+    "IX",
+    "X",
+    "XI",
+    "XII",
+  ];
+  return romans[month] || "";
 };
 
 /**
@@ -616,23 +798,27 @@ const monthToRoman = (month) => {
  * Month is displayed but does not affect sequence reset
  */
 const generateQuotationNumber = async (company, trx = db) => {
-  const currentYear = moment().format('YYYY');
+  const currentYear = moment().format("YYYY");
   const currentMonth = moment().month() + 1; // moment().month() returns 0-11, we need 1-12
   const monthRoman = monthToRoman(currentMonth);
-  let prefix = 'IEC-MSI';
+  let prefix = "IEC-MSI";
 
   // If company is ITI, use ITI-MSI prefix
-  if (company && typeof company === 'string' && company.toUpperCase().trim() === 'ITI') {
-    prefix = 'ITI-MSI';
+  if (
+    company &&
+    typeof company === "string" &&
+    company.toUpperCase().trim() === "ITI"
+  ) {
+    prefix = "ITI-MSI";
   }
 
   // Find the last quotation number for current year
   // Extract sequence number (first 3 digits before '/') and sort numerically
   // Query based on year only, sequence reset only when year changes
   const lastQuotation = await trx(TABLE_NAME)
-    .select('manage_quotation_no')
-    .where('is_delete', false)
-    .whereNotNull('manage_quotation_no')
+    .select("manage_quotation_no")
+    .where("is_delete", false)
+    .whereNotNull("manage_quotation_no")
     .whereRaw(`manage_quotation_no LIKE '%/${prefix}/%/${currentYear}'`)
     .orderByRaw(`CAST(SPLIT_PART(manage_quotation_no, '/', 1) AS INTEGER) DESC`)
     .first();
@@ -642,11 +828,13 @@ const generateQuotationNumber = async (company, trx = db) => {
   if (lastQuotation && lastQuotation.manage_quotation_no) {
     // Extract sequence number from last quotation number
     // Format: 001/IEC-MSI/IX/2025 (4 parts) or 001/IEC-MSI/2025 (3 parts - old format)
-    const parts = lastQuotation.manage_quotation_no.split('/');
+    const parts = lastQuotation.manage_quotation_no.split("/");
 
     // Handle both old format (3 parts) and new format (4 parts)
-    if ((parts.length === 4 && parts[1] === prefix && parts[3] === currentYear) ||
-      (parts.length === 3 && parts[1] === prefix && parts[2] === currentYear)) {
+    if (
+      (parts.length === 4 && parts[1] === prefix && parts[3] === currentYear) ||
+      (parts.length === 3 && parts[1] === prefix && parts[2] === currentYear)
+    ) {
       const lastSequence = parseInt(parts[0], 10);
       if (!isNaN(lastSequence) && lastSequence > 0) {
         sequence = lastSequence + 1;
@@ -655,7 +843,7 @@ const generateQuotationNumber = async (company, trx = db) => {
   }
 
   // Format sequence with leading zeros (001, 002, etc.)
-  const sequenceStr = String(sequence).padStart(3, '0');
+  const sequenceStr = String(sequence).padStart(3, "0");
 
   return `${sequenceStr}/${prefix}/${monthRoman}/${currentYear}`;
 };
@@ -666,7 +854,7 @@ const generateQuotationNumber = async (company, trx = db) => {
 const create = async (data, trx = db) => {
   // Generate quotation number if status is submit and no number provided
   let quotationNumber = data.manage_quotation_no || null;
-  if (data.status === 'submit' && !quotationNumber) {
+  if (data.status === "submit" && !quotationNumber) {
     quotationNumber = await generateQuotationNumber(data.company, trx);
   }
 
@@ -682,26 +870,35 @@ const create = async (data, trx = db) => {
       // Fetch customer
       if (data.customer_id) {
         const customerQuery = `SELECT customer_name, customer_email, customer_phone, customer_address, contact_person FROM customers WHERE customer_id = ''${data.customer_id}''`;
-        const customerRes = await db.raw(`SELECT * FROM dblink('${DBLINK_NAME}', '${customerQuery}') AS t(customer_name varchar, customer_email varchar, customer_phone varchar, customer_address text, contact_person varchar)`);
+        const customerRes = await db.raw(
+          `SELECT * FROM dblink('${DBLINK_NAME}', '${customerQuery}') AS t(customer_name varchar, customer_email varchar, customer_phone varchar, customer_address text, contact_person varchar)`,
+        );
         if (customerRes.rows.length > 0) customerData = customerRes.rows[0];
       }
 
       // Fetch employee
       if (data.employee_id) {
         const employeeQuery = `SELECT employee_name, employee_phone FROM employees WHERE employee_id = ''${data.employee_id}''`;
-        const employeeRes = await db.raw(`SELECT * FROM dblink('${DBLINK_NAME}', '${employeeQuery}') AS t(employee_name varchar, employee_phone varchar)`);
+        const employeeRes = await db.raw(
+          `SELECT * FROM dblink('${DBLINK_NAME}', '${employeeQuery}') AS t(employee_name varchar, employee_phone varchar)`,
+        );
         if (employeeRes.rows.length > 0) employeeData = employeeRes.rows[0];
       }
 
       // Fetch island
       if (data.island_id) {
         const islandQuery = `SELECT island_name FROM islands WHERE island_id = ''${data.island_id}''`;
-        const islandRes = await db.raw(`SELECT * FROM dblink('${DBLINK_NAME}', '${islandQuery}') AS t(island_name varchar)`);
+        const islandRes = await db.raw(
+          `SELECT * FROM dblink('${DBLINK_NAME}', '${islandQuery}') AS t(island_name varchar)`,
+        );
         if (islandRes.rows.length > 0) islandData = islandRes.rows[0];
       }
     }
   } catch (err) {
-    console.error('[manage-quotation:create] Failed to fetch external data via dblink for properties', err);
+    console.error(
+      "[manage-quotation:create] Failed to fetch external data via dblink for properties",
+      err,
+    );
   }
 
   // Construct properties JSONB object
@@ -723,7 +920,7 @@ const create = async (data, trx = db) => {
     bank_account_bank_name: data.bank_account_bank_name || null,
     term_content_id: data.term_content_id || null,
     term_content_directory: data.term_content_directory || null,
-    term_content_payload: data.term_content_payload || null
+    term_content_payload: data.term_content_payload || null,
   };
 
   // Build fields object - include all expected fields
@@ -733,15 +930,26 @@ const create = async (data, trx = db) => {
     employee_id: data.employee_id || null,
     manage_quotation_date: data.manage_quotation_date || null,
     manage_quotation_valid_date: data.manage_quotation_valid_date || null,
-    manage_quotation_grand_total: data.manage_quotation_grand_total !== undefined ? data.manage_quotation_grand_total : null,
-    manage_quotation_grand_total_before: data.manage_quotation_grand_total_before !== undefined ? data.manage_quotation_grand_total_before : null,
+    manage_quotation_grand_total:
+      data.manage_quotation_grand_total !== undefined
+        ? data.manage_quotation_grand_total
+        : null,
+    manage_quotation_grand_total_before:
+      data.manage_quotation_grand_total_before !== undefined
+        ? data.manage_quotation_grand_total_before
+        : null,
     manage_quotation_mutation_type: data.manage_quotation_mutation_type || null,
-    manage_quotation_mutation_nominal: data.manage_quotation_mutation_nominal !== undefined ? data.manage_quotation_mutation_nominal : null,
+    manage_quotation_mutation_nominal:
+      data.manage_quotation_mutation_nominal !== undefined
+        ? data.manage_quotation_mutation_nominal
+        : null,
     manage_quotation_ppn: data.manage_quotation_ppn || null,
     manage_quotation_delivery_fee: data.manage_quotation_delivery_fee || null,
     manage_quotation_other: data.manage_quotation_other || null,
-    manage_quotation_payment_presentase: data.manage_quotation_payment_presentase || null,
-    manage_quotation_payment_nominal: data.manage_quotation_payment_nominal || null,
+    manage_quotation_payment_presentase:
+      data.manage_quotation_payment_presentase || null,
+    manage_quotation_payment_nominal:
+      data.manage_quotation_payment_nominal || null,
     manage_quotation_description: data.manage_quotation_description || null,
     manage_quotation_shipping_term: data.manage_quotation_shipping_term || null,
     manage_quotation_franco: data.manage_quotation_franco || null,
@@ -754,20 +962,23 @@ const create = async (data, trx = db) => {
     term_content_directory: null,
     term_content_payload: data.term_content_payload || null,
     properties: JSON.stringify(properties),
-    status: data.status || 'submit',
+    status: data.status || "submit",
     include_aftersales_page: data.include_aftersales_page ?? false,
     include_msf_page: data.include_msf_page ?? false,
     island_id: data.island_id || null,
     company: data.company || null,
     project_id: data.project_id || null,
     quotation_for: data.quotation_for || null,
-    star: data.star !== undefined ? (data.star !== null && data.star !== '' ? String(data.star) : '0') : '0',
-    created_by: data.created_by || null
+    star:
+      data.star !== undefined
+        ? data.star !== null && data.star !== ""
+          ? String(data.star)
+          : "0"
+        : "0",
+    created_by: data.created_by || null,
   };
 
-  const result = await trx(TABLE_NAME)
-    .insert(fields)
-    .returning('*');
+  const result = await trx(TABLE_NAME).insert(fields).returning("*");
 
   return result[0] || null;
 };
@@ -777,11 +988,12 @@ const create = async (data, trx = db) => {
  */
 const update = async (id, data, trx = db) => {
   // Check if status is changing to submit and quotation number is not set
-  if (data.status === 'submit') {
+  if (data.status === "submit") {
     const existingQuotation = await findById(id);
     if (existingQuotation && !existingQuotation.manage_quotation_no) {
       // Generate quotation number if status is submit and no number exists
-      const company = data.company !== undefined ? data.company : existingQuotation.company;
+      const company =
+        data.company !== undefined ? data.company : existingQuotation.company;
       data.manage_quotation_no = await generateQuotationNumber(company, trx);
     }
   }
@@ -791,9 +1003,16 @@ const update = async (id, data, trx = db) => {
   if (!existingRecord) return null;
 
   // Determine effective IDs (newly updated or existing)
-  const effectiveCustomerId = data.customer_id !== undefined ? data.customer_id : existingRecord.customer_id;
-  const effectiveEmployeeId = data.employee_id !== undefined ? data.employee_id : existingRecord.employee_id;
-  const effectiveIslandId = data.island_id !== undefined ? data.island_id : existingRecord.island_id;
+  const effectiveCustomerId =
+    data.customer_id !== undefined
+      ? data.customer_id
+      : existingRecord.customer_id;
+  const effectiveEmployeeId =
+    data.employee_id !== undefined
+      ? data.employee_id
+      : existingRecord.employee_id;
+  const effectiveIslandId =
+    data.island_id !== undefined ? data.island_id : existingRecord.island_id;
 
   // Fetch external data for properties if any change might affect them
   let customerData = {};
@@ -802,7 +1021,7 @@ const update = async (id, data, trx = db) => {
 
   // Parse existing properties or default to empty object
   let existingProperties = existingRecord.properties || {};
-  if (typeof existingProperties === 'string') {
+  if (typeof existingProperties === "string") {
     try {
       existingProperties = JSON.parse(existingProperties);
     } catch (e) {
@@ -817,26 +1036,35 @@ const update = async (id, data, trx = db) => {
       // Fetch customer if ID is present
       if (effectiveCustomerId) {
         const customerQuery = `SELECT customer_name, customer_email, customer_phone, customer_address, contact_person FROM customers WHERE customer_id = ''${effectiveCustomerId}''`;
-        const customerRes = await db.raw(`SELECT * FROM dblink('${DBLINK_NAME}', '${customerQuery}') AS t(customer_name varchar, customer_email varchar, customer_phone varchar, customer_address text, contact_person varchar)`);
+        const customerRes = await db.raw(
+          `SELECT * FROM dblink('${DBLINK_NAME}', '${customerQuery}') AS t(customer_name varchar, customer_email varchar, customer_phone varchar, customer_address text, contact_person varchar)`,
+        );
         if (customerRes.rows.length > 0) customerData = customerRes.rows[0];
       }
 
       // Fetch employee if ID is present
       if (effectiveEmployeeId) {
         const employeeQuery = `SELECT employee_name, employee_phone FROM employees WHERE employee_id = ''${effectiveEmployeeId}''`;
-        const employeeRes = await db.raw(`SELECT * FROM dblink('${DBLINK_NAME}', '${employeeQuery}') AS t(employee_name varchar, employee_phone varchar)`);
+        const employeeRes = await db.raw(
+          `SELECT * FROM dblink('${DBLINK_NAME}', '${employeeQuery}') AS t(employee_name varchar, employee_phone varchar)`,
+        );
         if (employeeRes.rows.length > 0) employeeData = employeeRes.rows[0];
       }
 
       // Fetch island if ID is present
       if (effectiveIslandId) {
         const islandQuery = `SELECT island_name FROM islands WHERE island_id = ''${effectiveIslandId}''`;
-        const islandRes = await db.raw(`SELECT * FROM dblink('${DBLINK_NAME}', '${islandQuery}') AS t(island_name varchar)`);
+        const islandRes = await db.raw(
+          `SELECT * FROM dblink('${DBLINK_NAME}', '${islandQuery}') AS t(island_name varchar)`,
+        );
         if (islandRes.rows.length > 0) islandData = islandRes.rows[0];
       }
     }
   } catch (err) {
-    console.error('[manage-quotation:update] Failed to fetch external data via dblink for properties', err);
+    console.error(
+      "[manage-quotation:update] Failed to fetch external data via dblink for properties",
+      err,
+    );
     // If dblink fails, try to use existing properties for fallback data if IDs haven't changed
     if (effectiveCustomerId === existingRecord.customer_id) {
       customerData = {
@@ -844,31 +1072,46 @@ const update = async (id, data, trx = db) => {
         customer_email: existingProperties.customer_email,
         customer_phone: existingProperties.customer_phone,
         customer_address: existingProperties.customer_address,
-        contact_person: existingProperties.contact_person
+        contact_person: existingProperties.contact_person,
       };
     }
     if (effectiveEmployeeId === existingRecord.employee_id) {
       employeeData = {
         employee_name: existingProperties.employee_name,
-        employee_phone: existingProperties.employee_phone
+        employee_phone: existingProperties.employee_phone,
       };
     }
     if (effectiveIslandId === existingRecord.island_id) {
       islandData = {
-        island_name: existingProperties.island_name
+        island_name: existingProperties.island_name,
       };
     }
   }
 
   // Determine values for other property fields
-  const effectiveBankAccountName = data.bank_account_name !== undefined ? data.bank_account_name : existingRecord.bank_account_name;
-  const effectiveBankAccountNumber = data.bank_account_number !== undefined ? data.bank_account_number : existingRecord.bank_account_number;
-  const effectiveBankAccountBankName = data.bank_account_bank_name !== undefined ? data.bank_account_bank_name : existingRecord.bank_account_bank_name;
-  const effectiveBankAccountId = data.bank_account_id !== undefined ? data.bank_account_id : existingRecord.bank_account_id;
-  const effectiveTermContentId = data.term_content_id !== undefined ? data.term_content_id : existingRecord.term_content_id;
+  const effectiveBankAccountName =
+    data.bank_account_name !== undefined
+      ? data.bank_account_name
+      : existingRecord.bank_account_name;
+  const effectiveBankAccountNumber =
+    data.bank_account_number !== undefined
+      ? data.bank_account_number
+      : existingRecord.bank_account_number;
+  const effectiveBankAccountBankName =
+    data.bank_account_bank_name !== undefined
+      ? data.bank_account_bank_name
+      : existingRecord.bank_account_bank_name;
+  const effectiveBankAccountId =
+    data.bank_account_id !== undefined
+      ? data.bank_account_id
+      : existingRecord.bank_account_id;
+  const effectiveTermContentId =
+    data.term_content_id !== undefined
+      ? data.term_content_id
+      : existingRecord.term_content_id;
 
   // For term_content_directory (HTML content), prefer update data, else use what we had (but we only store content in properties if passed explicitly in data)
-  // If data.term_content_directory is passed (even if path), it might be used here. 
+  // If data.term_content_directory is passed (even if path), it might be used here.
   // However, usually Handler passes the path here after writing file.
   // BUT the requirement said: "term_content_directory ambil dari body request (ini bisa berisi halaman html jadi sesuaiakan formatnya)"
   // So if handler passes the original content in a separate field or if we use valid data.
@@ -879,10 +1122,16 @@ const update = async (id, data, trx = db) => {
   // otherwise use term_content_directory (which might be path) or existing.
   let effectiveTermContentDirectory = data.properties_term_content_directory;
   if (effectiveTermContentDirectory === undefined) {
-    effectiveTermContentDirectory = data.term_content_directory !== undefined ? data.term_content_directory : existingRecord.term_content_directory;
+    effectiveTermContentDirectory =
+      data.term_content_directory !== undefined
+        ? data.term_content_directory
+        : existingRecord.term_content_directory;
   }
 
-  let effectiveTermContentPayload = data.term_content_payload !== undefined ? data.term_content_payload : existingRecord.term_content_payload;
+  let effectiveTermContentPayload =
+    data.term_content_payload !== undefined
+      ? data.term_content_payload
+      : existingRecord.term_content_payload;
 
   // Construct properties JSONB object
   const properties = {
@@ -903,43 +1152,82 @@ const update = async (id, data, trx = db) => {
     bank_account_bank_name: effectiveBankAccountBankName || null,
     term_content_id: effectiveTermContentId || null,
     term_content_directory: effectiveTermContentDirectory || null,
-    term_content_payload: effectiveTermContentPayload || null
+    term_content_payload: effectiveTermContentPayload || null,
   };
 
   const updateFields = {};
-  if (data.manage_quotation_no !== undefined) updateFields.manage_quotation_no = data.manage_quotation_no;
-  if (data.customer_id !== undefined) updateFields.customer_id = data.customer_id;
-  if (data.employee_id !== undefined) updateFields.employee_id = data.employee_id;
-  if (data.manage_quotation_date !== undefined) updateFields.manage_quotation_date = data.manage_quotation_date;
-  if (data.manage_quotation_valid_date !== undefined) updateFields.manage_quotation_valid_date = data.manage_quotation_valid_date;
-  if (data.manage_quotation_grand_total !== undefined) updateFields.manage_quotation_grand_total = data.manage_quotation_grand_total;
-  if (data.manage_quotation_grand_total_before !== undefined) updateFields.manage_quotation_grand_total_before = data.manage_quotation_grand_total_before;
-  if (data.manage_quotation_mutation_type !== undefined) updateFields.manage_quotation_mutation_type = data.manage_quotation_mutation_type || null;
-  if (data.manage_quotation_mutation_nominal !== undefined) updateFields.manage_quotation_mutation_nominal = data.manage_quotation_mutation_nominal;
-  if (data.manage_quotation_ppn !== undefined) updateFields.manage_quotation_ppn = data.manage_quotation_ppn;
-  if (data.manage_quotation_delivery_fee !== undefined) updateFields.manage_quotation_delivery_fee = data.manage_quotation_delivery_fee;
-  if (data.manage_quotation_other !== undefined) updateFields.manage_quotation_other = data.manage_quotation_other;
-  if (data.manage_quotation_payment_presentase !== undefined) updateFields.manage_quotation_payment_presentase = data.manage_quotation_payment_presentase;
-  if (data.manage_quotation_payment_nominal !== undefined) updateFields.manage_quotation_payment_nominal = data.manage_quotation_payment_nominal;
-  if (data.manage_quotation_description !== undefined) updateFields.manage_quotation_description = data.manage_quotation_description;
-  if (data.manage_quotation_shipping_term !== undefined) updateFields.manage_quotation_shipping_term = data.manage_quotation_shipping_term;
-  if (data.manage_quotation_franco !== undefined) updateFields.manage_quotation_franco = data.manage_quotation_franco;
-  if (data.manage_quotation_lead_time !== undefined) updateFields.manage_quotation_lead_time = data.manage_quotation_lead_time;
-  if (data.bank_account_id !== undefined) updateFields.bank_account_id = data.bank_account_id;
-  if (data.bank_account_name !== undefined) updateFields.bank_account_name = data.bank_account_name;
-  if (data.bank_account_number !== undefined) updateFields.bank_account_number = data.bank_account_number;
-  if (data.bank_account_bank_name !== undefined) updateFields.bank_account_bank_name = data.bank_account_bank_name;
-  if (data.term_content_id !== undefined) updateFields.term_content_id = data.term_content_id;
-  if (data.term_content_directory !== undefined) updateFields.term_content_directory = data.term_content_directory;
-  if (data.term_content_payload !== undefined) updateFields.term_content_payload = data.term_content_payload;
-  if (data.include_aftersales_page !== undefined) updateFields.include_aftersales_page = data.include_aftersales_page;
-  if (data.include_msf_page !== undefined) updateFields.include_msf_page = data.include_msf_page;
+  if (data.manage_quotation_no !== undefined)
+    updateFields.manage_quotation_no = data.manage_quotation_no;
+  if (data.customer_id !== undefined)
+    updateFields.customer_id = data.customer_id;
+  if (data.employee_id !== undefined)
+    updateFields.employee_id = data.employee_id;
+  if (data.manage_quotation_date !== undefined)
+    updateFields.manage_quotation_date = data.manage_quotation_date;
+  if (data.manage_quotation_valid_date !== undefined)
+    updateFields.manage_quotation_valid_date = data.manage_quotation_valid_date;
+  if (data.manage_quotation_grand_total !== undefined)
+    updateFields.manage_quotation_grand_total =
+      data.manage_quotation_grand_total;
+  if (data.manage_quotation_grand_total_before !== undefined)
+    updateFields.manage_quotation_grand_total_before =
+      data.manage_quotation_grand_total_before;
+  if (data.manage_quotation_mutation_type !== undefined)
+    updateFields.manage_quotation_mutation_type =
+      data.manage_quotation_mutation_type || null;
+  if (data.manage_quotation_mutation_nominal !== undefined)
+    updateFields.manage_quotation_mutation_nominal =
+      data.manage_quotation_mutation_nominal;
+  if (data.manage_quotation_ppn !== undefined)
+    updateFields.manage_quotation_ppn = data.manage_quotation_ppn;
+  if (data.manage_quotation_delivery_fee !== undefined)
+    updateFields.manage_quotation_delivery_fee =
+      data.manage_quotation_delivery_fee;
+  if (data.manage_quotation_other !== undefined)
+    updateFields.manage_quotation_other = data.manage_quotation_other;
+  if (data.manage_quotation_payment_presentase !== undefined)
+    updateFields.manage_quotation_payment_presentase =
+      data.manage_quotation_payment_presentase;
+  if (data.manage_quotation_payment_nominal !== undefined)
+    updateFields.manage_quotation_payment_nominal =
+      data.manage_quotation_payment_nominal;
+  if (data.manage_quotation_description !== undefined)
+    updateFields.manage_quotation_description =
+      data.manage_quotation_description;
+  if (data.manage_quotation_shipping_term !== undefined)
+    updateFields.manage_quotation_shipping_term =
+      data.manage_quotation_shipping_term;
+  if (data.manage_quotation_franco !== undefined)
+    updateFields.manage_quotation_franco = data.manage_quotation_franco;
+  if (data.manage_quotation_lead_time !== undefined)
+    updateFields.manage_quotation_lead_time = data.manage_quotation_lead_time;
+  if (data.bank_account_id !== undefined)
+    updateFields.bank_account_id = data.bank_account_id;
+  if (data.bank_account_name !== undefined)
+    updateFields.bank_account_name = data.bank_account_name;
+  if (data.bank_account_number !== undefined)
+    updateFields.bank_account_number = data.bank_account_number;
+  if (data.bank_account_bank_name !== undefined)
+    updateFields.bank_account_bank_name = data.bank_account_bank_name;
+  if (data.term_content_id !== undefined)
+    updateFields.term_content_id = data.term_content_id;
+  if (data.term_content_directory !== undefined)
+    updateFields.term_content_directory = data.term_content_directory;
+  if (data.term_content_payload !== undefined)
+    updateFields.term_content_payload = data.term_content_payload;
+  if (data.include_aftersales_page !== undefined)
+    updateFields.include_aftersales_page = data.include_aftersales_page;
+  if (data.include_msf_page !== undefined)
+    updateFields.include_msf_page = data.include_msf_page;
   if (data.status !== undefined) updateFields.status = data.status;
   if (data.island_id !== undefined) updateFields.island_id = data.island_id;
   if (data.company !== undefined) updateFields.company = data.company;
   if (data.project_id !== undefined) updateFields.project_id = data.project_id;
-  if (data.quotation_for !== undefined) updateFields.quotation_for = data.quotation_for;
-  if (data.star !== undefined) updateFields.star = data.star !== null && data.star !== '' ? String(data.star) : '0';
+  if (data.quotation_for !== undefined)
+    updateFields.quotation_for = data.quotation_for;
+  if (data.star !== undefined)
+    updateFields.star =
+      data.star !== null && data.star !== "" ? String(data.star) : "0";
   if (data.updated_by !== undefined) updateFields.updated_by = data.updated_by;
   if (data.deleted_by !== undefined) updateFields.deleted_by = data.deleted_by;
 
@@ -956,7 +1244,7 @@ const update = async (id, data, trx = db) => {
   const result = await trx(TABLE_NAME)
     .where({ manage_quotation_id: id, is_delete: false })
     .update(updateFields)
-    .returning('*');
+    .returning("*");
 
   return result[0] || null;
 };
@@ -973,9 +1261,9 @@ const remove = async (id) => {
     .where({ manage_quotation_id: id, is_delete: false })
     .update({
       is_delete: true,
-      deleted_at: db.fn.now()
+      deleted_at: db.fn.now(),
     })
-    .returning('*');
+    .returning("*");
 
   return result[0] || null;
 };
@@ -994,9 +1282,9 @@ const restore = async (id) => {
       is_delete: false,
       deleted_at: null,
       deleted_by: null,
-      updated_at: db.fn.now()
+      updated_at: db.fn.now(),
     })
-    .returning('*');
+    .returning("*");
 
   return result[0] || null;
 };
@@ -1009,9 +1297,7 @@ const hardDelete = async (id) => {
     return false;
   }
 
-  const result = await db(TABLE_NAME)
-    .where({ manage_quotation_id: id })
-    .del();
+  const result = await db(TABLE_NAME).where({ manage_quotation_id: id }).del();
 
   return result > 0;
 };
@@ -1020,7 +1306,7 @@ const hardDelete = async (id) => {
  * ITEM FUNCTIONS
  */
 
-const ITEMS_TABLE_NAME = 'manage_quotation_items';
+const ITEMS_TABLE_NAME = "manage_quotation_items";
 
 /**
  * Validate componen_product_id exists
@@ -1039,7 +1325,9 @@ const validateComponenProductIds = async (items) => {
     }
 
     // Check if componen_product_id exists
-    const product = await componenProductRepository.findById(item.componen_product_id);
+    const product = await componenProductRepository.findById(
+      item.componen_product_id,
+    );
     if (!product) {
       invalidIds.push(item.componen_product_id);
     }
@@ -1047,14 +1335,19 @@ const validateComponenProductIds = async (items) => {
 
   return {
     isValid: invalidIds.length === 0,
-    invalidIds
+    invalidIds,
   };
 };
 
 /**
  * Create quotation items
  */
-const createItems = async (manage_quotation_id, items, created_by, trx = db) => {
+const createItems = async (
+  manage_quotation_id,
+  items,
+  created_by,
+  trx = db,
+) => {
   if (!items || items.length === 0) {
     return [];
   }
@@ -1066,9 +1359,11 @@ const createItems = async (manage_quotation_id, items, created_by, trx = db) => 
     let orderNumber = 0;
     if (item.order_number !== undefined && item.order_number !== null) {
       // Handle both string and number types
-      if (typeof item.order_number === 'number') {
-        orderNumber = isNaN(item.order_number) ? 0 : Math.floor(item.order_number);
-      } else if (typeof item.order_number === 'string') {
+      if (typeof item.order_number === "number") {
+        orderNumber = isNaN(item.order_number)
+          ? 0
+          : Math.floor(item.order_number);
+      } else if (typeof item.order_number === "string") {
         const parsed = parseInt(item.order_number, 10);
         orderNumber = isNaN(parsed) ? 0 : parsed;
       } else {
@@ -1080,9 +1375,9 @@ const createItems = async (manage_quotation_id, items, created_by, trx = db) => 
     // Ensure quantity is also an integer
     let quantity = 1;
     if (item.quantity !== undefined && item.quantity !== null) {
-      if (typeof item.quantity === 'number') {
+      if (typeof item.quantity === "number") {
         quantity = isNaN(item.quantity) ? 1 : Math.floor(item.quantity);
-      } else if (typeof item.quantity === 'string') {
+      } else if (typeof item.quantity === "string") {
         const parsed = parseInt(item.quantity, 10);
         quantity = isNaN(parsed) ? 1 : parsed;
       }
@@ -1108,21 +1403,29 @@ const createItems = async (manage_quotation_id, items, created_by, trx = db) => 
       notes: item.notes ?? null,
       order_number: orderNumber,
       specification_properties: item.specification_properties
-        ? JSON.stringify(Array.isArray(item.specification_properties)
-          ? item.specification_properties.map(p => ({ ...p, manage_quotation_id: manage_quotation_id || null }))
-          : item.specification_properties)
-        : '{}',
+        ? JSON.stringify(
+            Array.isArray(item.specification_properties)
+              ? item.specification_properties.map((p) => ({
+                  ...p,
+                  manage_quotation_id: manage_quotation_id || null,
+                }))
+              : item.specification_properties,
+          )
+        : "{}",
       accesories_properties: item.accesories_properties
-        ? JSON.stringify(Array.isArray(item.accesories_properties)
-          ? item.accesories_properties.map(p => ({ ...p, manage_quotation_id: manage_quotation_id || null }))
-          : item.accesories_properties)
-        : '{}',
-      created_by: created_by || null
+        ? JSON.stringify(
+            Array.isArray(item.accesories_properties)
+              ? item.accesories_properties.map((p) => ({
+                  ...p,
+                  manage_quotation_id: manage_quotation_id || null,
+                }))
+              : item.accesories_properties,
+          )
+        : "{}",
+      created_by: created_by || null,
     };
 
-    const result = await trx(ITEMS_TABLE_NAME)
-      .insert(fields)
-      .returning('*');
+    const result = await trx(ITEMS_TABLE_NAME).insert(fields).returning("*");
 
     results.push(result[0]);
   }
@@ -1140,57 +1443,61 @@ const getItemsByQuotationId = async (manage_quotation_id) => {
 
   const result = await db(`${ITEMS_TABLE_NAME} as mqi`)
     .select(
-      'mqi.manage_quotation_item_id',
-      'mqi.manage_quotation_id',
-      'mqi.componen_product_id',
-      'mqi.code_unique',
-      'mqi.segment',
-      'mqi.msi_model',
-      'mqi.msi_product',
-      'mqi.wheel_no',
-      'mqi.engine',
-      'mqi.volume',
-      'mqi.horse_power',
-      'mqi.market_price',
-      'mqi.componen_product_name',
-      'mqi.quantity',
-      'mqi.price',
-      'mqi.total',
-      'mqi.description',
-      'mqi.notes',
-      'mqi.order_number',
-      'mqi.created_by',
-      'mqi.updated_by',
-      'mqi.deleted_by',
-      'mqi.created_at',
-      'mqi.updated_at',
-      'mqi.deleted_at',
-      'mqi.is_delete',
-      'mqi.specification_properties',
-      'mqi.accesories_properties',
+      "mqi.manage_quotation_item_id",
+      "mqi.manage_quotation_id",
+      "mqi.componen_product_id",
+      "mqi.code_unique",
+      "mqi.segment",
+      "mqi.msi_model",
+      "mqi.msi_product",
+      "mqi.wheel_no",
+      "mqi.engine",
+      "mqi.volume",
+      "mqi.horse_power",
+      "mqi.market_price",
+      "mqi.componen_product_name",
+      "mqi.quantity",
+      "mqi.price",
+      "mqi.total",
+      "mqi.description",
+      "mqi.notes",
+      "mqi.order_number",
+      "mqi.created_by",
+      "mqi.updated_by",
+      "mqi.deleted_by",
+      "mqi.created_at",
+      "mqi.updated_at",
+      "mqi.deleted_at",
+      "mqi.is_delete",
+      "mqi.specification_properties",
+      "mqi.accesories_properties",
       // Data from componen_products - using db.raw for aliases
-      db.raw('cp.code_unique as cp_code_unique'),
-      db.raw('cp.segment as cp_segment'),
-      db.raw('cp.msi_model as cp_msi_model'),
-      db.raw('cp.msi_product as cp_msi_product'),
-      db.raw('cp.wheel_no as cp_wheel_no'),
-      db.raw('cp.engine as cp_engine'),
-      db.raw('cp.volume as cp_volume'),
-      db.raw('cp.horse_power as cp_horse_power'),
-      db.raw('cp.market_price as cp_market_price'),
-      db.raw('cp.componen_product_name as cp_componen_product_name'),
-      db.raw('cp.componen_product_unit_model as cp_componen_product_unit_model'),
-      db.raw('cp.image as cp_image'),
-      db.raw('cp.componen_type as cp_componen_type'),
-      db.raw('cp.product_type as cp_product_type')
+      db.raw("cp.code_unique as cp_code_unique"),
+      db.raw("cp.segment as cp_segment"),
+      db.raw("cp.notes as cp_notes"),
+      db.raw("cp.msi_model as cp_msi_model"),
+      db.raw("cp.msi_product as cp_msi_product"),
+      db.raw("cp.wheel_no as cp_wheel_no"),
+      db.raw("cp.engine as cp_engine"),
+      db.raw("cp.volume as cp_volume"),
+      db.raw("cp.horse_power as cp_horse_power"),
+      db.raw("cp.market_price as cp_market_price"),
+      db.raw("cp.componen_product_name as cp_componen_product_name"),
+      db.raw(
+        "cp.componen_product_unit_model as cp_componen_product_unit_model",
+      ),
+      db.raw("cp.image as cp_image"),
+      db.raw("cp.componen_type as cp_componen_type"),
+      db.raw("cp.product_type as cp_product_type"),
     )
-    .leftJoin('componen_products as cp', function () {
-      this.on('mqi.componen_product_id', '=', 'cp.componen_product_id')
-        .andOn(db.raw('cp.is_delete = false'));
+    .leftJoin("componen_products as cp", function () {
+      this.on("mqi.componen_product_id", "=", "cp.componen_product_id").andOn(
+        db.raw("cp.is_delete = false"),
+      );
     })
-    .where('mqi.manage_quotation_id', manage_quotation_id)
-    .where('mqi.is_delete', false)
-    .orderBy('mqi.order_number', 'asc');
+    .where("mqi.manage_quotation_id", manage_quotation_id)
+    .where("mqi.is_delete", false)
+    .orderBy("mqi.order_number", "asc");
 
   return result || [];
 };
@@ -1257,7 +1564,7 @@ const validateAccessoryIds = async (accessories) => {
 
   return {
     isValid: invalidIds.length === 0,
-    invalidIds
+    invalidIds,
   };
 };
 
@@ -1269,9 +1576,9 @@ const getAccessoriesByIds = async (ids) => {
     return [];
   }
 
-  const result = await db('accessories')
-    .whereIn('accessory_id', ids)
-    .where('is_delete', false);
+  const result = await db("accessories")
+    .whereIn("accessory_id", ids)
+    .where("is_delete", false);
 
   return result;
 };
@@ -1291,7 +1598,9 @@ const validateSpecificationComponenProductIds = async (specifications) => {
       continue;
     }
 
-    const product = await componenProductRepository.findById(spec.componen_product_id);
+    const product = await componenProductRepository.findById(
+      spec.componen_product_id,
+    );
     if (!product) {
       invalidIds.push(spec.componen_product_id);
     }
@@ -1299,7 +1608,7 @@ const validateSpecificationComponenProductIds = async (specifications) => {
 
   return {
     isValid: invalidIds.length === 0,
-    invalidIds
+    invalidIds,
   };
 };
 
@@ -1308,9 +1617,16 @@ const validateSpecificationComponenProductIds = async (specifications) => {
  * DISABLED: Tabel manage_quotation_item_accessories sudah dihapus.
  * Data accessories sekarang disimpan di kolom accesories_properties (JSONB) di tabel manage_quotation_items.
  */
-const createAccessories = async (manage_quotation_id, accessories, created_by, trx = db) => {
+const createAccessories = async (
+  manage_quotation_id,
+  accessories,
+  created_by,
+  trx = db,
+) => {
   // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
-  console.warn('[DEPRECATED] createAccessories() is disabled. Use accesories_properties in manage_quotation_items instead.');
+  console.warn(
+    "[DEPRECATED] createAccessories() is disabled. Use accesories_properties in manage_quotation_items instead.",
+  );
   return [];
 };
 
@@ -1321,7 +1637,9 @@ const createAccessories = async (manage_quotation_id, accessories, created_by, t
  */
 const getAccessoriesByQuotationId = async (manage_quotation_id) => {
   // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
-  console.warn('[DEPRECATED] getAccessoriesByQuotationId() is disabled. Use accesories_properties from manage_quotation_items instead.');
+  console.warn(
+    "[DEPRECATED] getAccessoriesByQuotationId() is disabled. Use accesories_properties from manage_quotation_items instead.",
+  );
   return [];
 };
 
@@ -1332,7 +1650,9 @@ const getAccessoriesByQuotationId = async (manage_quotation_id) => {
  */
 const deleteAccessoriesByQuotationId = async (manage_quotation_id) => {
   // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
-  console.warn('[DEPRECATED] deleteAccessoriesByQuotationId() is disabled. Update accesories_properties in manage_quotation_items instead.');
+  console.warn(
+    "[DEPRECATED] deleteAccessoriesByQuotationId() is disabled. Update accesories_properties in manage_quotation_items instead.",
+  );
   return false;
 };
 
@@ -1341,9 +1661,15 @@ const deleteAccessoriesByQuotationId = async (manage_quotation_id) => {
  * DISABLED: Tabel manage_quotation_item_accessories sudah dihapus.
  * Data accessories sekarang diupdate melalui kolom accesories_properties di tabel manage_quotation_items.
  */
-const replaceAccessories = async (manage_quotation_id, accessories, updated_by) => {
+const replaceAccessories = async (
+  manage_quotation_id,
+  accessories,
+  updated_by,
+) => {
   // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
-  console.warn('[DEPRECATED] replaceAccessories() is disabled. Update accesories_properties in manage_quotation_items instead.');
+  console.warn(
+    "[DEPRECATED] replaceAccessories() is disabled. Update accesories_properties in manage_quotation_items instead.",
+  );
   return [];
 };
 
@@ -1353,9 +1679,16 @@ const replaceAccessories = async (manage_quotation_id, accessories, updated_by) 
  * Data specifications sekarang disimpan di kolom specification_properties (JSONB) di tabel manage_quotation_items.
  */
 
-const createSpecifications = async (manage_quotation_id, specifications, created_by, trx = db) => {
+const createSpecifications = async (
+  manage_quotation_id,
+  specifications,
+  created_by,
+  trx = db,
+) => {
   // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
-  console.warn('[DEPRECATED] createSpecifications() is disabled. Use specification_properties in manage_quotation_items instead.');
+  console.warn(
+    "[DEPRECATED] createSpecifications() is disabled. Use specification_properties in manage_quotation_items instead.",
+  );
   return [];
 };
 
@@ -1366,7 +1699,9 @@ const createSpecifications = async (manage_quotation_id, specifications, created
  */
 const getSpecificationsByQuotationId = async (manage_quotation_id) => {
   // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
-  console.warn('[DEPRECATED] getSpecificationsByQuotationId() is disabled. Use specification_properties from manage_quotation_items instead.');
+  console.warn(
+    "[DEPRECATED] getSpecificationsByQuotationId() is disabled. Use specification_properties from manage_quotation_items instead.",
+  );
   return [];
 };
 
@@ -1377,7 +1712,9 @@ const getSpecificationsByQuotationId = async (manage_quotation_id) => {
  */
 const deleteSpecificationsByQuotationId = async (manage_quotation_id) => {
   // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
-  console.warn('[DEPRECATED] deleteSpecificationsByQuotationId() is disabled. Update specification_properties in manage_quotation_items instead.');
+  console.warn(
+    "[DEPRECATED] deleteSpecificationsByQuotationId() is disabled. Update specification_properties in manage_quotation_items instead.",
+  );
   return false;
 };
 
@@ -1386,9 +1723,15 @@ const deleteSpecificationsByQuotationId = async (manage_quotation_id) => {
  * DISABLED: Tabel manage_quotation_item_specifications sudah dihapus.
  * Data specifications sekarang diupdate melalui kolom specification_properties di tabel manage_quotation_items.
  */
-const replaceSpecifications = async (manage_quotation_id, specifications, updated_by) => {
+const replaceSpecifications = async (
+  manage_quotation_id,
+  specifications,
+  updated_by,
+) => {
   // DISABLED: Function tidak lagi digunakan karena tabel sudah dihapus
-  console.warn('[DEPRECATED] replaceSpecifications() is disabled. Update specification_properties in manage_quotation_items instead.');
+  console.warn(
+    "[DEPRECATED] replaceSpecifications() is disabled. Update specification_properties in manage_quotation_items instead.",
+  );
   return [];
 };
 
@@ -1403,19 +1746,22 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
   // Get source quotation
   const sourceQuotation = await findById(sourceQuotationId);
   if (!sourceQuotation) {
-    throw new Error('Quotation tidak ditemukan');
+    throw new Error("Quotation tidak ditemukan");
   }
 
   // Get all related data
   const sourceItems = await getItemsByQuotationId(sourceQuotationId);
 
   // Generate new quotation number
-  const newQuotationNo = await generateQuotationNumber(sourceQuotation.company, trx);
+  const newQuotationNo = await generateQuotationNumber(
+    sourceQuotation.company,
+    trx,
+  );
 
   // Build description: copy from manage_quotation_no mana
   const descriptionPrefix = sourceQuotation.manage_quotation_no
     ? `Copy dari ${sourceQuotation.manage_quotation_no}`
-    : 'Copy dari quotation';
+    : "Copy dari quotation";
   const newDescription = sourceQuotation.manage_quotation_description
     ? `${descriptionPrefix}. ${sourceQuotation.manage_quotation_description}`
     : descriptionPrefix;
@@ -1429,16 +1775,23 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
     manage_quotation_date: sourceQuotation.manage_quotation_date,
     manage_quotation_valid_date: sourceQuotation.manage_quotation_valid_date,
     manage_quotation_grand_total: sourceQuotation.manage_quotation_grand_total,
-    manage_quotation_grand_total_before: sourceQuotation.manage_quotation_grand_total_before,
-    manage_quotation_mutation_type: sourceQuotation.manage_quotation_mutation_type,
-    manage_quotation_mutation_nominal: sourceQuotation.manage_quotation_mutation_nominal,
+    manage_quotation_grand_total_before:
+      sourceQuotation.manage_quotation_grand_total_before,
+    manage_quotation_mutation_type:
+      sourceQuotation.manage_quotation_mutation_type,
+    manage_quotation_mutation_nominal:
+      sourceQuotation.manage_quotation_mutation_nominal,
     manage_quotation_ppn: sourceQuotation.manage_quotation_ppn,
-    manage_quotation_delivery_fee: sourceQuotation.manage_quotation_delivery_fee,
+    manage_quotation_delivery_fee:
+      sourceQuotation.manage_quotation_delivery_fee,
     manage_quotation_other: sourceQuotation.manage_quotation_other,
-    manage_quotation_payment_presentase: sourceQuotation.manage_quotation_payment_presentase,
-    manage_quotation_payment_nominal: sourceQuotation.manage_quotation_payment_nominal,
+    manage_quotation_payment_presentase:
+      sourceQuotation.manage_quotation_payment_presentase,
+    manage_quotation_payment_nominal:
+      sourceQuotation.manage_quotation_payment_nominal,
     manage_quotation_description: newDescription,
-    manage_quotation_shipping_term: sourceQuotation.manage_quotation_shipping_term,
+    manage_quotation_shipping_term:
+      sourceQuotation.manage_quotation_shipping_term,
     manage_quotation_franco: sourceQuotation.manage_quotation_franco,
     manage_quotation_lead_time: sourceQuotation.manage_quotation_lead_time,
     bank_account_name: sourceQuotation.bank_account_name,
@@ -1447,7 +1800,7 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
     term_content_id: sourceQuotation.term_content_id,
     term_content_directory: sourceQuotation.term_content_directory,
     term_content_payload: sourceQuotation.term_content_payload,
-    status: 'submit',
+    status: "submit",
     include_aftersales_page: sourceQuotation.include_aftersales_page ?? false,
     include_msf_page: sourceQuotation.include_msf_page ?? false,
     company: sourceQuotation.company,
@@ -1455,14 +1808,14 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
     quotation_for: sourceQuotation.quotation_for,
     star: sourceQuotation.star,
     bank_account_id: sourceQuotation.bank_account_id,
-    created_by: created_by
+    created_by: created_by,
   };
 
   // Create new quotation
   const newQuotation = await create(newQuotationData, trx);
 
   // Prepare items for duplication (remove IDs and manage_quotation_id)
-  const itemsForInsert = sourceItems.map(item => {
+  const itemsForInsert = sourceItems.map((item) => {
     const {
       manage_quotation_item_id,
       manage_quotation_id,
@@ -1476,6 +1829,7 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
       // Remove fields from JOIN with componen_products
       cp_code_unique,
       cp_segment,
+      cp_notes,
       cp_msi_model,
       cp_msi_product,
       cp_wheel_no,
@@ -1492,25 +1846,38 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
 
     // Parse properties if they are strings (they should be JSONB, so objects, but just in case)
     let specProps = item.specification_properties;
-    if (typeof specProps === 'string') {
-      try { specProps = JSON.parse(specProps); } catch (e) { specProps = []; }
+    if (typeof specProps === "string") {
+      try {
+        specProps = JSON.parse(specProps);
+      } catch (e) {
+        specProps = [];
+      }
     }
 
     let accProps = item.accesories_properties;
-    if (typeof accProps === 'string') {
-      try { accProps = JSON.parse(accProps); } catch (e) { accProps = []; }
+    if (typeof accProps === "string") {
+      try {
+        accProps = JSON.parse(accProps);
+      } catch (e) {
+        accProps = [];
+      }
     }
 
     return {
       ...rest,
       specification_properties: specProps,
-      accesories_properties: accProps
+      accesories_properties: accProps,
     };
   });
 
   // Create items
   if (itemsForInsert.length > 0) {
-    await createItems(newQuotation.manage_quotation_id, itemsForInsert, created_by, trx);
+    await createItems(
+      newQuotation.manage_quotation_id,
+      itemsForInsert,
+      created_by,
+      trx,
+    );
   }
 
   return newQuotation;
@@ -1542,6 +1909,5 @@ module.exports = {
   getSpecificationsByQuotationId,
   deleteSpecificationsByQuotationId,
   replaceSpecifications,
-  duplicateQuotation
+  duplicateQuotation,
 };
-

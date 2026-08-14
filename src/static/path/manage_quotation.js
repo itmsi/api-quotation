@@ -3,889 +3,906 @@
  */
 
 const manageQuotationPaths = {
-  '/manage-quotation/get': {
+  "/manage-quotation/get": {
     post: {
-      tags: ['Manage Quotation'],
-      summary: 'Get all manage quotations',
-      description: 'Retrieve all manage quotations with pagination, search, and sorting',
+      tags: ["Manage Quotation"],
+      summary: "Get all manage quotations",
+      description:
+        "Retrieve all manage quotations with pagination, search, and sorting",
       security: [
         {
-          bearerAuth: []
-        }
+          bearerAuth: [],
+        },
       ],
       requestBody: {
         required: true,
         content: {
-          'application/json': {
-            schema: { $ref: '#/components/schemas/ManageQuotationFilterInput' },
+          "application/json": {
+            schema: { $ref: "#/components/schemas/ManageQuotationFilterInput" },
             examples: {
               getAllStatuses: {
-                summary: 'Get all quotations (all statuses)',
-                description: 'Get all quotations without filtering by status',
+                summary: "Get all quotations (all statuses)",
+                description: "Get all quotations without filtering by status",
                 value: {
                   page: 1,
                   limit: 10,
-                  search: '',
-                  sort_by: 'created_at',
-                  sort_order: 'desc',
-                  status: '',
-                  island_id: '',
-                  quotation_for: '',
-                  start_date: '',
-                  end_date: '',
-                  customer_id: '',
-                  company_name: ''
-                }
+                  search: "",
+                  sort_by: "created_at",
+                  sort_order: "desc",
+                  status: "",
+                  island_id: "",
+                  quotation_for: "",
+                  start_date: "",
+                  end_date: "",
+                  customer_id: "",
+                  company_name: "",
+                },
               },
               getDraftOnly: {
-                summary: 'Get draft quotations only',
-                description: 'Filter quotations with status draft',
+                summary: "Get draft quotations only",
+                description: "Filter quotations with status draft",
                 value: {
                   page: 1,
                   limit: 10,
-                  search: '',
-                  sort_by: 'created_at',
-                  sort_order: 'desc',
-                  status: 'draft',
-                  island_id: '',
-                  quotation_for: '',
-                  start_date: '',
-                  end_date: '',
-                  customer_id: ''
-                }
+                  search: "",
+                  sort_by: "created_at",
+                  sort_order: "desc",
+                  status: "draft",
+                  island_id: "",
+                  quotation_for: "",
+                  start_date: "",
+                  end_date: "",
+                  customer_id: "",
+                },
               },
               getSubmitOnly: {
-                summary: 'Get submit quotations only',
-                description: 'Filter quotations with status submit',
+                summary: "Get submit quotations only",
+                description: "Filter quotations with status submit",
                 value: {
                   page: 1,
                   limit: 10,
-                  search: '',
-                  sort_by: 'created_at',
-                  sort_order: 'desc',
-                  status: 'submit',
-                  island_id: '',
-                  quotation_for: '',
-                  start_date: '',
-                  end_date: '',
-                  customer_id: ''
-                }
+                  search: "",
+                  sort_by: "created_at",
+                  sort_order: "desc",
+                  status: "submit",
+                  island_id: "",
+                  quotation_for: "",
+                  start_date: "",
+                  end_date: "",
+                  customer_id: "",
+                },
               },
               getRejectOnly: {
-                summary: 'Get reject quotations only',
-                description: 'Filter quotations with status reject',
+                summary: "Get reject quotations only",
+                description: "Filter quotations with status reject",
                 value: {
                   page: 1,
                   limit: 10,
-                  search: '',
-                  sort_by: 'created_at',
-                  sort_order: 'desc',
-                  status: 'reject',
-                  island_id: '',
-                  quotation_for: '',
-                  start_date: '',
-                  end_date: '',
-                  customer_id: ''
-                }
+                  search: "",
+                  sort_by: "created_at",
+                  sort_order: "desc",
+                  status: "reject",
+                  island_id: "",
+                  quotation_for: "",
+                  start_date: "",
+                  end_date: "",
+                  customer_id: "",
+                },
               },
               getByIslandId: {
-                summary: 'Get quotations by island_id',
-                description: 'Filter quotations by specific island_id',
+                summary: "Get quotations by island_id",
+                description: "Filter quotations by specific island_id",
                 value: {
                   page: 1,
                   limit: 10,
-                  search: '',
-                  sort_by: 'created_at',
-                  sort_order: 'desc',
-                  status: '',
-                  island_id: '123e4567-e89b-12d3-a456-426614174003',
-                  quotation_for: '',
-                  start_date: '',
-                  end_date: '',
-                  customer_id: ''
-                }
+                  search: "",
+                  sort_by: "created_at",
+                  sort_order: "desc",
+                  status: "",
+                  island_id: "123e4567-e89b-12d3-a456-426614174003",
+                  quotation_for: "",
+                  start_date: "",
+                  end_date: "",
+                  customer_id: "",
+                },
               },
               getAllWithEmptyIslandId: {
-                summary: 'Get all quotations (island_id empty)',
-                description: 'Get all quotations without filtering by island_id',
+                summary: "Get all quotations (island_id empty)",
+                description:
+                  "Get all quotations without filtering by island_id",
                 value: {
                   page: 1,
                   limit: 10,
-                  search: '',
-                  sort_by: 'created_at',
-                  sort_order: 'desc',
-                  status: '',
-                  island_id: '',
-                  quotation_for: '',
-                  start_date: '',
-                  end_date: '',
-                  customer_id: ''
-                }
+                  search: "",
+                  sort_by: "created_at",
+                  sort_order: "desc",
+                  status: "",
+                  island_id: "",
+                  quotation_for: "",
+                  start_date: "",
+                  end_date: "",
+                  customer_id: "",
+                },
               },
               getByQuotationFor: {
-                summary: 'Get quotations by quotation_for',
-                description: 'Filter quotations by specific quotation_for',
+                summary: "Get quotations by quotation_for",
+                description: "Filter quotations by specific quotation_for",
                 value: {
                   page: 1,
                   limit: 10,
-                  search: '',
-                  sort_by: 'created_at',
-                  sort_order: 'desc',
-                  status: '',
-                  island_id: '',
-                  quotation_for: 'Customer Name',
-                  start_date: '',
-                  end_date: '',
-                  customer_id: ''
-                }
+                  search: "",
+                  sort_by: "created_at",
+                  sort_order: "desc",
+                  status: "",
+                  island_id: "",
+                  quotation_for: "Customer Name",
+                  start_date: "",
+                  end_date: "",
+                  customer_id: "",
+                },
               },
               getByDateRange: {
-                summary: 'Get quotations by date range',
-                description: 'Filter quotations by date range (based on created_at)',
+                summary: "Get quotations by date range",
+                description:
+                  "Filter quotations by date range (based on created_at)",
                 value: {
                   page: 1,
                   limit: 10,
-                  search: '',
-                  sort_by: 'created_at',
-                  sort_order: 'desc',
-                  status: '',
-                  island_id: '',
-                  quotation_for: '',
-                  start_date: '2025-01-01',
-                  end_date: '2025-01-31',
-                  customer_id: ''
-                }
+                  search: "",
+                  sort_by: "created_at",
+                  sort_order: "desc",
+                  status: "",
+                  island_id: "",
+                  quotation_for: "",
+                  start_date: "2025-01-01",
+                  end_date: "2025-01-31",
+                  customer_id: "",
+                },
               },
               getByDateRange: {
-                summary: 'Get quotations by date range',
-                description: 'Filter quotations by date range (based on created_at)',
+                summary: "Get quotations by date range",
+                description:
+                  "Filter quotations by date range (based on created_at)",
                 value: {
                   page: 1,
                   limit: 10,
-                  search: '',
-                  sort_by: 'created_at',
-                  sort_order: 'desc',
-                  status: '',
-                  island_id: '',
-                  quotation_for: '',
-                  start_date: '2025-01-01',
-                  end_date: '2025-01-31',
-                  customer_id: ''
-                }
-              }
-            }
-          }
-        }
+                  search: "",
+                  sort_by: "created_at",
+                  sort_order: "desc",
+                  status: "",
+                  island_id: "",
+                  quotation_for: "",
+                  start_date: "2025-01-01",
+                  end_date: "2025-01-31",
+                  customer_id: "",
+                },
+              },
+            },
+          },
+        },
       },
       responses: {
         200: {
-          description: 'Success',
+          description: "Success",
           content: {
-            'application/json': {
+            "application/json": {
               schema: {
-                type: 'object',
+                type: "object",
                 properties: {
-                  success: { type: 'boolean', example: true },
+                  success: { type: "boolean", example: true },
                   data: {
-                    type: 'object',
+                    type: "object",
                     properties: {
                       items: {
-                        type: 'array',
-                        items: { $ref: '#/components/schemas/ManageQuotation' }
+                        type: "array",
+                        items: { $ref: "#/components/schemas/ManageQuotation" },
                       },
-                      pagination: { $ref: '#/components/schemas/Pagination' }
-                    }
-                  }
-                }
-              }
-            }
-          }
+                      pagination: { $ref: "#/components/schemas/Pagination" },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
         400: {
-          description: 'Validation error',
+          description: "Validation error",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
         },
         401: {
-          description: 'Unauthorized',
+          description: "Unauthorized",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
-        }
-      }
-    }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
+        },
+      },
+    },
   },
-  '/manage-quotation/pdf/{id}': {
+  "/manage-quotation/pdf/{id}": {
     get: {
-      tags: ['Manage Quotation'],
-      summary: 'Get manage quotation by ID for PDF',
-      description: 'Retrieve a single manage quotation by ID for PDF generation',
+      tags: ["Manage Quotation"],
+      summary: "Get manage quotation by ID for PDF",
+      description:
+        "Retrieve a single manage quotation by ID for PDF generation",
       security: [
         {
-          bearerAuth: []
-        }
+          bearerAuth: [],
+        },
       ],
       parameters: [
         {
-          name: 'id',
-          in: 'path',
+          name: "id",
+          in: "path",
           required: true,
-          description: 'Manage Quotation UUID',
+          description: "Manage Quotation UUID",
           schema: {
-            type: 'string',
-            format: 'uuid'
-          }
-        }
+            type: "string",
+            format: "uuid",
+          },
+        },
       ],
       responses: {
         200: {
-          description: 'Success',
+          description: "Success",
           content: {
-            'application/json': {
+            "application/json": {
               schema: {
-                type: 'object',
+                type: "object",
                 properties: {
-                  success: { type: 'boolean', example: true },
-                  data: { $ref: '#/components/schemas/ManageQuotation' }
-                }
+                  success: { type: "boolean", example: true },
+                  data: { $ref: "#/components/schemas/ManageQuotation" },
+                },
               },
               example: {
                 success: true,
                 data: {
-                  manage_quotation_id: '123e4567-e89b-12d3-a456-426614174000',
-                  manage_quotation_no: '001/IEC-MSI/2025',
-                  customer_id: '7dbe5e70-87c4-4761-82de-9d9f54eea45f',
-                  employee_id: '3659340c-46b0-43f5-bf5c-d1d0222eb7f9',
-                  island_id: '123e4567-e89b-12d3-a456-426614174003',
-                  manage_quotation_date: '2025-01-15',
-                  manage_quotation_valid_date: '2025-01-30',
-                  status: 'submit'
-                }
-              }
-            }
-          }
+                  manage_quotation_id: "123e4567-e89b-12d3-a456-426614174000",
+                  manage_quotation_no: "001/IEC-MSI/2025",
+                  customer_id: "7dbe5e70-87c4-4761-82de-9d9f54eea45f",
+                  employee_id: "3659340c-46b0-43f5-bf5c-d1d0222eb7f9",
+                  island_id: "123e4567-e89b-12d3-a456-426614174003",
+                  manage_quotation_date: "2025-01-15",
+                  manage_quotation_valid_date: "2025-01-30",
+                  status: "submit",
+                },
+              },
+            },
+          },
         },
         404: {
-          description: 'Not found',
+          description: "Not found",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
         },
         401: {
-          description: 'Unauthorized',
+          description: "Unauthorized",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
-        }
-      }
-    }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
+        },
+      },
+    },
   },
-  '/manage-quotation/{id}': {
+  "/manage-quotation/{id}": {
     get: {
-      tags: ['Manage Quotation'],
-      summary: 'Get manage quotation by ID',
-      description: 'Retrieve a single manage quotation by ID',
+      tags: ["Manage Quotation"],
+      summary: "Get manage quotation by ID",
+      description: "Retrieve a single manage quotation by ID",
       security: [
         {
-          bearerAuth: []
-        }
+          bearerAuth: [],
+        },
       ],
       parameters: [
         {
-          name: 'id',
-          in: 'path',
+          name: "id",
+          in: "path",
           required: true,
-          description: 'Manage Quotation UUID',
+          description: "Manage Quotation UUID",
           schema: {
-            type: 'string',
-            format: 'uuid'
-          }
-        }
+            type: "string",
+            format: "uuid",
+          },
+        },
       ],
       responses: {
         200: {
-          description: 'Success',
+          description: "Success",
           content: {
-            'application/json': {
+            "application/json": {
               schema: {
-                type: 'object',
+                type: "object",
                 properties: {
-                  success: { type: 'boolean', example: true },
-                  data: { $ref: '#/components/schemas/ManageQuotation' }
-                }
+                  success: { type: "boolean", example: true },
+                  data: { $ref: "#/components/schemas/ManageQuotation" },
+                },
               },
               example: {
                 success: true,
                 data: {
-                  manage_quotation_id: '123e4567-e89b-12d3-a456-426614174000',
-                  manage_quotation_no: '001/IEC-MSI/2025',
-                  customer_id: '7dbe5e70-87c4-4761-82de-9d9f54eea45f',
-                  employee_id: '3659340c-46b0-43f5-bf5c-d1d0222eb7f9',
-                  island_id: '123e4567-e89b-12d3-a456-426614174003',
-                  manage_quotation_date: '2025-01-15',
-                  manage_quotation_valid_date: '2025-01-30',
-                  status: 'submit',
-                  company: 'PT Example Company',
-                  project_id: 'PROJ-001',
-                  quotation_for: 'Customer Name',
-                  star: 5
-                }
-              }
-            }
-          }
+                  manage_quotation_id: "123e4567-e89b-12d3-a456-426614174000",
+                  manage_quotation_no: "001/IEC-MSI/2025",
+                  customer_id: "7dbe5e70-87c4-4761-82de-9d9f54eea45f",
+                  employee_id: "3659340c-46b0-43f5-bf5c-d1d0222eb7f9",
+                  island_id: "123e4567-e89b-12d3-a456-426614174003",
+                  manage_quotation_date: "2025-01-15",
+                  manage_quotation_valid_date: "2025-01-30",
+                  status: "submit",
+                  company: "PT Example Company",
+                  project_id: "PROJ-001",
+                  quotation_for: "Customer Name",
+                  star: 5,
+                },
+              },
+            },
+          },
         },
         404: {
-          description: 'Not found',
+          description: "Not found",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
         },
         401: {
-          description: 'Unauthorized',
+          description: "Unauthorized",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
-        }
-      }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
+        },
+      },
     },
     put: {
-      tags: ['Manage Quotation'],
-      summary: 'Update manage quotation by ID',
-      description: 'Update an existing manage quotation',
+      tags: ["Manage Quotation"],
+      summary: "Update manage quotation by ID",
+      description: "Update an existing manage quotation",
       security: [
         {
-          bearerAuth: []
-        }
+          bearerAuth: [],
+        },
       ],
       parameters: [
         {
-          name: 'id',
-          in: 'path',
+          name: "id",
+          in: "path",
           required: true,
-          description: 'Manage Quotation UUID',
+          description: "Manage Quotation UUID",
           schema: {
-            type: 'string',
-            format: 'uuid'
-          }
-        }
+            type: "string",
+            format: "uuid",
+          },
+        },
       ],
       requestBody: {
         required: true,
         content: {
-          'application/json': {
-            schema: { $ref: '#/components/schemas/ManageQuotationInput' },
+          "application/json": {
+            schema: { $ref: "#/components/schemas/ManageQuotationInput" },
             example: {
-              customer_id: '7dbe5e70-87c4-4761-82de-9d9f54eea45f',
-              employee_id: '3659340c-46b0-43f5-bf5c-d1d0222eb7f9',
-              island_id: '123e4567-e89b-12d3-a456-426614174003',
-              manage_quotation_date: '2025-01-15',
-              manage_quotation_valid_date: '2025-01-30',
-              manage_quotation_grand_total: 1200000.00,
-              manage_quotation_grand_total_before: 1000000.00,
-              manage_quotation_mutation_type: 'plus',
-              manage_quotation_mutation_nominal: 200000.00,
-              manage_quotation_ppn: '132000',
-              manage_quotation_delivery_fee: '60000',
-              manage_quotation_other: '30000',
-              manage_quotation_payment_presentase: '40',
-              manage_quotation_payment_nominal: 480000.00,
-              manage_quotation_description: 'Updated notes about the quotation',
-              manage_quotation_shipping_term: '',
-              manage_quotation_franco: '',
-              manage_quotation_lead_time: '',
-              bank_account_id: '123e4567-e89b-12d3-a456-426614174003',
-              bank_account_name: 'John Doe',
-              bank_account_number: '1234567890',
-              bank_account_bank_name: 'Bank Mandiri',
-              term_content_id: '123e4567-e89b-12d3-a456-426614174000',
-              term_content_directory: '<p>halo ini test</p>',
-              status: 'draft',
+              customer_id: "7dbe5e70-87c4-4761-82de-9d9f54eea45f",
+              employee_id: "3659340c-46b0-43f5-bf5c-d1d0222eb7f9",
+              island_id: "123e4567-e89b-12d3-a456-426614174003",
+              manage_quotation_date: "2025-01-15",
+              manage_quotation_valid_date: "2025-01-30",
+              manage_quotation_grand_total: 1200000.0,
+              manage_quotation_grand_total_before: 1000000.0,
+              manage_quotation_mutation_type: "plus",
+              manage_quotation_mutation_nominal: 200000.0,
+              manage_quotation_ppn: "132000",
+              manage_quotation_delivery_fee: "60000",
+              manage_quotation_other: "30000",
+              manage_quotation_payment_presentase: "40",
+              manage_quotation_payment_nominal: 480000.0,
+              manage_quotation_description: "Updated notes about the quotation",
+              manage_quotation_shipping_term: "",
+              manage_quotation_franco: "",
+              manage_quotation_lead_time: "",
+              bank_account_id: "123e4567-e89b-12d3-a456-426614174003",
+              bank_account_name: "John Doe",
+              bank_account_number: "1234567890",
+              bank_account_bank_name: "Bank Mandiri",
+              term_content_id: "123e4567-e89b-12d3-a456-426614174000",
+              term_content_directory: "<p>halo ini test</p>",
+              status: "draft",
               include_aftersales_page: false,
               include_msf_page: true,
-              company: 'PT Example Company',
-              project_id: 'PROJ-001',
-              quotation_for: 'Customer Name',
+              company: "PT Example Company",
+              project_id: "PROJ-001",
+              quotation_for: "Customer Name",
               star: 5,
               manage_quotation_items: [
                 {
-                  componen_product_id: '123e4567-e89b-12d3-a456-426614174004',
-                  code_unique: 'CU-002',
-                  segment: 'Segment A',
-                  msi_model: 'MSI Model 2',
-                  msi_product: 'MSI Product 2',
-                  wheel_no: 'Wheel-02',
-                  engine: 'Engine 2',
-                  volume: '2500',
-                  horse_power: '150',
-                  market_price: '180000',
-                  componen_product_name: 'Excavator Arm Deluxe',
+                  componen_product_id: "123e4567-e89b-12d3-a456-426614174004",
+                  code_unique: "CU-002",
+                  segment: "Segment A",
+                  msi_model: "MSI Model 2",
+                  msi_product: "MSI Product 2",
+                  wheel_no: "Wheel-02",
+                  engine: "Engine 2",
+                  volume: "2500",
+                  horse_power: "150",
+                  market_price: "180000",
+                  componen_product_name: "Excavator Arm Deluxe",
                   quantity: 2,
-                  price: '150000',
-                  total: '300000',
-                  description: 'Updated notes about the item',
+                  price: "150000",
+                  total: "300000",
+                  description: "Updated notes about the item",
+                  notes: "Updated notes about the item",
                   order_number: 1,
                   manage_quotation_item_accessories: [
                     {
-                      accessory_id: '123e4567-e89b-12d3-a456-426614174004',
+                      accessory_id: "123e4567-e89b-12d3-a456-426614174004",
                       quantity: 1,
-                      description: 'Updated notes about the accessory'
-                    }
+                      description: "Updated notes about the accessory",
+                    },
                   ],
                   manage_quotation_item_specifications: [
                     {
-                      manage_quotation_item_specification_label: 'model',
-                      manage_quotation_item_specification_value: 'SX32434534534'
-                    }
-                  ]
+                      manage_quotation_item_specification_label: "model",
+                      manage_quotation_item_specification_value:
+                        "SX32434534534",
+                    },
+                  ],
                 },
                 {
-                  componen_product_id: '123e4567-e89b-12d3-a456-426614174005',
-                  code_unique: 'CU-003',
-                  segment: 'Segment B',
-                  msi_model: 'MSI Model 3',
-                  msi_product: 'MSI Product 3',
-                  wheel_no: 'Wheel-03',
-                  engine: 'Engine 3',
-                  volume: '3000',
-                  horse_power: '200',
-                  market_price: '220000',
-                  componen_product_name: 'Excavator Bucket',
+                  componen_product_id: "123e4567-e89b-12d3-a456-426614174005",
+                  code_unique: "CU-003",
+                  segment: "Segment B",
+                  msi_model: "MSI Model 3",
+                  msi_product: "MSI Product 3",
+                  wheel_no: "Wheel-03",
+                  engine: "Engine 3",
+                  volume: "3000",
+                  horse_power: "200",
+                  market_price: "220000",
+                  componen_product_name: "Excavator Bucket",
                   quantity: 1,
-                  price: '200000',
-                  total: '200000',
-                  description: 'Second item in quotation',
+                  price: "200000",
+                  total: "200000",
+                  description: "Second item in quotation",
                   order_number: 2,
                   manage_quotation_item_accessories: [],
-                  manage_quotation_item_specifications: []
-                }
-              ]
-            }
-          }
-        }
+                  manage_quotation_item_specifications: [],
+                },
+              ],
+            },
+          },
+        },
       },
       responses: {
         200: {
-          description: 'Success',
+          description: "Success",
           content: {
-            'application/json': {
+            "application/json": {
               schema: {
-                type: 'object',
+                type: "object",
                 properties: {
-                  success: { type: 'boolean', example: true },
-                  data: { $ref: '#/components/schemas/ManageQuotation' }
-                }
+                  success: { type: "boolean", example: true },
+                  data: { $ref: "#/components/schemas/ManageQuotation" },
+                },
               },
               example: {
                 success: true,
                 data: {
-                  manage_quotation_id: '123e4567-e89b-12d3-a456-426614174000',
-                  manage_quotation_no: '001/IEC-MSI/2025',
-                  customer_id: '7dbe5e70-87c4-4761-82de-9d9f54eea45f',
-                  employee_id: '3659340c-46b0-43f5-bf5c-d1d0222eb7f9',
-                  island_id: '123e4567-e89b-12d3-a456-426614174003',
-                  manage_quotation_date: '2025-01-15',
-                  manage_quotation_valid_date: '2025-01-30',
-                  status: 'submit',
-                  company: 'PT Example Company',
-                  project_id: 'PROJ-001',
-                  quotation_for: 'Customer Name',
-                  star: 5
-                }
-              }
-            }
-          }
+                  manage_quotation_id: "123e4567-e89b-12d3-a456-426614174000",
+                  manage_quotation_no: "001/IEC-MSI/2025",
+                  customer_id: "7dbe5e70-87c4-4761-82de-9d9f54eea45f",
+                  employee_id: "3659340c-46b0-43f5-bf5c-d1d0222eb7f9",
+                  island_id: "123e4567-e89b-12d3-a456-426614174003",
+                  manage_quotation_date: "2025-01-15",
+                  manage_quotation_valid_date: "2025-01-30",
+                  status: "submit",
+                  company: "PT Example Company",
+                  project_id: "PROJ-001",
+                  quotation_for: "Customer Name",
+                  star: 5,
+                },
+              },
+            },
+          },
         },
         400: {
-          description: 'Validation error',
+          description: "Validation error",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
         },
         404: {
-          description: 'Not found',
+          description: "Not found",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
         },
         401: {
-          description: 'Unauthorized',
+          description: "Unauthorized",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
-        }
-      }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
+        },
+      },
     },
     delete: {
-      tags: ['Manage Quotation'],
-      summary: 'Delete manage quotation by ID',
-      description: 'Soft delete a manage quotation',
+      tags: ["Manage Quotation"],
+      summary: "Delete manage quotation by ID",
+      description: "Soft delete a manage quotation",
       security: [
         {
-          bearerAuth: []
-        }
+          bearerAuth: [],
+        },
       ],
       parameters: [
         {
-          name: 'id',
-          in: 'path',
+          name: "id",
+          in: "path",
           required: true,
-          description: 'Manage Quotation UUID',
+          description: "Manage Quotation UUID",
           schema: {
-            type: 'string',
-            format: 'uuid'
-          }
-        }
+            type: "string",
+            format: "uuid",
+          },
+        },
       ],
       responses: {
         200: {
-          description: 'Success',
+          description: "Success",
           content: {
-            'application/json': {
+            "application/json": {
               schema: {
-                type: 'object',
+                type: "object",
                 properties: {
-                  success: { type: 'boolean', example: true },
-                  message: { type: 'string', example: 'Data berhasil dihapus' }
-                }
-              }
-            }
-          }
+                  success: { type: "boolean", example: true },
+                  message: { type: "string", example: "Data berhasil dihapus" },
+                },
+              },
+            },
+          },
         },
         400: {
-          description: 'Validation error',
+          description: "Validation error",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
         },
         404: {
-          description: 'Not found',
+          description: "Not found",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
         },
         401: {
-          description: 'Unauthorized',
+          description: "Unauthorized",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
-        }
-      }
-    }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
+        },
+      },
+    },
   },
-  '/manage-quotation': {
+  "/manage-quotation": {
     post: {
-      tags: ['Manage Quotation'],
-      summary: 'Create new manage quotation',
-      description: 'Create a new manage quotation with items',
+      tags: ["Manage Quotation"],
+      summary: "Create new manage quotation",
+      description: "Create a new manage quotation with items",
       security: [
         {
-          bearerAuth: []
-        }
+          bearerAuth: [],
+        },
       ],
       requestBody: {
         required: true,
         content: {
-          'application/json': {
-            schema: { $ref: '#/components/schemas/ManageQuotationInput' },
+          "application/json": {
+            schema: { $ref: "#/components/schemas/ManageQuotationInput" },
             example: {
-              customer_id: '7dbe5e70-87c4-4761-82de-9d9f54eea45f',
-              employee_id: '3659340c-46b0-43f5-bf5c-d1d0222eb7f9',
-              island_id: '123e4567-e89b-12d3-a456-426614174003',
-              manage_quotation_date: '2025-01-15',
-              manage_quotation_valid_date: '2025-01-30',
-              manage_quotation_grand_total: 1000000.00,
-              manage_quotation_grand_total_before: 950000.00,
-              manage_quotation_mutation_type: 'plus',
-              manage_quotation_mutation_nominal: 50000.00,
-              manage_quotation_ppn: '110000',
-              manage_quotation_delivery_fee: '50000',
-              manage_quotation_other: '20000',
-              manage_quotation_payment_presentase: '50',
-              manage_quotation_payment_nominal: 500000.00,
-              manage_quotation_description: 'Additional notes about the quotation',
-              manage_quotation_shipping_term: '',
-              manage_quotation_franco: '',
-              manage_quotation_lead_time: '',
-              bank_account_id: '123e4567-e89b-12d3-a456-426614174003',
-              bank_account_name: 'John Doe',
-              bank_account_number: '1234567890',
-              bank_account_bank_name: 'Bank Mandiri',
-              term_content_id: '123e4567-e89b-12d3-a456-426614174000',
-              term_content_directory: '<p>halo ini test</p>',
-              status: 'submit',
+              customer_id: "7dbe5e70-87c4-4761-82de-9d9f54eea45f",
+              employee_id: "3659340c-46b0-43f5-bf5c-d1d0222eb7f9",
+              island_id: "123e4567-e89b-12d3-a456-426614174003",
+              manage_quotation_date: "2025-01-15",
+              manage_quotation_valid_date: "2025-01-30",
+              manage_quotation_grand_total: 1000000.0,
+              manage_quotation_grand_total_before: 950000.0,
+              manage_quotation_mutation_type: "plus",
+              manage_quotation_mutation_nominal: 50000.0,
+              manage_quotation_ppn: "110000",
+              manage_quotation_delivery_fee: "50000",
+              manage_quotation_other: "20000",
+              manage_quotation_payment_presentase: "50",
+              manage_quotation_payment_nominal: 500000.0,
+              manage_quotation_description:
+                "Additional notes about the quotation",
+              manage_quotation_shipping_term: "",
+              manage_quotation_franco: "",
+              manage_quotation_lead_time: "",
+              bank_account_id: "123e4567-e89b-12d3-a456-426614174003",
+              bank_account_name: "John Doe",
+              bank_account_number: "1234567890",
+              bank_account_bank_name: "Bank Mandiri",
+              term_content_id: "123e4567-e89b-12d3-a456-426614174000",
+              term_content_directory: "<p>halo ini test</p>",
+              status: "submit",
               include_aftersales_page: true,
               include_msf_page: false,
-              company: 'PT Example Company',
-              project_id: 'PROJ-001',
-              quotation_for: 'Customer Name',
+              company: "PT Example Company",
+              project_id: "PROJ-001",
+              quotation_for: "Customer Name",
               star: 5,
               manage_quotation_items: [
                 {
-                  componen_product_id: '123e4567-e89b-12d3-a456-426614174004',
-                  code_unique: 'CU-001',
-                  segment: 'Segment 1',
-                  msi_model: 'MSI Model 1',
-                  msi_product: 'MSI Product 1',
-                  wheel_no: 'Wheel-01',
-                  engine: 'Engine 1',
-                  volume: '2000',
-                  horse_power: '100',
-                  market_price: '95000',
-                  componen_product_name: 'Excavator Arm',
+                  componen_product_id: "123e4567-e89b-12d3-a456-426614174004",
+                  code_unique: "CU-001",
+                  segment: "Segment 1",
+                  msi_model: "MSI Model 1",
+                  msi_product: "MSI Product 1",
+                  wheel_no: "Wheel-01",
+                  engine: "Engine 1",
+                  volume: "2000",
+                  horse_power: "100",
+                  market_price: "95000",
+                  componen_product_name: "Excavator Arm",
                   quantity: 1,
-                  price: '100000',
-                  total: '100000',
-                  description: 'Additional notes about the item',
+                  price: "100000",
+                  total: "100000",
+                  description: "Additional notes about the item",
+                  notes: "Additional notes about the item",
                   order_number: 1,
                   manage_quotation_item_accessories: [
                     {
-                      accessory_id: '123e4567-e89b-12d3-a456-426614174004',
+                      accessory_id: "123e4567-e89b-12d3-a456-426614174004",
                       quantity: 1,
-                      description: 'Additional notes about the item'
-                    }
+                      description: "Additional notes about the item",
+                    },
                   ],
                   manage_quotation_item_specifications: [
                     {
-                      manage_quotation_item_specification_label: 'model',
-                      manage_quotation_item_specification_value: 'SX32434534534'
-                    }
-                  ]
-                }
-              ]
-            }
-          }
-        }
+                      manage_quotation_item_specification_label: "model",
+                      manage_quotation_item_specification_value:
+                        "SX32434534534",
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        },
       },
       responses: {
         201: {
-          description: 'Created',
+          description: "Created",
           content: {
-            'application/json': {
+            "application/json": {
               schema: {
-                type: 'object',
+                type: "object",
                 properties: {
-                  success: { type: 'boolean', example: true },
-                  data: { $ref: '#/components/schemas/ManageQuotation' },
-                  message: { type: 'string', example: 'Data berhasil dibuat' }
-                }
+                  success: { type: "boolean", example: true },
+                  data: { $ref: "#/components/schemas/ManageQuotation" },
+                  message: { type: "string", example: "Data berhasil dibuat" },
+                },
               },
               example: {
                 success: true,
-                message: 'Data berhasil dibuat',
+                message: "Data berhasil dibuat",
                 data: {
-                  manage_quotation_id: '123e4567-e89b-12d3-a456-426614174000',
-                  manage_quotation_no: '001/IEC-MSI/2025',
-                  customer_id: '7dbe5e70-87c4-4761-82de-9d9f54eea45f',
-                  employee_id: '3659340c-46b0-43f5-bf5c-d1d0222eb7f9',
-                  island_id: '123e4567-e89b-12d3-a456-426614174003',
-                  manage_quotation_date: '2025-01-15',
-                  manage_quotation_valid_date: '2025-01-30',
-                  status: 'submit',
-                  company: 'PT Example Company',
-                  project_id: 'PROJ-001',
-                  quotation_for: 'Customer Name',
+                  manage_quotation_id: "123e4567-e89b-12d3-a456-426614174000",
+                  manage_quotation_no: "001/IEC-MSI/2025",
+                  customer_id: "7dbe5e70-87c4-4761-82de-9d9f54eea45f",
+                  employee_id: "3659340c-46b0-43f5-bf5c-d1d0222eb7f9",
+                  island_id: "123e4567-e89b-12d3-a456-426614174003",
+                  manage_quotation_date: "2025-01-15",
+                  manage_quotation_valid_date: "2025-01-30",
+                  status: "submit",
+                  company: "PT Example Company",
+                  project_id: "PROJ-001",
+                  quotation_for: "Customer Name",
                   star: 5,
-                  created_at: '2025-01-15T10:00:00.000Z'
-                }
-              }
-            }
-          }
+                  created_at: "2025-01-15T10:00:00.000Z",
+                },
+              },
+            },
+          },
         },
         400: {
-          description: 'Validation error',
+          description: "Validation error",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
         },
         401: {
-          description: 'Unauthorized',
+          description: "Unauthorized",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
-        }
-      }
-    }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
+        },
+      },
+    },
   },
-  '/manage-quotation/{id}/restore': {
+  "/manage-quotation/{id}/restore": {
     post: {
-      tags: ['Manage Quotation'],
-      summary: 'Restore manage quotation by ID',
-      description: 'Restore a soft deleted manage quotation',
+      tags: ["Manage Quotation"],
+      summary: "Restore manage quotation by ID",
+      description: "Restore a soft deleted manage quotation",
       security: [
         {
-          bearerAuth: []
-        }
+          bearerAuth: [],
+        },
       ],
       parameters: [
         {
-          name: 'id',
-          in: 'path',
+          name: "id",
+          in: "path",
           required: true,
-          description: 'Manage Quotation UUID',
+          description: "Manage Quotation UUID",
           schema: {
-            type: 'string',
-            format: 'uuid'
-          }
-        }
+            type: "string",
+            format: "uuid",
+          },
+        },
       ],
       responses: {
         200: {
-          description: 'Success',
+          description: "Success",
           content: {
-            'application/json': {
+            "application/json": {
               schema: {
-                type: 'object',
+                type: "object",
                 properties: {
-                  success: { type: 'boolean', example: true },
-                  data: { $ref: '#/components/schemas/ManageQuotation' },
-                  message: { type: 'string', example: 'Data berhasil direstore' }
-                }
-              }
-            }
-          }
+                  success: { type: "boolean", example: true },
+                  data: { $ref: "#/components/schemas/ManageQuotation" },
+                  message: {
+                    type: "string",
+                    example: "Data berhasil direstore",
+                  },
+                },
+              },
+            },
+          },
         },
         400: {
-          description: 'Validation error',
+          description: "Validation error",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
         },
         404: {
-          description: 'Not found',
+          description: "Not found",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
         },
         401: {
-          description: 'Unauthorized',
+          description: "Unauthorized",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
-        }
-      }
-    }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
+        },
+      },
+    },
   },
-  '/manage-quotation/duplikat/{manage_quotation_id}': {
+  "/manage-quotation/duplikat/{manage_quotation_id}": {
     post: {
-      tags: ['Manage Quotation'],
-      summary: 'Duplicate manage quotation',
-      description: 'Duplicate a manage quotation with all related data (items, accessories, specifications). Creates a new quotation with status draft and new quotation number.',
+      tags: ["Manage Quotation"],
+      summary: "Duplicate manage quotation",
+      description:
+        "Duplicate a manage quotation with all related data (items, accessories, specifications). Creates a new quotation with status draft and new quotation number.",
       security: [
         {
-          bearerAuth: []
-        }
+          bearerAuth: [],
+        },
       ],
       parameters: [
         {
-          name: 'manage_quotation_id',
-          in: 'path',
+          name: "manage_quotation_id",
+          in: "path",
           required: true,
-          description: 'Manage Quotation UUID to duplicate',
+          description: "Manage Quotation UUID to duplicate",
           schema: {
-            type: 'string',
-            format: 'uuid'
-          }
-        }
+            type: "string",
+            format: "uuid",
+          },
+        },
       ],
       responses: {
         201: {
-          description: 'Created',
+          description: "Created",
           content: {
-            'application/json': {
+            "application/json": {
               schema: {
-                type: 'object',
+                type: "object",
                 properties: {
-                  success: { type: 'boolean', example: true },
-                  data: { $ref: '#/components/schemas/ManageQuotation' },
-                  message: { type: 'string', example: 'Data berhasil diduplikat' }
-                }
+                  success: { type: "boolean", example: true },
+                  data: { $ref: "#/components/schemas/ManageQuotation" },
+                  message: {
+                    type: "string",
+                    example: "Data berhasil diduplikat",
+                  },
+                },
               },
               example: {
                 success: true,
-                message: 'Data berhasil diduplikat',
+                message: "Data berhasil diduplikat",
                 data: {
-                  manage_quotation_id: '123e4567-e89b-12d3-a456-426614174001',
-                  manage_quotation_no: '002/IEC-MSI/2025',
-                  customer_id: '7dbe5e70-87c4-4761-82de-9d9f54eea45f',
-                  employee_id: '3659340c-46b0-43f5-bf5c-d1d0222eb7f9',
-                  island_id: '123e4567-e89b-12d3-a456-426614174003',
-                  manage_quotation_date: '2025-01-15',
-                  manage_quotation_valid_date: '2025-01-30',
-                  manage_quotation_description: 'Copy dari 001/IEC-MSI/2025. Additional notes about the quotation',
-                  status: 'draft',
-                  company: 'PT Example Company',
-                  project_id: 'PROJ-001',
-                  quotation_for: 'Customer Name',
+                  manage_quotation_id: "123e4567-e89b-12d3-a456-426614174001",
+                  manage_quotation_no: "002/IEC-MSI/2025",
+                  customer_id: "7dbe5e70-87c4-4761-82de-9d9f54eea45f",
+                  employee_id: "3659340c-46b0-43f5-bf5c-d1d0222eb7f9",
+                  island_id: "123e4567-e89b-12d3-a456-426614174003",
+                  manage_quotation_date: "2025-01-15",
+                  manage_quotation_valid_date: "2025-01-30",
+                  manage_quotation_description:
+                    "Copy dari 001/IEC-MSI/2025. Additional notes about the quotation",
+                  status: "draft",
+                  company: "PT Example Company",
+                  project_id: "PROJ-001",
+                  quotation_for: "Customer Name",
                   star: 5,
-                  created_at: '2025-01-15T10:00:00.000Z'
-                }
-              }
-            }
-          }
+                  created_at: "2025-01-15T10:00:00.000Z",
+                },
+              },
+            },
+          },
         },
         400: {
-          description: 'Validation error',
+          description: "Validation error",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
         },
         404: {
-          description: 'Not found',
+          description: "Not found",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
         },
         401: {
-          description: 'Unauthorized',
+          description: "Unauthorized",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
-        }
-      }
-    }
-  }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
+        },
+      },
+    },
+  },
 };
 
 module.exports = manageQuotationPaths;
-
