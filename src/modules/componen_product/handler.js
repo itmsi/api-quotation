@@ -531,6 +531,7 @@ const create = async (req, res) => {
       images: imageData, // New column for array of image URLs
       image_count: imageCount, // New column for image count
       componen_product_description: req.body.componen_product_description || null,
+      notes: req.body.notes || null,
       created_by: tokenData.created_by
     };
 
@@ -886,6 +887,7 @@ const update = async (req, res) => {
       selling_price_star_4: req.body.selling_price_star_4,
       selling_price_star_5: req.body.selling_price_star_5,
       componen_product_description: req.body.componen_product_description,
+      notes: req.body.notes,
       updated_by: tokenData.updated_by
     };
 

@@ -158,6 +158,12 @@ const componenProductSchemas = {
         description: 'Product description',
         example: 'This is a componen product description'
       },
+      notes: {
+        type: 'string',
+        nullable: true,
+        description: 'Catatan tambahan untuk componen product',
+        example: 'Catatan tambahan mengenai componen product ini'
+      },
       componen_product_specifications: {
         type: 'array',
         description: 'Daftar spesifikasi yang tersimpan untuk componen product',
@@ -431,6 +437,11 @@ const componenProductSchemas = {
         type: 'string',
         description: 'Product description',
         example: 'This is a componen product description'
+      },
+      notes: {
+        type: 'string',
+        description: 'Catatan tambahan untuk componen product',
+        example: 'Catatan tambahan mengenai componen product ini'
       },
       componen_product_specifications: {
         type: 'string',

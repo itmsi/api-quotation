@@ -124,6 +124,11 @@ const createValidation = [
     .optional()
     .isString()
     .withMessage('Componen product description harus berupa string'),
+  body('notes')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Notes maksimal 255 karakter')
+    .trim(),
   body('componen_product_specifications')
     .optional()
     .custom((value) => {
@@ -305,6 +310,11 @@ const updateValidation = [
     .optional()
     .isString()
     .withMessage('Componen product description harus berupa string'),
+  body('notes')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Notes maksimal 255 karakter')
+    .trim(),
   body('componen_product_specifications')
     .optional()
     .custom((value) => {

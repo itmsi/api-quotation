@@ -1105,7 +1105,7 @@ const createItems = async (manage_quotation_id, items, created_by, trx = db) => 
       price: item.price ?? null,
       total: item.total ?? null,
       description: item.description ?? null,
-      description: item.description ?? null,
+      notes: item.notes ?? null,
       order_number: orderNumber,
       specification_properties: item.specification_properties
         ? JSON.stringify(Array.isArray(item.specification_properties)
@@ -1157,6 +1157,7 @@ const getItemsByQuotationId = async (manage_quotation_id) => {
       'mqi.price',
       'mqi.total',
       'mqi.description',
+      'mqi.notes',
       'mqi.order_number',
       'mqi.created_by',
       'mqi.updated_by',

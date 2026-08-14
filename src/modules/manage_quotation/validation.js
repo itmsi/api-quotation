@@ -332,6 +332,11 @@ const createValidation = [
   body('manage_quotation_items.*.description')
     .optional()
     .trim(),
+  body('manage_quotation_items.*.notes')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Notes maksimal 255 karakter')
+    .trim(),
   body('manage_quotation_items.*.order_number')
     .optional()
     .isInt({ min: 0 })
@@ -745,6 +750,11 @@ const updateValidation = [
     .trim(),
   body('manage_quotation_items.*.description')
     .optional()
+    .trim(),
+  body('manage_quotation_items.*.notes')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Notes maksimal 255 karakter')
     .trim(),
   body('manage_quotation_items.*.order_number')
     .optional()
