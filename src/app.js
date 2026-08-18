@@ -19,6 +19,7 @@ const healthCheck = require('./routes')
 const apiV1 = require('./routes/V1')
 const { initListener } = require('./listeners')
 const { prometheusMiddleware } = require('./middlewares/prometheus')
+const { lokiRequestLogger } = require('./middlewares/loki-request-logger')
 
 // Conditionally initialize listeners only if RabbitMQ is enabled
 if (process.env.RABBITMQ_ENABLED === 'true' && process.env.RABBITMQ_URL && process.env.RABBITMQ_URL !== 'disabled') {
@@ -43,6 +44,9 @@ if (process.env.NODE_ENV === 'production') {
 
 // Prometheus monitoring middleware
 app.use(prometheusMiddleware)
+
+// Loki request/response logging + log_activities audit trail
+app.use(lokiRequestLogger)
 
 app.use(healthCheck) // routing
 app.use(apiV1) // routing
