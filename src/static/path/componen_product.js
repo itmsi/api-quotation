@@ -52,7 +52,7 @@ const componenProductPaths = {
                 product_type: {
                   type: 'string',
                   nullable: true,
-                  description: 'Filter by product type',
+                  description: 'Filter by product type (unit, non_unit, hardware, implementation, application)',
                   example: 'non_unit'
                 }
               }

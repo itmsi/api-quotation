@@ -675,6 +675,12 @@ const manageQuotationSchemas = {
         description: 'Item description',
         example: 'Additional notes about the item'
       },
+      notes: {
+        type: 'string',
+        nullable: true,
+        description: 'Catatan tambahan untuk item quotation',
+        example: 'Catatan tambahan mengenai item ini'
+      },
       order_number: {
         type: 'integer',
         description: 'Order number untuk urutan item dalam quotation',
@@ -830,6 +836,12 @@ const manageQuotationSchemas = {
         nullable: true,
         description: 'Item description',
         example: 'Additional notes about the item'
+      },
+      notes: {
+        type: 'string',
+        nullable: true,
+        description: 'Catatan tambahan untuk item quotation',
+        example: 'Catatan tambahan mengenai item ini'
       },
       order_number: {
         type: 'integer',
