@@ -136,7 +136,7 @@ const createValidation = [
     .optional()
     .isString()
     .withMessage("Componen product description harus berupa string"),
-  body("notes").trim(),
+  body("notes").optional().trim(),
   body("componen_product_specifications")
     .optional()
     .custom((value) => {
