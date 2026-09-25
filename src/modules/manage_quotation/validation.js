@@ -1,4 +1,4 @@
-const { body, param } = require('express-validator');
+const { body, param } = require("express-validator");
 
 /**
  * Validation rules for creating manage quotation
@@ -6,38 +6,37 @@ const { body, param } = require('express-validator');
 const createValidation = [
   // manage_quotation_no tidak perlu di-validate karena akan di-generate otomatis
   // jika status = submit, dan tidak akan di-generate jika status = draft
-  body('customer_id')
+  body("customer_id")
     .optional()
     .isUUID()
-    .withMessage('Format customer_id tidak valid'),
-  body('employee_id')
+    .withMessage("Format customer_id tidak valid"),
+  body("employee_id")
     .optional()
     .isUUID()
-    .withMessage('Format employee_id tidak valid'),
-  body('island_id')
-    .optional(),
-  body('manage_quotation_date')
+    .withMessage("Format employee_id tidak valid"),
+  body("island_id").optional(),
+  body("manage_quotation_date")
     .optional()
     .isISO8601()
-    .withMessage('Format tanggal tidak valid')
+    .withMessage("Format tanggal tidak valid")
     .trim(),
-  body('manage_quotation_valid_date')
+  body("manage_quotation_valid_date")
     .optional()
     .isISO8601()
-    .withMessage('Format tanggal valid tidak valid')
+    .withMessage("Format tanggal valid tidak valid")
     .trim(),
-  body('manage_quotation_grand_total')
+  body("manage_quotation_grand_total")
     .optional()
     .isNumeric()
-    .withMessage('Grand total harus berupa angka')
+    .withMessage("Grand total harus berupa angka")
     .custom((value) => {
-      if (value !== undefined && value !== null && value !== '') {
+      if (value !== undefined && value !== null && value !== "") {
         const num = parseFloat(value);
         if (isNaN(num)) {
           return false;
         }
         const str = num.toString();
-        const parts = str.split('.');
+        const parts = str.split(".");
         if (parts[0].length > 20) {
           return false;
         }
@@ -47,19 +46,21 @@ const createValidation = [
       }
       return true;
     })
-    .withMessage('Grand total harus berupa angka dengan maksimal 25 digit dan 5 desimal'),
-  body('manage_quotation_grand_total_before')
+    .withMessage(
+      "Grand total harus berupa angka dengan maksimal 25 digit dan 5 desimal",
+    ),
+  body("manage_quotation_grand_total_before")
     .optional()
     .isNumeric()
-    .withMessage('Grand total before harus berupa angka')
+    .withMessage("Grand total before harus berupa angka")
     .custom((value) => {
-      if (value !== undefined && value !== null && value !== '') {
+      if (value !== undefined && value !== null && value !== "") {
         const num = parseFloat(value);
         if (isNaN(num)) {
           return false;
         }
         const str = num.toString();
-        const parts = str.split('.');
+        const parts = str.split(".");
         if (parts[0].length > 20) {
           return false;
         }
@@ -69,21 +70,22 @@ const createValidation = [
       }
       return true;
     })
-    .withMessage('Grand total before harus berupa angka dengan maksimal 25 digit dan 5 desimal'),
-  body('manage_quotation_mutation_type')
-    .optional(),
-  body('manage_quotation_mutation_nominal')
+    .withMessage(
+      "Grand total before harus berupa angka dengan maksimal 25 digit dan 5 desimal",
+    ),
+  body("manage_quotation_mutation_type").optional(),
+  body("manage_quotation_mutation_nominal")
     .optional()
     .isNumeric()
-    .withMessage('Mutation nominal harus berupa angka')
+    .withMessage("Mutation nominal harus berupa angka")
     .custom((value) => {
-      if (value !== undefined && value !== null && value !== '') {
+      if (value !== undefined && value !== null && value !== "") {
         const num = parseFloat(value);
         if (isNaN(num)) {
           return false;
         }
         const str = num.toString();
-        const parts = str.split('.');
+        const parts = str.split(".");
         if (parts[0].length > 20) {
           return false;
         }
@@ -93,39 +95,41 @@ const createValidation = [
       }
       return true;
     })
-    .withMessage('Mutation nominal harus berupa angka dengan maksimal 25 digit dan 5 desimal'),
-  body('manage_quotation_ppn')
+    .withMessage(
+      "Mutation nominal harus berupa angka dengan maksimal 25 digit dan 5 desimal",
+    ),
+  body("manage_quotation_ppn")
     .optional()
     .isLength({ max: 100 })
-    .withMessage('PPN maksimal 100 karakter')
+    .withMessage("PPN maksimal 100 karakter")
     .trim(),
-  body('manage_quotation_delivery_fee')
+  body("manage_quotation_delivery_fee")
     .optional()
     .isLength({ max: 100 })
-    .withMessage('Delivery fee maksimal 100 karakter')
+    .withMessage("Delivery fee maksimal 100 karakter")
     .trim(),
-  body('manage_quotation_other')
+  body("manage_quotation_other")
     .optional()
     .isLength({ max: 100 })
-    .withMessage('Other maksimal 100 karakter')
+    .withMessage("Other maksimal 100 karakter")
     .trim(),
-  body('manage_quotation_payment_presentase')
+  body("manage_quotation_payment_presentase")
     .optional()
     .isLength({ max: 100 })
-    .withMessage('Payment presentase maksimal 100 karakter')
+    .withMessage("Payment presentase maksimal 100 karakter")
     .trim(),
-  body('manage_quotation_payment_nominal')
+  body("manage_quotation_payment_nominal")
     .optional()
     .isNumeric()
-    .withMessage('Payment nominal harus berupa angka')
+    .withMessage("Payment nominal harus berupa angka")
     .custom((value) => {
-      if (value !== undefined && value !== null && value !== '') {
+      if (value !== undefined && value !== null && value !== "") {
         const num = parseFloat(value);
         if (isNaN(num)) {
           return false;
         }
         const str = num.toString();
-        const parts = str.split('.');
+        const parts = str.split(".");
         if (parts[0].length > 20) {
           return false;
         }
@@ -135,282 +139,298 @@ const createValidation = [
       }
       return true;
     })
-    .withMessage('Payment nominal harus berupa angka dengan maksimal 25 digit dan 5 desimal'),
-  body('manage_quotation_description')
-    .optional()
-    .trim(),
-  body('manage_quotation_shipping_term')
+    .withMessage(
+      "Payment nominal harus berupa angka dengan maksimal 25 digit dan 5 desimal",
+    ),
+  body("manage_quotation_description").optional().trim(),
+  body("manage_quotation_shipping_term")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Shipping term maksimal 255 karakter')
+    .withMessage("Shipping term maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_franco')
+  body("manage_quotation_franco")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Franco maksimal 255 karakter')
+    .withMessage("Franco maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_lead_time')
+  body("manage_quotation_lead_time")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Lead time maksimal 255 karakter')
+    .withMessage("Lead time maksimal 255 karakter")
     .trim(),
-  body('bank_account_id')
+  body("bank_account_id")
     .optional()
     .isUUID()
-    .withMessage('Format bank_account_id tidak valid'),
-  body('bank_account_name')
+    .withMessage("Format bank_account_id tidak valid"),
+  body("bank_account_name")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Bank account name maksimal 255 karakter')
+    .withMessage("Bank account name maksimal 255 karakter")
     .trim(),
-  body('bank_account_number')
+  body("bank_account_number")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Bank account number maksimal 255 karakter')
+    .withMessage("Bank account number maksimal 255 karakter")
     .trim(),
-  body('bank_account_bank_name')
+  body("bank_account_bank_name")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Bank name maksimal 255 karakter')
+    .withMessage("Bank name maksimal 255 karakter")
     .trim(),
-  body('term_content_id')
+  body("term_content_id")
     .optional()
     .custom((value) => {
       // Allow null, undefined, empty string, NaN, or valid UUID
-      if (value === null || value === undefined || value === '') {
+      if (value === null || value === undefined || value === "") {
         return true;
       }
-      if (typeof value === 'string') {
+      if (typeof value === "string") {
         const trimmed = value.trim();
-        if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
+        if (trimmed === "" || trimmed === "NaN" || trimmed === "null") {
           return true;
         }
         // If not empty, must be valid UUID
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const uuidRegex =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         return uuidRegex.test(trimmed);
       }
       // Allow NaN
-      if (typeof value === 'number' && isNaN(value)) {
+      if (typeof value === "number" && isNaN(value)) {
         return true;
       }
       return false;
     })
-    .withMessage('Format term_content_id tidak valid'),
-  body('term_content_directory')
+    .withMessage("Format term_content_id tidak valid"),
+  body("term_content_directory")
     .optional()
     .custom((value) => {
       // Allow null, empty string, object, or any string (JSON or plain string)
-      if (value === null || value === undefined || value === '') {
+      if (value === null || value === undefined || value === "") {
         return true;
       }
-      if (typeof value === 'object') {
+      if (typeof value === "object") {
         return true;
       }
-      if (typeof value === 'string') {
+      if (typeof value === "string") {
         // Allow any string - handler will handle JSON parsing or use as plain string
         return true;
       }
       return false;
     })
-    .withMessage('term_content_directory harus berupa object atau string'),
-  body('status')
+    .withMessage("term_content_directory harus berupa object atau string"),
+  body("status")
     .optional()
-    .isIn(['draft', 'submit'])
-    .withMessage('Status harus salah satu dari: draft, submit'),
-  body('include_aftersales_page')
-    .optional()
-    .isBoolean()
-    .withMessage('include_aftersales_page harus berupa boolean')
-    .toBoolean(),
-  body('include_msf_page')
+    .isIn(["draft", "submit"])
+    .withMessage("Status harus salah satu dari: draft, submit"),
+  body("include_aftersales_page")
     .optional()
     .isBoolean()
-    .withMessage('include_msf_page harus berupa boolean')
+    .withMessage("include_aftersales_page harus berupa boolean")
     .toBoolean(),
-  body('company')
+  body("include_msf_page")
+    .optional()
+    .isBoolean()
+    .withMessage("include_msf_page harus berupa boolean")
+    .toBoolean(),
+  body("company")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Company maksimal 255 karakter')
+    .withMessage("Company maksimal 255 karakter")
     .trim(),
-  body('project_id')
+  body("project_id")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Project ID maksimal 255 karakter')
+    .withMessage("Project ID maksimal 255 karakter")
     .trim(),
-  body('quotation_for')
+  body("quotation_for")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Quotation for maksimal 255 karakter')
+    .withMessage("Quotation for maksimal 255 karakter")
     .trim(),
-  body('star')
+  body("star")
     .optional()
     .custom((value) => {
       // Allow null, undefined, empty string, or any string
-      if (value === null || value === undefined || value === '') {
+      if (value === null || value === undefined || value === "") {
         return true;
       }
-      if (typeof value === 'string') {
+      if (typeof value === "string") {
         return true;
       }
       // Allow number but convert to string
-      if (typeof value === 'number') {
+      if (typeof value === "number") {
         return true;
       }
       return false;
     })
-    .withMessage('Star harus berupa string atau null'),
-  body('manage_quotation_items')
+    .withMessage("Star harus berupa string atau null"),
+  body("manage_quotation_items")
     .optional()
     .isArray({ min: 0 })
-    .withMessage('Manage quotation items harus berupa array'),
-  body('manage_quotation_items.*.componen_product_id')
+    .withMessage("Manage quotation items harus berupa array"),
+  body("manage_quotation_items.*.componen_product_id")
     .optional()
     .isUUID()
-    .withMessage('Format componen_product_id tidak valid'),
-  body('manage_quotation_items.*.quantity')
+    .withMessage("Format componen_product_id tidak valid"),
+  body("manage_quotation_items.*.quantity")
     .optional()
     .isInt({ min: 1 })
-    .withMessage('Quantity harus berupa angka positif'),
-  body('manage_quotation_items.*.price')
+    .withMessage("Quantity harus berupa angka positif"),
+  body("manage_quotation_items.*.price")
     .optional()
     .notEmpty()
-    .withMessage('Price tidak boleh kosong'),
-  body('manage_quotation_items.*.total')
+    .withMessage("Price tidak boleh kosong"),
+  body("manage_quotation_items.*.total")
     .optional()
     .notEmpty()
-    .withMessage('Total tidak boleh kosong'),
-  body('manage_quotation_items.*.code_unique')
+    .withMessage("Total tidak boleh kosong"),
+  body("manage_quotation_items.*.code_unique")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Code unique maksimal 255 karakter')
+    .withMessage("Code unique maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.segment')
+  body("manage_quotation_items.*.segment")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Segment maksimal 255 karakter')
+    .withMessage("Segment maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.msi_model')
+  body("manage_quotation_items.*.msi_model")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('MSI model maksimal 255 karakter')
+    .withMessage("MSI model maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.msi_product')
+  body("manage_quotation_items.*.msi_product")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('MSI product maksimal 255 karakter')
+    .withMessage("MSI product maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.wheel_no')
+  body("manage_quotation_items.*.wheel_no")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Wheel no maksimal 255 karakter')
+    .withMessage("Wheel no maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.engine')
+  body("manage_quotation_items.*.engine")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Engine maksimal 255 karakter')
+    .withMessage("Engine maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.volume')
+  body("manage_quotation_items.*.volume")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Volume maksimal 255 karakter')
+    .withMessage("Volume maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.horse_power')
+  body("manage_quotation_items.*.horse_power")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Horse power maksimal 255 karakter')
+    .withMessage("Horse power maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.market_price')
+  body("manage_quotation_items.*.market_price")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Market price maksimal 255 karakter')
+    .withMessage("Market price maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.componen_product_name')
+  body("manage_quotation_items.*.componen_product_name")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Componen product name maksimal 255 karakter')
+    .withMessage("Componen product name maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.description')
-    .optional()
-    .trim(),
-  body('manage_quotation_items.*.notes')
-    .optional()
-    .isLength({ max: 255 })
-    .withMessage('Notes maksimal 255 karakter')
-    .trim(),
-  body('manage_quotation_items.*.order_number')
+  body("manage_quotation_items.*.description").optional().trim(),
+  body("manage_quotation_items.*.notes").optional().trim(),
+  body("manage_quotation_items.*.order_number")
     .optional()
     .isInt({ min: 0 })
-    .withMessage('Order number harus berupa angka bulat non-negatif'),
-  body('manage_quotation_items.*.manage_quotation_item_accessories')
+    .withMessage("Order number harus berupa angka bulat non-negatif"),
+  body("manage_quotation_items.*.manage_quotation_item_accessories")
     .optional()
     .isArray({ min: 0 })
-    .withMessage('Manage quotation item accessories harus berupa array'),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_id')
+    .withMessage("Manage quotation item accessories harus berupa array"),
+  body(
+    "manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_id",
+  )
     .optional()
     .isUUID()
-    .withMessage('Format accessory_id tidak valid'),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.quantity')
+    .withMessage("Format accessory_id tidak valid"),
+  body("manage_quotation_items.*.manage_quotation_item_accessories.*.quantity")
     .optional()
     .isInt({ min: 1 })
-    .withMessage('Quantity harus berupa angka positif'),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.description')
+    .withMessage("Quantity harus berupa angka positif"),
+  body(
+    "manage_quotation_items.*.manage_quotation_item_accessories.*.description",
+  )
     .optional()
     .trim(),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_part_number')
+  body(
+    "manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_part_number",
+  )
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Accessory part number maksimal 255 karakter')
+    .withMessage("Accessory part number maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_part_name')
+  body(
+    "manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_part_name",
+  )
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Accessory part name maksimal 255 karakter')
+    .withMessage("Accessory part name maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_specification')
-    .optional(),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_brand')
-    .optional(),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_remark')
-    .optional(),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_region')
-    .optional(),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_description')
-    .optional(),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.componen_product_id')
+  body(
+    "manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_specification",
+  ).optional(),
+  body(
+    "manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_brand",
+  ).optional(),
+  body(
+    "manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_remark",
+  ).optional(),
+  body(
+    "manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_region",
+  ).optional(),
+  body(
+    "manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_description",
+  ).optional(),
+  body(
+    "manage_quotation_items.*.manage_quotation_item_accessories.*.componen_product_id",
+  )
     .optional()
     .isUUID()
-    .withMessage('Format componen_product_id pada accessory tidak valid'),
-  body('manage_quotation_items.*.manage_quotation_item_specifications')
+    .withMessage("Format componen_product_id pada accessory tidak valid"),
+  body("manage_quotation_items.*.manage_quotation_item_specifications")
     .optional()
     .isArray({ min: 0 })
-    .withMessage('Manage quotation item specifications harus berupa array'),
-  body('manage_quotation_items.*.manage_quotation_item_specifications.*.componen_product_id')
+    .withMessage("Manage quotation item specifications harus berupa array"),
+  body(
+    "manage_quotation_items.*.manage_quotation_item_specifications.*.componen_product_id",
+  )
     .optional()
     .isUUID()
-    .withMessage('Format componen_product_id pada specification tidak valid'),
-  body('manage_quotation_items.*.manage_quotation_item_specifications.*.manage_quotation_item_specification_label')
+    .withMessage("Format componen_product_id pada specification tidak valid"),
+  body(
+    "manage_quotation_items.*.manage_quotation_item_specifications.*.manage_quotation_item_specification_label",
+  )
     .optional()
     .trim(),
-  body('manage_quotation_items.*.manage_quotation_item_specifications.*.manage_quotation_item_specification_value')
+  body(
+    "manage_quotation_items.*.manage_quotation_item_specifications.*.manage_quotation_item_specification_value",
+  )
     .optional()
     .trim(),
   // Validation for manage_quotation_item_accessories at root level
-  body('manage_quotation_item_accessories')
+  body("manage_quotation_item_accessories")
     .optional()
     .isArray({ min: 0 })
-    .withMessage('Manage quotation item accessories harus berupa array'),
-  body('manage_quotation_item_accessories.*.accessory_id')
+    .withMessage("Manage quotation item accessories harus berupa array"),
+  body("manage_quotation_item_accessories.*.accessory_id")
     .optional()
     .isUUID()
-    .withMessage('Format accessory_id tidak valid'),
-  body('manage_quotation_item_accessories.*.quantity')
+    .withMessage("Format accessory_id tidak valid"),
+  body("manage_quotation_item_accessories.*.quantity")
     .optional()
     .isInt({ min: 0 })
-    .withMessage('Quantity harus berupa angka integer positif'),
-  body('manage_quotation_item_accessories.*.description')
+    .withMessage("Quantity harus berupa angka integer positif"),
+  body("manage_quotation_item_accessories.*.description")
     .optional()
     .isString()
-    .withMessage('Description harus berupa string')
+    .withMessage("Description harus berupa string")
     .trim(),
 ];
 
@@ -418,45 +438,44 @@ const createValidation = [
  * Validation rules for updating manage quotation
  */
 const updateValidation = [
-  param('id')
+  param("id")
     .notEmpty()
-    .withMessage('ID wajib diisi')
+    .withMessage("ID wajib diisi")
     .isUUID()
-    .withMessage('Format ID tidak valid'),
+    .withMessage("Format ID tidak valid"),
   // manage_quotation_no tidak perlu di-validate karena akan di-generate otomatis
   // jika status berubah ke submit dan belum ada nomor
-  body('customer_id')
+  body("customer_id")
     .optional()
     .isUUID()
-    .withMessage('Format customer_id tidak valid'),
-  body('employee_id')
+    .withMessage("Format customer_id tidak valid"),
+  body("employee_id")
     .optional()
     .isUUID()
-    .withMessage('Format employee_id tidak valid'),
-  body('island_id')
-    .optional(),
-  body('manage_quotation_date')
+    .withMessage("Format employee_id tidak valid"),
+  body("island_id").optional(),
+  body("manage_quotation_date")
     .optional()
     .isISO8601()
-    .withMessage('Format tanggal tidak valid')
+    .withMessage("Format tanggal tidak valid")
     .trim(),
-  body('manage_quotation_valid_date')
+  body("manage_quotation_valid_date")
     .optional()
     .isISO8601()
-    .withMessage('Format tanggal valid tidak valid')
+    .withMessage("Format tanggal valid tidak valid")
     .trim(),
-  body('manage_quotation_grand_total')
+  body("manage_quotation_grand_total")
     .optional()
     .isNumeric()
-    .withMessage('Grand total harus berupa angka')
+    .withMessage("Grand total harus berupa angka")
     .custom((value) => {
-      if (value !== undefined && value !== null && value !== '') {
+      if (value !== undefined && value !== null && value !== "") {
         const num = parseFloat(value);
         if (isNaN(num)) {
           return false;
         }
         const str = num.toString();
-        const parts = str.split('.');
+        const parts = str.split(".");
         if (parts[0].length > 20) {
           return false;
         }
@@ -466,19 +485,21 @@ const updateValidation = [
       }
       return true;
     })
-    .withMessage('Grand total harus berupa angka dengan maksimal 25 digit dan 5 desimal'),
-  body('manage_quotation_grand_total_before')
+    .withMessage(
+      "Grand total harus berupa angka dengan maksimal 25 digit dan 5 desimal",
+    ),
+  body("manage_quotation_grand_total_before")
     .optional()
     .isNumeric()
-    .withMessage('Grand total before harus berupa angka')
+    .withMessage("Grand total before harus berupa angka")
     .custom((value) => {
-      if (value !== undefined && value !== null && value !== '') {
+      if (value !== undefined && value !== null && value !== "") {
         const num = parseFloat(value);
         if (isNaN(num)) {
           return false;
         }
         const str = num.toString();
-        const parts = str.split('.');
+        const parts = str.split(".");
         if (parts[0].length > 20) {
           return false;
         }
@@ -488,21 +509,22 @@ const updateValidation = [
       }
       return true;
     })
-    .withMessage('Grand total before harus berupa angka dengan maksimal 25 digit dan 5 desimal'),
-  body('manage_quotation_mutation_type')
-    .optional(),
-  body('manage_quotation_mutation_nominal')
+    .withMessage(
+      "Grand total before harus berupa angka dengan maksimal 25 digit dan 5 desimal",
+    ),
+  body("manage_quotation_mutation_type").optional(),
+  body("manage_quotation_mutation_nominal")
     .optional()
     .isNumeric()
-    .withMessage('Mutation nominal harus berupa angka')
+    .withMessage("Mutation nominal harus berupa angka")
     .custom((value) => {
-      if (value !== undefined && value !== null && value !== '') {
+      if (value !== undefined && value !== null && value !== "") {
         const num = parseFloat(value);
         if (isNaN(num)) {
           return false;
         }
         const str = num.toString();
-        const parts = str.split('.');
+        const parts = str.split(".");
         if (parts[0].length > 20) {
           return false;
         }
@@ -512,39 +534,41 @@ const updateValidation = [
       }
       return true;
     })
-    .withMessage('Mutation nominal harus berupa angka dengan maksimal 25 digit dan 5 desimal'),
-  body('manage_quotation_ppn')
+    .withMessage(
+      "Mutation nominal harus berupa angka dengan maksimal 25 digit dan 5 desimal",
+    ),
+  body("manage_quotation_ppn")
     .optional()
     .isLength({ max: 100 })
-    .withMessage('PPN maksimal 100 karakter')
+    .withMessage("PPN maksimal 100 karakter")
     .trim(),
-  body('manage_quotation_delivery_fee')
+  body("manage_quotation_delivery_fee")
     .optional()
     .isLength({ max: 100 })
-    .withMessage('Delivery fee maksimal 100 karakter')
+    .withMessage("Delivery fee maksimal 100 karakter")
     .trim(),
-  body('manage_quotation_other')
+  body("manage_quotation_other")
     .optional()
     .isLength({ max: 100 })
-    .withMessage('Other maksimal 100 karakter')
+    .withMessage("Other maksimal 100 karakter")
     .trim(),
-  body('manage_quotation_payment_presentase')
+  body("manage_quotation_payment_presentase")
     .optional()
     .isLength({ max: 100 })
-    .withMessage('Payment presentase maksimal 100 karakter')
+    .withMessage("Payment presentase maksimal 100 karakter")
     .trim(),
-  body('manage_quotation_payment_nominal')
+  body("manage_quotation_payment_nominal")
     .optional()
     .isNumeric()
-    .withMessage('Payment nominal harus berupa angka')
+    .withMessage("Payment nominal harus berupa angka")
     .custom((value) => {
-      if (value !== undefined && value !== null && value !== '') {
+      if (value !== undefined && value !== null && value !== "") {
         const num = parseFloat(value);
         if (isNaN(num)) {
           return false;
         }
         const str = num.toString();
-        const parts = str.split('.');
+        const parts = str.split(".");
         if (parts[0].length > 20) {
           return false;
         }
@@ -554,295 +578,314 @@ const updateValidation = [
       }
       return true;
     })
-    .withMessage('Payment nominal harus berupa angka dengan maksimal 25 digit dan 5 desimal'),
-  body('manage_quotation_description')
-    .optional()
-    .trim(),
-  body('manage_quotation_shipping_term')
+    .withMessage(
+      "Payment nominal harus berupa angka dengan maksimal 25 digit dan 5 desimal",
+    ),
+  body("manage_quotation_description").optional().trim(),
+  body("manage_quotation_shipping_term")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Shipping term maksimal 255 karakter')
+    .withMessage("Shipping term maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_franco')
+  body("manage_quotation_franco")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Franco maksimal 255 karakter')
+    .withMessage("Franco maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_lead_time')
+  body("manage_quotation_lead_time")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Lead time maksimal 255 karakter')
+    .withMessage("Lead time maksimal 255 karakter")
     .trim(),
-  body('bank_account_id')
+  body("bank_account_id")
     .optional()
     .isUUID()
-    .withMessage('Format bank_account_id tidak valid'),
-  body('bank_account_name')
+    .withMessage("Format bank_account_id tidak valid"),
+  body("bank_account_name")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Bank account name maksimal 255 karakter')
+    .withMessage("Bank account name maksimal 255 karakter")
     .trim(),
-  body('bank_account_number')
+  body("bank_account_number")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Bank account number maksimal 255 karakter')
+    .withMessage("Bank account number maksimal 255 karakter")
     .trim(),
-  body('bank_account_bank_name')
+  body("bank_account_bank_name")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Bank name maksimal 255 karakter')
+    .withMessage("Bank name maksimal 255 karakter")
     .trim(),
-  body('term_content_id')
+  body("term_content_id")
     .optional()
     .custom((value) => {
       // Allow null, undefined, empty string, NaN, or valid UUID
-      if (value === null || value === undefined || value === '') {
+      if (value === null || value === undefined || value === "") {
         return true;
       }
-      if (typeof value === 'string') {
+      if (typeof value === "string") {
         const trimmed = value.trim();
-        if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
+        if (trimmed === "" || trimmed === "NaN" || trimmed === "null") {
           return true;
         }
         // If not empty, must be valid UUID
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const uuidRegex =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         return uuidRegex.test(trimmed);
       }
       // Allow NaN
-      if (typeof value === 'number' && isNaN(value)) {
+      if (typeof value === "number" && isNaN(value)) {
         return true;
       }
       return false;
     })
-    .withMessage('Format term_content_id tidak valid'),
-  body('term_content_directory')
+    .withMessage("Format term_content_id tidak valid"),
+  body("term_content_directory")
     .optional()
     .custom((value) => {
       // Allow null, empty string, object, or any string (JSON or plain string)
-      if (value === null || value === undefined || value === '') {
+      if (value === null || value === undefined || value === "") {
         return true;
       }
-      if (typeof value === 'object') {
+      if (typeof value === "object") {
         return true;
       }
-      if (typeof value === 'string') {
+      if (typeof value === "string") {
         // Allow any string - handler will handle JSON parsing or use as plain string
         return true;
       }
       return false;
     })
-    .withMessage('term_content_directory harus berupa object atau string'),
-  body('status')
+    .withMessage("term_content_directory harus berupa object atau string"),
+  body("status")
     .optional()
-    .isIn(['draft', 'submit'])
-    .withMessage('Status harus salah satu dari: draft, submit'),
-  body('include_aftersales_page')
-    .optional()
-    .isBoolean()
-    .withMessage('include_aftersales_page harus berupa boolean')
-    .toBoolean(),
-  body('include_msf_page')
+    .isIn(["draft", "submit"])
+    .withMessage("Status harus salah satu dari: draft, submit"),
+  body("include_aftersales_page")
     .optional()
     .isBoolean()
-    .withMessage('include_msf_page harus berupa boolean')
+    .withMessage("include_aftersales_page harus berupa boolean")
     .toBoolean(),
-  body('company')
+  body("include_msf_page")
+    .optional()
+    .isBoolean()
+    .withMessage("include_msf_page harus berupa boolean")
+    .toBoolean(),
+  body("company")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Company maksimal 255 karakter')
+    .withMessage("Company maksimal 255 karakter")
     .trim(),
-  body('project_id')
+  body("project_id")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Project ID maksimal 255 karakter')
+    .withMessage("Project ID maksimal 255 karakter")
     .trim(),
-  body('quotation_for')
+  body("quotation_for")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Quotation for maksimal 255 karakter')
+    .withMessage("Quotation for maksimal 255 karakter")
     .trim(),
-  body('star')
+  body("star")
     .optional()
     .custom((value) => {
       // Allow null, undefined, empty string, or any string
-      if (value === null || value === undefined || value === '') {
+      if (value === null || value === undefined || value === "") {
         return true;
       }
-      if (typeof value === 'string') {
+      if (typeof value === "string") {
         return true;
       }
       // Allow number but convert to string
-      if (typeof value === 'number') {
+      if (typeof value === "number") {
         return true;
       }
       return false;
     })
-    .withMessage('Star harus berupa string atau null'),
-  body('manage_quotation_items')
+    .withMessage("Star harus berupa string atau null"),
+  body("manage_quotation_items")
     .optional()
     .isArray({ min: 0 })
-    .withMessage('Manage quotation items harus berupa array'),
-  body('manage_quotation_items.*.componen_product_id')
+    .withMessage("Manage quotation items harus berupa array"),
+  body("manage_quotation_items.*.componen_product_id")
     .optional()
     .isUUID()
-    .withMessage('Format componen_product_id tidak valid'),
-  body('manage_quotation_items.*.quantity')
+    .withMessage("Format componen_product_id tidak valid"),
+  body("manage_quotation_items.*.quantity")
     .optional()
     .isInt({ min: 1 })
-    .withMessage('Quantity harus berupa angka positif'),
-  body('manage_quotation_items.*.price')
+    .withMessage("Quantity harus berupa angka positif"),
+  body("manage_quotation_items.*.price")
     .optional()
     .notEmpty()
-    .withMessage('Price tidak boleh kosong'),
-  body('manage_quotation_items.*.total')
+    .withMessage("Price tidak boleh kosong"),
+  body("manage_quotation_items.*.total")
     .optional()
     .notEmpty()
-    .withMessage('Total tidak boleh kosong'),
-  body('manage_quotation_items.*.code_unique')
+    .withMessage("Total tidak boleh kosong"),
+  body("manage_quotation_items.*.code_unique")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Code unique maksimal 255 karakter')
+    .withMessage("Code unique maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.segment')
+  body("manage_quotation_items.*.segment")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Segment maksimal 255 karakter')
+    .withMessage("Segment maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.msi_model')
+  body("manage_quotation_items.*.msi_model")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('MSI model maksimal 255 karakter')
+    .withMessage("MSI model maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.msi_product')
+  body("manage_quotation_items.*.msi_product")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('MSI product maksimal 255 karakter')
+    .withMessage("MSI product maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.wheel_no')
+  body("manage_quotation_items.*.wheel_no")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Wheel no maksimal 255 karakter')
+    .withMessage("Wheel no maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.engine')
+  body("manage_quotation_items.*.engine")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Engine maksimal 255 karakter')
+    .withMessage("Engine maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.volume')
+  body("manage_quotation_items.*.volume")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Volume maksimal 255 karakter')
+    .withMessage("Volume maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.horse_power')
+  body("manage_quotation_items.*.horse_power")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Horse power maksimal 255 karakter')
+    .withMessage("Horse power maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.market_price')
+  body("manage_quotation_items.*.market_price")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Market price maksimal 255 karakter')
+    .withMessage("Market price maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.componen_product_name')
+  body("manage_quotation_items.*.componen_product_name")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Componen product name maksimal 255 karakter')
+    .withMessage("Componen product name maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.description')
-    .optional()
-    .trim(),
-  body('manage_quotation_items.*.notes')
-    .optional()
-    .isLength({ max: 255 })
-    .withMessage('Notes maksimal 255 karakter')
-    .trim(),
-  body('manage_quotation_items.*.order_number')
+  body("manage_quotation_items.*.description").optional().trim(),
+  body("manage_quotation_items.*.notes").optional().trim(),
+  body("manage_quotation_items.*.order_number")
     .optional()
     .isInt({ min: 0 })
-    .withMessage('Order number harus berupa angka bulat non-negatif'),
-  body('manage_quotation_items.*.manage_quotation_item_accessories')
+    .withMessage("Order number harus berupa angka bulat non-negatif"),
+  body("manage_quotation_items.*.manage_quotation_item_accessories")
     .optional()
     .isArray({ min: 0 })
-    .withMessage('Manage quotation item accessories harus berupa array'),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_id')
+    .withMessage("Manage quotation item accessories harus berupa array"),
+  body(
+    "manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_id",
+  )
     .optional()
     .isUUID()
-    .withMessage('Format accessory_id tidak valid'),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.quantity')
+    .withMessage("Format accessory_id tidak valid"),
+  body("manage_quotation_items.*.manage_quotation_item_accessories.*.quantity")
     .optional()
     .isInt({ min: 1 })
-    .withMessage('Quantity harus berupa angka positif'),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.description')
+    .withMessage("Quantity harus berupa angka positif"),
+  body(
+    "manage_quotation_items.*.manage_quotation_item_accessories.*.description",
+  )
     .optional()
     .trim(),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_part_number')
-    .optional()
-    .isLength({ max: 255 })
-    .withMessage('Accessory part number maksimal 255 karakter')
-    .trim(),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_part_name')
-    .optional()
-    .isLength({ max: 255 })
-    .withMessage('Accessory part name maksimal 255 karakter')
-    .trim(),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_specification')
+  body(
+    "manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_part_number",
+  )
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Accessory specification maksimal 255 karakter')
+    .withMessage("Accessory part number maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_brand')
+  body(
+    "manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_part_name",
+  )
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Accessory brand maksimal 255 karakter')
+    .withMessage("Accessory part name maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_remark')
+  body(
+    "manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_specification",
+  )
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Accessory remark maksimal 255 karakter')
+    .withMessage("Accessory specification maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_region')
+  body(
+    "manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_brand",
+  )
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Accessory region maksimal 255 karakter')
+    .withMessage("Accessory brand maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_description')
+  body(
+    "manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_remark",
+  )
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Accessory description maksimal 255 karakter')
+    .withMessage("Accessory remark maksimal 255 karakter")
     .trim(),
-  body('manage_quotation_items.*.manage_quotation_item_accessories.*.componen_product_id')
+  body(
+    "manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_region",
+  )
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage("Accessory region maksimal 255 karakter")
+    .trim(),
+  body(
+    "manage_quotation_items.*.manage_quotation_item_accessories.*.accessory_description",
+  )
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage("Accessory description maksimal 255 karakter")
+    .trim(),
+  body(
+    "manage_quotation_items.*.manage_quotation_item_accessories.*.componen_product_id",
+  )
     .optional()
     .isUUID()
-    .withMessage('Format componen_product_id pada accessory tidak valid'),
-  body('manage_quotation_items.*.manage_quotation_item_specifications')
+    .withMessage("Format componen_product_id pada accessory tidak valid"),
+  body("manage_quotation_items.*.manage_quotation_item_specifications")
     .optional()
     .isArray({ min: 0 })
-    .withMessage('Manage quotation item specifications harus berupa array'),
-  body('manage_quotation_items.*.manage_quotation_item_specifications.*.componen_product_id')
+    .withMessage("Manage quotation item specifications harus berupa array"),
+  body(
+    "manage_quotation_items.*.manage_quotation_item_specifications.*.componen_product_id",
+  )
     .optional()
     .isUUID()
-    .withMessage('Format componen_product_id pada specification tidak valid'),
-  body('manage_quotation_items.*.manage_quotation_item_specifications.*.manage_quotation_item_specification_label')
-    .optional(),
-  body('manage_quotation_items.*.manage_quotation_item_specifications.*.manage_quotation_item_specification_value')
-    .optional(),
+    .withMessage("Format componen_product_id pada specification tidak valid"),
+  body(
+    "manage_quotation_items.*.manage_quotation_item_specifications.*.manage_quotation_item_specification_label",
+  ).optional(),
+  body(
+    "manage_quotation_items.*.manage_quotation_item_specifications.*.manage_quotation_item_specification_value",
+  ).optional(),
   // Validation for manage_quotation_item_accessories at root level
-  body('manage_quotation_item_accessories')
+  body("manage_quotation_item_accessories")
     .optional()
     .isArray({ min: 0 })
-    .withMessage('Manage quotation item accessories harus berupa array'),
-  body('manage_quotation_item_accessories.*.accessory_id')
+    .withMessage("Manage quotation item accessories harus berupa array"),
+  body("manage_quotation_item_accessories.*.accessory_id")
     .optional()
     .isUUID()
-    .withMessage('Format accessory_id tidak valid'),
-  body('manage_quotation_item_accessories.*.quantity')
+    .withMessage("Format accessory_id tidak valid"),
+  body("manage_quotation_item_accessories.*.quantity")
     .optional()
     .isInt({ min: 0 })
-    .withMessage('Quantity harus berupa angka integer positif'),
-  body('manage_quotation_item_accessories.*.description')
+    .withMessage("Quantity harus berupa angka integer positif"),
+  body("manage_quotation_item_accessories.*.description")
     .optional()
     .isString()
-    .withMessage('Description harus berupa string')
+    .withMessage("Description harus berupa string")
     .trim(),
 ];
 
@@ -850,131 +893,146 @@ const updateValidation = [
  * Validation rules for getting manage quotation by ID
  */
 const getByIdValidation = [
-  param('id')
+  param("id")
     .notEmpty()
-    .withMessage('ID wajib diisi')
+    .withMessage("ID wajib diisi")
     .isUUID()
-    .withMessage('Format ID tidak valid'),
+    .withMessage("Format ID tidak valid"),
 ];
 
 /**
  * Validation rules for list with pagination
  */
 const listValidation = [
-  body('page')
+  body("page")
     .optional()
     .isInt({ min: 1 })
-    .withMessage('Page harus berupa angka positif'),
-  body('limit')
+    .withMessage("Page harus berupa angka positif"),
+  body("limit")
     .optional()
     .isInt({ min: 1, max: 9999 })
-    .withMessage('Limit harus antara 1-9999'),
-  body('search')
+    .withMessage("Limit harus antara 1-9999"),
+  body("search")
     .optional()
     .isLength({ max: 255 })
-    .withMessage('Search maksimal 255 karakter')
+    .withMessage("Search maksimal 255 karakter")
     .trim(),
-  body('sort_by')
+  body("sort_by")
     .optional()
-    .isIn(['created_at', 'manage_quotation_no', 'manage_quotation_date', 'manage_quotation_valid_date'])
-    .withMessage('Sort by harus salah satu dari: created_at, manage_quotation_no, manage_quotation_date, manage_quotation_valid_date'),
-  body('sort_order')
+    .isIn([
+      "created_at",
+      "manage_quotation_no",
+      "manage_quotation_date",
+      "manage_quotation_valid_date",
+    ])
+    .withMessage(
+      "Sort by harus salah satu dari: created_at, manage_quotation_no, manage_quotation_date, manage_quotation_valid_date",
+    ),
+  body("sort_order")
     .optional()
-    .isIn(['asc', 'desc'])
-    .withMessage('Sort order harus asc atau desc'),
-  body('company_name')
+    .isIn(["asc", "desc"])
+    .withMessage("Sort order harus asc atau desc"),
+  body("company_name")
     .optional()
     .custom((value) => {
       // Allow empty string, null, undefined, NaN, or any string
-      if (value === null || value === undefined || value === '') {
+      if (value === null || value === undefined || value === "") {
         return true;
       }
-      if (typeof value === 'string') {
+      if (typeof value === "string") {
         const trimmed = value.trim();
-        if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
+        if (trimmed === "" || trimmed === "NaN" || trimmed === "null") {
           return true;
         }
         // Allow any non-empty string
         return true;
       }
       // Allow NaN
-      if (typeof value === 'number' && isNaN(value)) {
+      if (typeof value === "number" && isNaN(value)) {
         return true;
       }
       return false;
     })
-    .withMessage('company_name harus berupa string, string kosong, null, atau NaN'),
-  body('status')
+    .withMessage(
+      "company_name harus berupa string, string kosong, null, atau NaN",
+    ),
+  body("status")
     .optional()
     .custom((value) => {
       // Allow empty string, null, undefined, or valid status values
-      if (value === null || value === undefined || value === '') {
+      if (value === null || value === undefined || value === "") {
         return true;
       }
-      if (typeof value === 'string') {
+      if (typeof value === "string") {
         const trimmed = value.trim();
-        if (trimmed === '') {
+        if (trimmed === "") {
           return true;
         }
-        return ['draft', 'submit', 'reject'].includes(trimmed.toLowerCase());
+        return ["draft", "submit", "reject"].includes(trimmed.toLowerCase());
       }
       return false;
     })
-    .withMessage('Status harus salah satu dari: draft, submit, reject atau kosong'),
-  body('island_id')
+    .withMessage(
+      "Status harus salah satu dari: draft, submit, reject atau kosong",
+    ),
+  body("island_id")
     .optional()
     .custom((value) => {
       // Allow empty string, null, undefined, NaN, or any string (not necessarily valid UUID)
-      if (value === null || value === undefined || value === '') {
+      if (value === null || value === undefined || value === "") {
         return true;
       }
-      if (typeof value === 'string') {
+      if (typeof value === "string") {
         const trimmed = value.trim();
-        if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
+        if (trimmed === "" || trimmed === "NaN" || trimmed === "null") {
           return true;
         }
         // Allow any string (not necessarily valid UUID)
         return true;
       }
       // Allow NaN
-      if (typeof value === 'number' && isNaN(value)) {
+      if (typeof value === "number" && isNaN(value)) {
         return true;
       }
       return false;
     })
-    .withMessage('island_id harus berupa string, string kosong, null, undefined, atau NaN'),
-  body('quotation_for')
+    .withMessage(
+      "island_id harus berupa string, string kosong, null, undefined, atau NaN",
+    ),
+  body("quotation_for")
     .optional()
     .custom((value) => {
       // Allow empty string, null, undefined, NaN, or any string
-      if (value === null || value === undefined || value === '') {
+      if (value === null || value === undefined || value === "") {
         return true;
       }
-      if (typeof value === 'string') {
+      if (typeof value === "string") {
         const trimmed = value.trim();
-        if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
+        if (trimmed === "" || trimmed === "NaN" || trimmed === "null") {
           return true;
         }
         // Allow any non-empty string
         return true;
       }
       // Allow NaN
-      if (typeof value === 'number' && isNaN(value)) {
+      if (typeof value === "number" && isNaN(value)) {
         return true;
       }
       return false;
     })
-    .withMessage('quotation_for harus berupa string, string kosong, null, atau NaN'),
-  body('start_date')
+    .withMessage(
+      "quotation_for harus berupa string, string kosong, null, atau NaN",
+    ),
+  body("start_date")
     .optional()
     .custom((value) => {
       // Allow empty string, null, undefined, NaN, or valid date string
-      if (value === null || value === undefined || value === '') {
+      if (value === null || value === undefined || value === "") {
         return true;
       }
-      if (typeof value === 'string') {
+      if (typeof value === "string") {
         const trimmed = value.trim();
-        if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
+        if (trimmed === "" || trimmed === "NaN" || trimmed === "null") {
           return true;
         }
         // If not empty, try to validate date format (but allow invalid dates too)
@@ -989,22 +1047,24 @@ const listValidation = [
         return true;
       }
       // Allow NaN
-      if (typeof value === 'number' && isNaN(value)) {
+      if (typeof value === "number" && isNaN(value)) {
         return true;
       }
       return false;
     })
-    .withMessage('start_date harus berupa string date, string kosong, null, undefined, atau NaN'),
-  body('end_date')
+    .withMessage(
+      "start_date harus berupa string date, string kosong, null, undefined, atau NaN",
+    ),
+  body("end_date")
     .optional()
     .custom((value) => {
       // Allow empty string, null, undefined, NaN, or valid date string
-      if (value === null || value === undefined || value === '') {
+      if (value === null || value === undefined || value === "") {
         return true;
       }
-      if (typeof value === 'string') {
+      if (typeof value === "string") {
         const trimmed = value.trim();
-        if (trimmed === '' || trimmed === 'NaN' || trimmed === 'null') {
+        if (trimmed === "" || trimmed === "NaN" || trimmed === "null") {
           return true;
         }
         // If not empty, try to validate date format (but allow invalid dates too)
@@ -1019,23 +1079,25 @@ const listValidation = [
         return true;
       }
       // Allow NaN
-      if (typeof value === 'number' && isNaN(value)) {
+      if (typeof value === "number" && isNaN(value)) {
         return true;
       }
       return false;
     })
-    .withMessage('end_date harus berupa string date, string kosong, null, undefined, atau NaN'),
+    .withMessage(
+      "end_date harus berupa string date, string kosong, null, undefined, atau NaN",
+    ),
 ];
 
 /**
  * Validation rules for duplicating manage quotation
  */
 const duplikatValidation = [
-  param('manage_quotation_id')
+  param("manage_quotation_id")
     .notEmpty()
-    .withMessage('manage_quotation_id wajib diisi')
+    .withMessage("manage_quotation_id wajib diisi")
     .isUUID()
-    .withMessage('Format manage_quotation_id tidak valid'),
+    .withMessage("Format manage_quotation_id tidak valid"),
 ];
 
 module.exports = {
@@ -1043,6 +1105,5 @@ module.exports = {
   updateValidation,
   getByIdValidation,
   listValidation,
-  duplikatValidation
+  duplikatValidation,
 };
-
