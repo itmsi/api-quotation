@@ -137,6 +137,10 @@ const createValidation = [
     .isString()
     .withMessage("Componen product description harus berupa string"),
   body("notes").optional().trim(),
+  body("componen_product_custom")
+    .optional({ nullable: true })
+    .isString()
+    .withMessage("Componen product custom harus berupa string"),
   body("componen_product_specifications")
     .optional()
     .custom((value) => {
@@ -339,6 +343,10 @@ const updateValidation = [
     .isString()
     .withMessage("Componen product description harus berupa string"),
   body("notes").optional().trim(),
+  body("componen_product_custom")
+    .optional({ nullable: true })
+    .isString()
+    .withMessage("Componen product custom harus berupa string"),
   body("componen_product_specifications")
     .optional()
     .custom((value) => {

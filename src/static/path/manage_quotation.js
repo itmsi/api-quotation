@@ -442,6 +442,7 @@ const manageQuotationPaths = {
                   total: "300000",
                   description: "Updated notes about the item",
                   notes: "Updated notes about the item",
+                  componen_product_custom: "This is a componen product description custom",
                   order_number: 1,
                   manage_quotation_item_accessories: [
                     {
@@ -670,6 +671,7 @@ const manageQuotationPaths = {
                   total: "100000",
                   description: "Additional notes about the item",
                   notes: "Additional notes about the item",
+                  componen_product_custom: "This is a componen product description custom",
                   order_number: 1,
                   manage_quotation_item_accessories: [
                     {

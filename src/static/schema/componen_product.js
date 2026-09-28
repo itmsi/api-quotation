@@ -4,584 +4,616 @@
 
 const componenProductSchemas = {
   ComponenProduct: {
-    type: 'object',
+    type: "object",
     properties: {
       componen_product_id: {
-        type: 'string',
-        format: 'uuid',
-        description: 'Unique identifier',
-        example: '123e4567-e89b-12d3-a456-426614174000'
+        type: "string",
+        format: "uuid",
+        description: "Unique identifier",
+        example: "123e4567-e89b-12d3-a456-426614174000",
       },
       componen_product_name: {
-        type: 'string',
+        type: "string",
         nullable: true,
-        description: 'Componen product name',
-        example: 'Brake Component'
+        description: "Componen product name",
+        example: "Brake Component",
       },
       componen_type: {
-        type: 'integer',
+        type: "integer",
         nullable: true,
         enum: [1, 2, 3, 4, 5],
-        description: 'Componen type (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR, 4: OFF ROAD REGULAR EV, 5: ON ROAD REGULAR EV)',
-        example: 1
+        description:
+          "Componen type (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR, 4: OFF ROAD REGULAR EV, 5: ON ROAD REGULAR EV)",
+        example: 1,
       },
       company_name: {
-        type: 'string',
+        type: "string",
         nullable: true,
-        description: 'Company name',
-        example: 'PT Example Company'
+        description: "Company name",
+        example: "PT Example Company",
       },
       product_type: {
-        type: 'string',
+        type: "string",
         nullable: true,
-        description: 'Product type (unit, non_unit, hardware, implementation, application)',
-        example: 'non_unit'
+        description:
+          "Product type (unit, non_unit, hardware, implementation, application)",
+        example: "non_unit",
       },
       code_unique: {
-        type: 'string',
+        type: "string",
         nullable: true,
-        description: 'Unique code',
-        example: 'CP-001'
+        description: "Unique code",
+        example: "CP-001",
       },
       segment: {
-        type: 'string',
+        type: "string",
         nullable: true,
-        description: 'Segment',
-        example: 'Segment A'
+        description: "Segment",
+        example: "Segment A",
       },
       msi_model: {
-        type: 'string',
+        type: "string",
         nullable: true,
-        description: 'MSI model',
-        example: 'MSI-001'
+        description: "MSI model",
+        example: "MSI-001",
       },
       msi_product: {
-        type: 'string',
+        type: "string",
         nullable: true,
-        description: 'MSI product',
-        example: 'MSI-Product-001'
+        description: "MSI product",
+        example: "MSI-Product-001",
       },
       wheel_no: {
-        type: 'string',
+        type: "string",
         nullable: true,
-        description: 'Wheel number',
-        example: 'WHEEL-001'
+        description: "Wheel number",
+        example: "WHEEL-001",
       },
       engine: {
-        type: 'string',
+        type: "string",
         nullable: true,
-        description: 'Engine type',
-        example: 'Engine V8'
+        description: "Engine type",
+        example: "Engine V8",
       },
       horse_power: {
-        type: 'string',
+        type: "string",
         nullable: true,
-        description: 'Horse power',
-        example: '200 HP'
+        description: "Horse power",
+        example: "200 HP",
       },
       componen_product_unit_model: {
-        type: 'string',
+        type: "string",
         nullable: true,
-        description: 'Componen product unit model',
-        example: 'Unit Model A'
+        description: "Componen product unit model",
+        example: "Unit Model A",
       },
       volume: {
-        type: 'string',
+        type: "string",
         nullable: true,
-        description: 'Volume',
-        example: '20 L'
+        description: "Volume",
+        example: "20 L",
       },
       market_price: {
-        type: 'string',
+        type: "string",
         nullable: true,
-        description: 'Market price',
-        example: '10000000'
+        description: "Market price",
+        example: "10000000",
       },
       selling_price_star_1: {
-        type: 'string',
+        type: "string",
         nullable: true,
-        description: 'Selling price star 1',
-        example: '9500000'
+        description: "Selling price star 1",
+        example: "9500000",
       },
       selling_price_star_2: {
-        type: 'string',
+        type: "string",
         nullable: true,
-        description: 'Selling price star 2',
-        example: '9000000'
+        description: "Selling price star 2",
+        example: "9000000",
       },
       selling_price_star_3: {
-        type: 'string',
+        type: "string",
         nullable: true,
-        description: 'Selling price star 3',
-        example: '8500000'
+        description: "Selling price star 3",
+        example: "8500000",
       },
       selling_price_star_4: {
-        type: 'string',
+        type: "string",
         nullable: true,
-        description: 'Selling price star 4',
-        example: '8000000'
+        description: "Selling price star 4",
+        example: "8000000",
       },
       selling_price_star_5: {
-        type: 'string',
+        type: "string",
         nullable: true,
-        description: 'Selling price star 5',
-        example: '7500000'
+        description: "Selling price star 5",
+        example: "7500000",
       },
       image: {
-        type: 'array',
-        description: 'Product image URLs (array of strings) - DEPRECATED: Use images instead',
+        type: "array",
+        description:
+          "Product image URLs (array of strings) - DEPRECATED: Use images instead",
         items: {
-          type: 'string',
-          format: 'uri',
-          example: 'https://example.com/image.jpg'
+          type: "string",
+          format: "uri",
+          example: "https://example.com/image.jpg",
         },
-        example: ['https://example.com/image1.jpg', 'https://example.com/image2.jpg']
+        example: [
+          "https://example.com/image1.jpg",
+          "https://example.com/image2.jpg",
+        ],
       },
       images: {
-        type: 'array',
-        description: 'Product image URLs (array of strings)',
+        type: "array",
+        description: "Product image URLs (array of strings)",
         items: {
-          type: 'string',
-          format: 'uri',
-          example: 'https://example.com/image.jpg'
+          type: "string",
+          format: "uri",
+          example: "https://example.com/image.jpg",
         },
-        example: ['https://example.com/image1.jpg', 'https://example.com/image2.jpg']
+        example: [
+          "https://example.com/image1.jpg",
+          "https://example.com/image2.jpg",
+        ],
       },
       image_count: {
-        type: 'integer',
-        description: 'Number of images uploaded',
-        example: 3
+        type: "integer",
+        description: "Number of images uploaded",
+        example: 3,
       },
       componen_product_description: {
-        type: 'string',
+        type: "string",
         nullable: true,
-        description: 'Product description',
-        example: 'This is a componen product description'
+        description: "Product description",
+        example: "This is a componen product description",
       },
       notes: {
-        type: 'string',
+        type: "string",
         nullable: true,
-        description: 'Catatan tambahan untuk componen product',
-        example: 'Catatan tambahan mengenai componen product ini'
+        description: "Catatan tambahan untuk componen product",
+        example: "Catatan tambahan mengenai componen product ini",
       },
       componen_product_specifications: {
-        type: 'array',
-        description: 'Daftar spesifikasi yang tersimpan untuk componen product',
+        type: "array",
+        description: "Daftar spesifikasi yang tersimpan untuk componen product",
         items: {
-          type: 'object',
+          type: "object",
           properties: {
             componen_product_specification_id: {
-              type: 'string',
-              format: 'uuid',
-              description: 'ID spesifikasi komponen',
-              example: '123e4567-e89b-12d3-a456-426614174000'
+              type: "string",
+              format: "uuid",
+              description: "ID spesifikasi komponen",
+              example: "123e4567-e89b-12d3-a456-426614174000",
             },
             componen_product_specification_label: {
-              type: 'string',
+              type: "string",
               nullable: true,
-              description: 'Label spesifikasi',
-              example: 'Horse Power'
+              description: "Label spesifikasi",
+              example: "Horse Power",
             },
             componen_product_specification_value: {
-              type: 'string',
+              type: "string",
               nullable: true,
-              description: 'Nilai spesifikasi',
-              example: '200 HP'
+              description: "Nilai spesifikasi",
+              example: "200 HP",
             },
             componen_product_specification_description: {
-              type: 'string',
+              type: "string",
               nullable: true,
-              description: 'Deskripsi tambahan spesifikasi',
-              example: 'Informasi tambahan mengenai horse power'
-            }
-          }
-        }
+              description: "Deskripsi tambahan spesifikasi",
+              example: "Informasi tambahan mengenai horse power",
+            },
+          },
+        },
+      },
+      componen_product_custom: {
+        type: "string",
+        nullable: true,
+        description: "Product description custom",
+        example: "This is a componen product description custom",
       },
       created_at: {
-        type: 'string',
-        format: 'date-time',
-        description: 'Creation timestamp',
-        example: '2025-02-23T00:00:00.000Z'
+        type: "string",
+        format: "date-time",
+        description: "Creation timestamp",
+        example: "2025-02-23T00:00:00.000Z",
       },
       created_by: {
-        type: 'string',
-        format: 'uuid',
+        type: "string",
+        format: "uuid",
         nullable: true,
-        description: 'Creator UUID',
-        example: '123e4567-e89b-12d3-a456-426614174000'
+        description: "Creator UUID",
+        example: "123e4567-e89b-12d3-a456-426614174000",
       },
       updated_at: {
-        type: 'string',
-        format: 'date-time',
-        description: 'Last update timestamp',
-        example: '2025-02-23T00:00:00.000Z'
+        type: "string",
+        format: "date-time",
+        description: "Last update timestamp",
+        example: "2025-02-23T00:00:00.000Z",
       },
       updated_by: {
-        type: 'string',
-        format: 'uuid',
+        type: "string",
+        format: "uuid",
         nullable: true,
-        description: 'Updater UUID',
-        example: '123e4567-e89b-12d3-a456-426614174000'
+        description: "Updater UUID",
+        example: "123e4567-e89b-12d3-a456-426614174000",
       },
       deleted_at: {
-        type: 'string',
-        format: 'date-time',
+        type: "string",
+        format: "date-time",
         nullable: true,
-        description: 'Deletion timestamp (null if not deleted)',
-        example: null
+        description: "Deletion timestamp (null if not deleted)",
+        example: null,
       },
       deleted_by: {
-        type: 'string',
-        format: 'uuid',
+        type: "string",
+        format: "uuid",
         nullable: true,
-        description: 'Deleter UUID',
-        example: null
+        description: "Deleter UUID",
+        example: null,
       },
       is_delete: {
-        type: 'boolean',
-        description: 'Soft delete flag',
-        example: false
+        type: "boolean",
+        description: "Soft delete flag",
+        example: false,
       },
       datase_specification: {
-        type: 'array',
-        description: 'Alias daftar spesifikasi terkait componen product (kompatibilitas mundur)',
+        type: "array",
+        description:
+          "Alias daftar spesifikasi terkait componen product (kompatibilitas mundur)",
         items: {
-          type: 'object',
+          type: "object",
           properties: {
             componen_product_specification_id: {
-              type: 'string',
-              format: 'uuid',
-              description: 'ID spesifikasi komponen',
-              example: '123e4567-e89b-12d3-a456-426614174000'
+              type: "string",
+              format: "uuid",
+              description: "ID spesifikasi komponen",
+              example: "123e4567-e89b-12d3-a456-426614174000",
             },
             componen_product_specification_label: {
-              type: 'string',
+              type: "string",
               nullable: true,
-              description: 'Label spesifikasi',
-              example: 'Horse Power'
+              description: "Label spesifikasi",
+              example: "Horse Power",
             },
             componen_product_specification_value: {
-              type: 'string',
+              type: "string",
               nullable: true,
-              description: 'Nilai spesifikasi',
-              example: '200 HP'
+              description: "Nilai spesifikasi",
+              example: "200 HP",
             },
             componen_product_specification_description: {
-              type: 'string',
+              type: "string",
               nullable: true,
-              description: 'Deskripsi tambahan spesifikasi',
-              example: 'Informasi tambahan mengenai horse power'
-            }
-          }
-        }
-      }
-    }
+              description: "Deskripsi tambahan spesifikasi",
+              example: "Informasi tambahan mengenai horse power",
+            },
+          },
+        },
+      },
+    },
   },
   ComponenProductInput: {
-    type: 'object',
+    type: "object",
     properties: {
       componen_type: {
-        type: 'integer',
+        type: "integer",
         enum: [1, 2, 3, 4, 5],
-        description: 'Componen type (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR, 4: OFF ROAD REGULAR EV, 5: ON ROAD REGULAR EV)',
-        example: 1
+        description:
+          "Componen type (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR, 4: OFF ROAD REGULAR EV, 5: ON ROAD REGULAR EV)",
+        example: 1,
       },
       company_name: {
-        type: 'string',
-        description: 'Company name',
-        example: 'PT Example Company'
+        type: "string",
+        description: "Company name",
+        example: "PT Example Company",
       },
       product_type: {
-        type: 'string',
+        type: "string",
         maxLength: 255,
-        description: 'Product type (unit, non_unit, hardware, implementation, application)',
-        example: 'non_unit'
+        description:
+          "Product type (unit, non_unit, hardware, implementation, application)",
+        example: "non_unit",
       },
       componen_product_name: {
-        type: 'string',
+        type: "string",
         maxLength: 255,
-        description: 'Componen product name',
-        example: 'Brake Component'
+        description: "Componen product name",
+        example: "Brake Component",
       },
       code_unique: {
-        type: 'string',
+        type: "string",
         maxLength: 255,
-        description: 'Unique code',
-        example: 'CP-001'
+        description: "Unique code",
+        example: "CP-001",
       },
       segment: {
-        type: 'string',
+        type: "string",
         maxLength: 255,
-        description: 'Segment',
-        example: 'Segment A'
+        description: "Segment",
+        example: "Segment A",
       },
       msi_model: {
-        type: 'string',
+        type: "string",
         maxLength: 255,
-        description: 'MSI model',
-        example: 'MSI-001'
+        description: "MSI model",
+        example: "MSI-001",
       },
       msi_product: {
-        type: 'string',
+        type: "string",
         maxLength: 255,
-        description: 'MSI product',
-        example: 'MSI-Product-001'
+        description: "MSI product",
+        example: "MSI-Product-001",
       },
       wheel_no: {
-        type: 'string',
+        type: "string",
         maxLength: 255,
-        description: 'Wheel number',
-        example: 'WHEEL-001'
+        description: "Wheel number",
+        example: "WHEEL-001",
       },
       engine: {
-        type: 'string',
+        type: "string",
         maxLength: 255,
-        description: 'Engine type',
-        example: 'Engine V8'
+        description: "Engine type",
+        example: "Engine V8",
       },
       horse_power: {
-        type: 'string',
+        type: "string",
         maxLength: 255,
-        description: 'Horse power',
-        example: '200 HP'
+        description: "Horse power",
+        example: "200 HP",
       },
       componen_product_unit_model: {
-        type: 'string',
+        type: "string",
         maxLength: 255,
-        description: 'Componen product unit model',
-        example: 'Unit Model A'
+        description: "Componen product unit model",
+        example: "Unit Model A",
       },
       volume: {
-        type: 'string',
+        type: "string",
         maxLength: 255,
-        description: 'Volume',
-        example: '20 L'
+        description: "Volume",
+        example: "20 L",
       },
       market_price: {
-        type: 'string',
+        type: "string",
         maxLength: 255,
-        description: 'Market price',
-        example: '10000000'
+        description: "Market price",
+        example: "10000000",
       },
       selling_price_star_1: {
-        type: 'string',
+        type: "string",
         maxLength: 255,
-        description: 'Selling price star 1',
-        example: '9500000'
+        description: "Selling price star 1",
+        example: "9500000",
       },
       selling_price_star_2: {
-        type: 'string',
+        type: "string",
         maxLength: 255,
-        description: 'Selling price star 2',
-        example: '9000000'
+        description: "Selling price star 2",
+        example: "9000000",
       },
       selling_price_star_3: {
-        type: 'string',
+        type: "string",
         maxLength: 255,
-        description: 'Selling price star 3',
-        example: '8500000'
+        description: "Selling price star 3",
+        example: "8500000",
       },
       selling_price_star_4: {
-        type: 'string',
+        type: "string",
         maxLength: 255,
-        description: 'Selling price star 4',
-        example: '8000000'
+        description: "Selling price star 4",
+        example: "8000000",
       },
       selling_price_star_5: {
-        type: 'string',
+        type: "string",
         maxLength: 255,
-        description: 'Selling price star 5',
-        example: '7500000'
+        description: "Selling price star 5",
+        example: "7500000",
       },
       image: {
-        type: 'string',
-        format: 'binary',
-        description: 'Product image file (jpg, jpeg, png, gif, webp) - DEPRECATED: Use images[0], images[1], etc. instead'
+        type: "string",
+        format: "binary",
+        description:
+          "Product image file (jpg, jpeg, png, gif, webp) - DEPRECATED: Use images[0], images[1], etc. instead",
       },
-      'images[0]': {
-        type: 'string',
-        format: 'binary',
-        description: 'First product image file (jpg, jpeg, png, gif, webp)'
+      "images[0]": {
+        type: "string",
+        format: "binary",
+        description: "First product image file (jpg, jpeg, png, gif, webp)",
       },
-      'images[1]': {
-        type: 'string',
-        format: 'binary',
-        description: 'Second product image file (jpg, jpeg, png, gif, webp)'
+      "images[1]": {
+        type: "string",
+        format: "binary",
+        description: "Second product image file (jpg, jpeg, png, gif, webp)",
       },
-      'images[2]': {
-        type: 'string',
-        format: 'binary',
-        description: 'Third product image file (jpg, jpeg, png, gif, webp)'
+      "images[2]": {
+        type: "string",
+        format: "binary",
+        description: "Third product image file (jpg, jpeg, png, gif, webp)",
       },
-      'images[3]': {
-        type: 'string',
-        format: 'binary',
-        description: 'Fourth product image file (jpg, jpeg, png, gif, webp)'
+      "images[3]": {
+        type: "string",
+        format: "binary",
+        description: "Fourth product image file (jpg, jpeg, png, gif, webp)",
       },
-      'images[4]': {
-        type: 'string',
-        format: 'binary',
-        description: 'Fifth product image file (jpg, jpeg, png, gif, webp). You can add more images using images[5], images[6], etc. (up to 50 images)'
+      "images[4]": {
+        type: "string",
+        format: "binary",
+        description:
+          "Fifth product image file (jpg, jpeg, png, gif, webp). You can add more images using images[5], images[6], etc. (up to 50 images)",
       },
       image_count: {
-        type: 'string',
-        description: 'Number of images being uploaded. Must match the number of images[0], images[1], etc. fields sent. Format: "3" (as string)',
-        example: '3'
+        type: "string",
+        description:
+          'Number of images being uploaded. Must match the number of images[0], images[1], etc. fields sent. Format: "3" (as string)',
+        example: "3",
       },
       images: {
-        type: 'string',
-        description: 'JSON string array untuk menghapus images yang sudah ada. Format: [{"image_id":"uuid-existing","image_url":"url-existing","image_id_to_delete":"uuid-to-delete"}]. Jika image_id_to_delete diisi dengan UUID image yang ingin dihapus, image tersebut akan dihapus. Jika kosong atau null, image tidak akan dihapus. Contoh: [{"image_id":"123e4567-e89b-12d3-a456-426614174000","image_url":"https://example.com/image1.jpg","image_id_to_delete":"123e4567-e89b-12d3-a456-426614174000"}]',
-        example: '[{"image_id":"123e4567-e89b-12d3-a456-426614174000","image_url":"https://example.com/image1.jpg","image_id_to_delete":"123e4567-e89b-12d3-a456-426614174000"}]'
+        type: "string",
+        description:
+          'JSON string array untuk menghapus images yang sudah ada. Format: [{"image_id":"uuid-existing","image_url":"url-existing","image_id_to_delete":"uuid-to-delete"}]. Jika image_id_to_delete diisi dengan UUID image yang ingin dihapus, image tersebut akan dihapus. Jika kosong atau null, image tidak akan dihapus. Contoh: [{"image_id":"123e4567-e89b-12d3-a456-426614174000","image_url":"https://example.com/image1.jpg","image_id_to_delete":"123e4567-e89b-12d3-a456-426614174000"}]',
+        example:
+          '[{"image_id":"123e4567-e89b-12d3-a456-426614174000","image_url":"https://example.com/image1.jpg","image_id_to_delete":"123e4567-e89b-12d3-a456-426614174000"}]',
       },
       componen_product_description: {
-        type: 'string',
-        description: 'Product description',
-        example: 'This is a componen product description'
+        type: "string",
+        description: "Product description",
+        example: "This is a componen product description",
       },
       notes: {
-        type: 'string',
-        description: 'Catatan tambahan untuk componen product',
-        example: 'Catatan tambahan mengenai componen product ini'
+        type: "string",
+        description: "Catatan tambahan untuk componen product",
+        example: "Catatan tambahan mengenai componen product ini",
       },
       componen_product_specifications: {
-        type: 'string',
-        description: 'String JSON berisi daftar spesifikasi komponen. Contoh: [{"componen_product_specification_label":"Horse Power","componen_product_specification_value":"200 HP"}]',
-        example: '[{"componen_product_specification_label":"Horse Power","componen_product_specification_value":"200 HP","componen_product_specification_description":"Informasi tambahan mengenai horse power"}]'
-      }
-    }
+        type: "string",
+        description:
+          'String JSON berisi daftar spesifikasi komponen. Contoh: [{"componen_product_specification_label":"Horse Power","componen_product_specification_value":"200 HP"}]',
+        example:
+          '[{"componen_product_specification_label":"Horse Power","componen_product_specification_value":"200 HP","componen_product_specification_description":"Informasi tambahan mengenai horse power"}]',
+      },
+      componen_product_custom: {
+        type: "string",
+        description: "Product description Custom",
+        example: "This is a componen product description custom",
+      },
+    },
   },
   Pagination: {
-    type: 'object',
+    type: "object",
     properties: {
       page: {
-        type: 'integer',
-        description: 'Current page number',
-        example: 1
+        type: "integer",
+        description: "Current page number",
+        example: 1,
       },
       limit: {
-        type: 'integer',
-        description: 'Items per page',
-        example: 10
+        type: "integer",
+        description: "Items per page",
+        example: 10,
       },
       total: {
-        type: 'integer',
-        description: 'Total number of items',
-        example: 100
+        type: "integer",
+        description: "Total number of items",
+        example: 100,
       },
       totalPages: {
-        type: 'integer',
-        description: 'Total number of pages',
-        example: 10
-      }
-    }
+        type: "integer",
+        description: "Total number of pages",
+        example: 10,
+      },
+    },
   },
   ErrorResponse: {
-    type: 'object',
+    type: "object",
     properties: {
       success: {
-        type: 'boolean',
-        example: false
+        type: "boolean",
+        example: false,
       },
       error: {
-        type: 'string',
-        description: 'Error message',
-        example: 'Data tidak ditemukan'
+        type: "string",
+        description: "Error message",
+        example: "Data tidak ditemukan",
       },
       details: {
-        type: 'object',
-        description: 'Additional error details',
-        nullable: true
-      }
-    }
+        type: "object",
+        description: "Additional error details",
+        nullable: true,
+      },
+    },
   },
   ImportCSVResponse: {
-    type: 'object',
+    type: "object",
     properties: {
       success: {
-        type: 'boolean',
-        example: true
+        type: "boolean",
+        example: true,
       },
       message: {
-        type: 'string',
-        example: 'Import CSV selesai. Berhasil: 10, Gagal: 0'
+        type: "string",
+        example: "Import CSV selesai. Berhasil: 10, Gagal: 0",
       },
       data: {
-        type: 'object',
+        type: "object",
         properties: {
           total: {
-            type: 'integer',
-            description: 'Total jumlah baris dalam CSV',
-            example: 10
+            type: "integer",
+            description: "Total jumlah baris dalam CSV",
+            example: 10,
           },
           success: {
-            type: 'integer',
-            description: 'Jumlah baris yang berhasil diimport',
-            example: 10
+            type: "integer",
+            description: "Jumlah baris yang berhasil diimport",
+            example: 10,
           },
           failed: {
-            type: 'integer',
-            description: 'Jumlah baris yang gagal diimport',
-            example: 0
+            type: "integer",
+            description: "Jumlah baris yang gagal diimport",
+            example: 0,
           },
           details: {
-            type: 'object',
+            type: "object",
             properties: {
               success: {
-                type: 'array',
-                description: 'Detail baris yang berhasil diimport',
+                type: "array",
+                description: "Detail baris yang berhasil diimport",
                 items: {
-                  type: 'object',
+                  type: "object",
                   properties: {
                     row: {
-                      type: 'integer',
-                      description: 'Nomor baris di CSV (dimulai dari 2 karena baris 1 adalah header)',
-                      example: 2
+                      type: "integer",
+                      description:
+                        "Nomor baris di CSV (dimulai dari 2 karena baris 1 adalah header)",
+                      example: 2,
                     },
                     code_unique: {
-                      type: 'string',
-                      description: 'Code unique dari baris yang berhasil diimport',
-                      example: 'MSI-001'
+                      type: "string",
+                      description:
+                        "Code unique dari baris yang berhasil diimport",
+                      example: "MSI-001",
                     },
                     componen_product_id: {
-                      type: 'string',
-                      format: 'uuid',
-                      description: 'ID componen product yang berhasil dibuat',
-                      example: '123e4567-e89b-12d3-a456-426614174000'
-                    }
-                  }
-                }
+                      type: "string",
+                      format: "uuid",
+                      description: "ID componen product yang berhasil dibuat",
+                      example: "123e4567-e89b-12d3-a456-426614174000",
+                    },
+                  },
+                },
               },
               failed: {
-                type: 'array',
-                description: 'Detail baris yang gagal diimport',
+                type: "array",
+                description: "Detail baris yang gagal diimport",
                 items: {
-                  type: 'object',
+                  type: "object",
                   properties: {
                     row: {
-                      type: 'integer',
-                      description: 'Nomor baris di CSV (dimulai dari 2 karena baris 1 adalah header)',
-                      example: 3
+                      type: "integer",
+                      description:
+                        "Nomor baris di CSV (dimulai dari 2 karena baris 1 adalah header)",
+                      example: 3,
                     },
                     code_unique: {
-                      type: 'string',
-                      description: 'Code unique dari baris yang gagal diimport',
-                      example: 'MSI-002'
+                      type: "string",
+                      description: "Code unique dari baris yang gagal diimport",
+                      example: "MSI-002",
                     },
                     error: {
-                      type: 'string',
-                      description: 'Pesan error yang terjadi',
-                      example: 'Duplicate entry for code_unique'
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+                      type: "string",
+                      description: "Pesan error yang terjadi",
+                      example: "Duplicate entry for code_unique",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
 };
 
 module.exports = componenProductSchemas;
-

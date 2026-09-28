@@ -681,6 +681,12 @@ const manageQuotationSchemas = {
         description: 'Catatan tambahan untuk item quotation',
         example: 'Catatan tambahan mengenai item ini'
       },
+      componen_product_custom: {
+        type: 'string',
+        nullable: true,
+        description: 'Componen product custom untuk item quotation',
+        example: 'This is a componen product description custom'
+      },
       order_number: {
         type: 'integer',
         description: 'Order number untuk urutan item dalam quotation',
@@ -842,6 +848,12 @@ const manageQuotationSchemas = {
         nullable: true,
         description: 'Catatan tambahan untuk item quotation',
         example: 'Catatan tambahan mengenai item ini'
+      },
+      componen_product_custom: {
+        type: 'string',
+        nullable: true,
+        description: 'Componen product custom untuk item quotation',
+        example: 'This is a componen product description custom'
       },
       order_number: {
         type: 'integer',
