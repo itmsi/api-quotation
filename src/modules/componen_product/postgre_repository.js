@@ -511,6 +511,7 @@ const create = async (data, specifications = []) => {
       image_count: data.image_count || 0, // New column for image count
       componen_product_description: data.componen_product_description || null,
       notes: data.notes || null,
+      componen_product_custom: data.componen_product_custom || null,
       created_by: data.created_by || null
     };
 
@@ -605,6 +606,7 @@ const update = async (id, data, options = {}) => {
     if (data.image_count !== undefined) updateFields.image_count = data.image_count; // New column for image count
     if (data.componen_product_description !== undefined) updateFields.componen_product_description = data.componen_product_description;
     if (data.notes !== undefined) updateFields.notes = data.notes;
+    if (data.componen_product_custom !== undefined) updateFields.componen_product_custom = data.componen_product_custom;
     if (data.updated_by !== undefined) updateFields.updated_by = data.updated_by;
 
     if (specificationsProvided) {

@@ -1401,6 +1401,7 @@ const createItems = async (
       total: item.total ?? null,
       description: item.description ?? null,
       notes: item.notes ?? null,
+      componen_product_custom: item.componen_product_custom ?? null,
       order_number: orderNumber,
       specification_properties: item.specification_properties
         ? JSON.stringify(
@@ -1461,6 +1462,7 @@ const getItemsByQuotationId = async (manage_quotation_id) => {
       "mqi.total",
       "mqi.description",
       "mqi.notes",
+      "mqi.componen_product_custom",
       "mqi.order_number",
       "mqi.created_by",
       "mqi.updated_by",
@@ -1475,6 +1477,7 @@ const getItemsByQuotationId = async (manage_quotation_id) => {
       db.raw("cp.code_unique as cp_code_unique"),
       db.raw("cp.segment as cp_segment"),
       db.raw("cp.notes as cp_notes"),
+      db.raw("cp.componen_product_custom as cp_componen_product_custom"),
       db.raw("cp.msi_model as cp_msi_model"),
       db.raw("cp.msi_product as cp_msi_product"),
       db.raw("cp.wheel_no as cp_wheel_no"),
@@ -1830,6 +1833,7 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
       cp_code_unique,
       cp_segment,
       cp_notes,
+      cp_componen_product_custom,
       cp_msi_model,
       cp_msi_product,
       cp_wheel_no,

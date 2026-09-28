@@ -336,6 +336,10 @@ const createValidation = [
     .trim(),
   body("manage_quotation_items.*.description").optional().trim(),
   body("manage_quotation_items.*.notes").optional().trim(),
+  body("manage_quotation_items.*.componen_product_custom")
+    .optional({ nullable: true })
+    .isString()
+    .withMessage("Componen product custom harus berupa string"),
   body("manage_quotation_items.*.order_number")
     .optional()
     .isInt({ min: 0 })
@@ -775,6 +779,10 @@ const updateValidation = [
     .trim(),
   body("manage_quotation_items.*.description").optional().trim(),
   body("manage_quotation_items.*.notes").optional().trim(),
+  body("manage_quotation_items.*.componen_product_custom")
+    .optional({ nullable: true })
+    .isString()
+    .withMessage("Componen product custom harus berupa string"),
   body("manage_quotation_items.*.order_number")
     .optional()
     .isInt({ min: 0 })
