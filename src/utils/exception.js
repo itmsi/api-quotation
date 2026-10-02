@@ -187,6 +187,19 @@ const mappingErrorValidation = (error, code = HTTP.CREATED) => {
 }
 
 const mappingError = (error, code = HTTP.CREATED) => {
+  // Error bisnis/validasi yang sudah membawa statusCode 4xx (mis. duplikat code_unique)
+  // dikembalikan apa adanya, bukan dianggap error koneksi DB
+  if (error instanceof Error && Number.isInteger(error.statusCode) && error.statusCode >= 400 && error.statusCode < 500) {
+    return {
+      code: error.statusCode,
+      data: {
+        status: false,
+        message: error.message,
+        ...(error.code ? { error_code: error.code } : {}),
+        data: []
+      }
+    }
+  }
   let { message, exception } = ['', '']
   const manipulate = error.toString().split(':')
   switch (manipulate[0] || 'Unknown') {
