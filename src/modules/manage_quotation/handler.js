@@ -336,7 +336,7 @@ const mapProductType = (componenType) => {
  */
 const getAll = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = '', sort_by = 'created_at', sort_order = 'desc', status = '', island_id = '', quotation_for = '', start_date = '', end_date = '', customer_id = '', company_name = '' } = req.body;
+    const { page = 1, limit = 10, search = '', sort_by = 'created_at', sort_order = 'desc', status = '', island_id = '', quotation_for = '', quotation_segment = '', start_date = '', end_date = '', customer_id = '', company_name = '' } = req.body;
 
     const offset = (page - 1) * limit;
 
@@ -364,6 +364,15 @@ const getAll = async (req, res) => {
       const quotationForStr = String(quotation_for).trim();
       if (quotationForStr !== '' && quotationForStr !== 'NaN' && quotationForStr !== 'null') {
         normalizedQuotationFor = quotationForStr;
+      }
+    }
+
+    // Validate and normalize quotation_segment
+    let normalizedQuotationSegment = null;
+    if (quotation_segment && quotation_segment !== '' && quotation_segment !== null && quotation_segment !== undefined) {
+      const quotationSegmentStr = String(quotation_segment).trim();
+      if (quotationSegmentStr !== '' && quotationSegmentStr !== 'NaN' && quotationSegmentStr !== 'null') {
+        normalizedQuotationSegment = quotationSegmentStr;
       }
     }
 
@@ -419,6 +428,7 @@ const getAll = async (req, res) => {
       islandId: normalizedIslandId,
       customerId: normalizedCustomerId,
       quotationFor: normalizedQuotationFor,
+      quotationSegment: normalizedQuotationSegment,
       startDate: normalizedStartDate,
       endDate: normalizedEndDate,
       companyName: normalizedCompanyName

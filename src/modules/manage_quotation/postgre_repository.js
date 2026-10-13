@@ -55,6 +55,7 @@ const findAll = async (params) => {
     status,
     islandId,
     quotationFor,
+    quotationSegment,
     startDate,
     endDate,
     customerId,
@@ -138,6 +139,7 @@ const findAll = async (params) => {
       "mq.company",
       "mq.project_id",
       "mq.quotation_for",
+      "mq.quotation_segment",
       "mq.star",
       "mq.created_by",
       "mq.updated_by",
@@ -211,6 +213,10 @@ const findAll = async (params) => {
   // Add quotation_for filter condition
   if (quotationFor && quotationFor.trim() !== "") {
     query = query.where("mq.quotation_for", quotationFor.trim());
+  }
+
+  if (quotationSegment && quotationSegment.trim() !== "") {
+    query = query.where("mq.quotation_segment", quotationSegment.trim());
   }
 
   // Add company filter condition
@@ -382,6 +388,10 @@ const findAll = async (params) => {
             query = query.where("mq.quotation_for", quotationFor.trim());
           }
 
+          if (quotationSegment && quotationSegment.trim() !== "") {
+            query = query.where("mq.quotation_segment", quotationSegment.trim());
+          }
+
           if (companyName && companyName.trim() !== "") {
             query = query.where("mq.company", companyName.trim());
           }
@@ -441,6 +451,10 @@ const findAll = async (params) => {
 
           if (quotationFor && quotationFor.trim() !== "") {
             query = query.where("mq.quotation_for", quotationFor.trim());
+          }
+
+          if (quotationSegment && quotationSegment.trim() !== "") {
+            query = query.where("mq.quotation_segment", quotationSegment.trim());
           }
 
           if (companyName && companyName.trim() !== "") {
@@ -512,6 +526,10 @@ const findAll = async (params) => {
 
         if (quotationFor && quotationFor.trim() !== "") {
           query = query.where("mq.quotation_for", quotationFor.trim());
+        }
+
+        if (quotationSegment && quotationSegment.trim() !== "") {
+          query = query.where("mq.quotation_segment", quotationSegment.trim());
         }
 
         if (companyName && companyName.trim() !== "") {
@@ -624,6 +642,10 @@ const findAll = async (params) => {
     countQuery = countQuery.where("mq.quotation_for", quotationFor.trim());
   }
 
+  if (quotationSegment && quotationSegment.trim() !== "") {
+    countQuery = countQuery.where("mq.quotation_segment", quotationSegment.trim());
+  }
+
   // Add company filter condition to count query
   if (companyName && companyName.trim() !== "") {
     countQuery = countQuery.where("mq.company", companyName.trim());
@@ -692,6 +714,10 @@ const findAll = async (params) => {
 
       if (quotationFor && quotationFor.trim() !== "") {
         countQuery = countQuery.where("mq.quotation_for", quotationFor.trim());
+      }
+
+      if (quotationSegment && quotationSegment.trim() !== "") {
+        countQuery = countQuery.where("mq.quotation_segment", quotationSegment.trim());
       }
 
       if (companyName && companyName.trim() !== "") {
@@ -969,6 +995,7 @@ const create = async (data, trx = db) => {
     company: data.company || null,
     project_id: data.project_id || null,
     quotation_for: data.quotation_for || null,
+    quotation_segment: data.quotation_segment || null,
     star:
       data.star !== undefined
         ? data.star !== null && data.star !== ""
@@ -1225,6 +1252,8 @@ const update = async (id, data, trx = db) => {
   if (data.project_id !== undefined) updateFields.project_id = data.project_id;
   if (data.quotation_for !== undefined)
     updateFields.quotation_for = data.quotation_for;
+  if (data.quotation_segment !== undefined)
+    updateFields.quotation_segment = data.quotation_segment;
   if (data.star !== undefined)
     updateFields.star =
       data.star !== null && data.star !== "" ? String(data.star) : "0";
@@ -1809,6 +1838,7 @@ const duplicateQuotation = async (sourceQuotationId, created_by, trx = db) => {
     company: sourceQuotation.company,
     project_id: sourceQuotation.project_id,
     quotation_for: sourceQuotation.quotation_for,
+    quotation_segment: sourceQuotation.quotation_segment,
     star: sourceQuotation.star,
     bank_account_id: sourceQuotation.bank_account_id,
     created_by: created_by,
