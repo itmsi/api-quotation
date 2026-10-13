@@ -160,7 +160,7 @@ const manageQuotationPaths = {
                   status: "",
                   island_id: "",
                   quotation_for: "",
-                  quotation_segment: "Retail",
+                  quotation_segment: "CC",
                   start_date: "",
                   end_date: "",
                   customer_id: "",
@@ -369,7 +369,7 @@ const manageQuotationPaths = {
                   company: "PT Example Company",
                   project_id: "PROJ-001",
                   quotation_for: "Customer Name",
-                  quotation_segment: "Retail",
+                  quotation_segment: "CC",
                   star: 5,
                 },
               },
@@ -451,7 +451,7 @@ const manageQuotationPaths = {
               company: "PT Example Company",
               project_id: "PROJ-001",
               quotation_for: "Customer Name",
-              quotation_segment: "Retail",
+              quotation_segment: "CC",
               star: 5,
               manage_quotation_items: [
                 {
@@ -471,7 +471,8 @@ const manageQuotationPaths = {
                   total: "300000",
                   description: "Updated notes about the item",
                   notes: "Updated notes about the item",
-                  componen_product_custom: "This is a componen product description custom",
+                  componen_product_custom:
+                    "This is a componen product description custom",
                   order_number: 1,
                   manage_quotation_item_accessories: [
                     {
@@ -539,7 +540,7 @@ const manageQuotationPaths = {
                   company: "PT Example Company",
                   project_id: "PROJ-001",
                   quotation_for: "Customer Name",
-                  quotation_segment: "Retail",
+                  quotation_segment: "CC",
                   star: 5,
                 },
               },
@@ -682,7 +683,7 @@ const manageQuotationPaths = {
               company: "PT Example Company",
               project_id: "PROJ-001",
               quotation_for: "Customer Name",
-              quotation_segment: "Retail",
+              quotation_segment: "CC",
               star: 5,
               manage_quotation_items: [
                 {
@@ -702,7 +703,8 @@ const manageQuotationPaths = {
                   total: "100000",
                   description: "Additional notes about the item",
                   notes: "Additional notes about the item",
-                  componen_product_custom: "This is a componen product description custom",
+                  componen_product_custom:
+                    "This is a componen product description custom",
                   order_number: 1,
                   manage_quotation_item_accessories: [
                     {
@@ -752,7 +754,7 @@ const manageQuotationPaths = {
                   company: "PT Example Company",
                   project_id: "PROJ-001",
                   quotation_for: "Customer Name",
-                  quotation_segment: "Retail",
+                  quotation_segment: "CC",
                   star: 5,
                   created_at: "2025-01-15T10:00:00.000Z",
                 },
@@ -903,7 +905,7 @@ const manageQuotationPaths = {
                   company: "PT Example Company",
                   project_id: "PROJ-001",
                   quotation_for: "Customer Name",
-                  quotation_segment: "Retail",
+                  quotation_segment: "CC",
                   star: 5,
                   created_at: "2025-01-15T10:00:00.000Z",
                 },
