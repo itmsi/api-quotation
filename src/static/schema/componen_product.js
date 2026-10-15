@@ -21,9 +21,9 @@ const componenProductSchemas = {
       componen_type: {
         type: "integer",
         nullable: true,
-        enum: [1, 2, 3, 4, 5],
+        enum: [1, 2, 3, 4, 5, 6],
         description:
-          "Componen type (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR, 4: OFF ROAD REGULAR EV, 5: ON ROAD REGULAR EV)",
+          "Componen type (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR, 4: OFF ROAD REGULAR EV, 5: ON ROAD REGULAR EV, 6: BESS)",
         example: 1,
       },
       company_name: {
@@ -298,9 +298,9 @@ const componenProductSchemas = {
     properties: {
       componen_type: {
         type: "integer",
-        enum: [1, 2, 3, 4, 5],
+        enum: [1, 2, 3, 4, 5, 6],
         description:
-          "Componen type (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR, 4: OFF ROAD REGULAR EV, 5: ON ROAD REGULAR EV)",
+          "Componen type (1: OFF ROAD REGULAR, 2: ON ROAD REGULAR, 3: OFF ROAD IRREGULAR, 4: OFF ROAD REGULAR EV, 5: ON ROAD REGULAR EV, 6: BESS)",
         example: 1,
       },
       company_name: {

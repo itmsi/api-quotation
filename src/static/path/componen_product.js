@@ -3,138 +3,156 @@
  */
 
 const componenProductPaths = {
-  '/componen_product/get': {
+  "/componen_product/get": {
     post: {
-      tags: ['Componen Products'],
-      summary: 'Get all componen products',
-      description: 'Retrieve all componen products with pagination, search, and sort',
+      tags: ["Componen Products"],
+      summary: "Get all componen products",
+      description:
+        "Retrieve all componen products with pagination, search, and sort",
       security: [{ bearerAuth: [] }],
       requestBody: {
         required: true,
         content: {
-          'application/json': {
+          "application/json": {
             schema: {
-              type: 'object',
+              type: "object",
               properties: {
                 page: {
-                  type: 'integer',
+                  type: "integer",
                   default: 1,
-                  example: 1
+                  example: 1,
                 },
                 limit: {
-                  type: 'integer',
+                  type: "integer",
                   default: 10,
-                  example: 10
+                  example: 10,
                 },
                 search: {
-                  type: 'string',
-                  default: '',
-                  example: ''
+                  type: "string",
+                  default: "",
+                  example: "",
                 },
                 sort_by: {
-                  type: 'string',
-                  enum: ['created_at', 'code_unique', 'componen_product_name', 'segment', 'msi_model', 'msi_product', 'volume', 'componen_product_unit_model'],
-                  default: 'created_at',
-                  example: 'created_at'
+                  type: "string",
+                  enum: [
+                    "created_at",
+                    "code_unique",
+                    "componen_product_name",
+                    "segment",
+                    "msi_model",
+                    "msi_product",
+                    "volume",
+                    "componen_product_unit_model",
+                  ],
+                  default: "created_at",
+                  example: "created_at",
                 },
                 sort_order: {
-                  type: 'string',
-                  enum: ['asc', 'desc'],
-                  default: 'desc',
-                  example: 'desc'
+                  type: "string",
+                  enum: ["asc", "desc"],
+                  default: "desc",
+                  example: "desc",
                 },
                 company_name: {
-                  type: 'string',
+                  type: "string",
                   nullable: true,
-                  description: 'Filter by company name (bisa NaN, nullable, string kosong, null)',
-                  example: 'ITI edit'
+                  description:
+                    "Filter by company name (bisa NaN, nullable, string kosong, null)",
+                  example: "ITI edit",
                 },
                 product_type: {
-                  type: 'string',
+                  type: "string",
                   nullable: true,
-                  description: 'Filter by product type (unit, non_unit, hardware, implementation, application)',
-                  example: 'non_unit'
-                }
-              }
-            }
-          }
-        }
+                  description:
+                    "Filter by product type (unit, non_unit, hardware, implementation, application)",
+                  example: "non_unit",
+                },
+              },
+            },
+          },
+        },
       },
       responses: {
         200: {
-          description: 'Success',
+          description: "Success",
           content: {
-            'application/json': {
+            "application/json": {
               schema: {
-                type: 'object',
+                type: "object",
                 properties: {
-                  success: { type: 'boolean', example: true },
-                  message: { type: 'string', example: 'Data componen product berhasil diambil' },
+                  success: { type: "boolean", example: true },
+                  message: {
+                    type: "string",
+                    example: "Data componen product berhasil diambil",
+                  },
                   data: {
-                    type: 'object',
+                    type: "object",
                     properties: {
                       items: {
-                        type: 'array',
-                        items: { $ref: '#/components/schemas/ComponenProduct' }
+                        type: "array",
+                        items: { $ref: "#/components/schemas/ComponenProduct" },
                       },
-                      pagination: { $ref: '#/components/schemas/Pagination' }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+                      pagination: { $ref: "#/components/schemas/Pagination" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   },
-  '/componen_product/{id}': {
+  "/componen_product/{id}": {
     get: {
-      tags: ['Componen Products'],
-      summary: 'Get componen product by ID',
-      description: 'Retrieve a single componen product by ID',
+      tags: ["Componen Products"],
+      summary: "Get componen product by ID",
+      description: "Retrieve a single componen product by ID",
       security: [{ bearerAuth: [] }],
       parameters: [
         {
-          name: 'id',
-          in: 'path',
+          name: "id",
+          in: "path",
           required: true,
-          description: 'Componen Product UUID',
+          description: "Componen Product UUID",
           schema: {
-            type: 'string',
-            format: 'uuid'
-          }
-        }
+            type: "string",
+            format: "uuid",
+          },
+        },
       ],
       responses: {
         200: {
-          description: 'Success',
+          description: "Success",
           content: {
-            'application/json': {
+            "application/json": {
               schema: {
-                type: 'object',
+                type: "object",
                 properties: {
-                  success: { type: 'boolean', example: true },
-                  message: { type: 'string', example: 'Data componen product berhasil diambil' },
-                  data: { $ref: '#/components/schemas/ComponenProduct' }
-                }
-              }
-            }
-          }
+                  success: { type: "boolean", example: true },
+                  message: {
+                    type: "string",
+                    example: "Data componen product berhasil diambil",
+                  },
+                  data: { $ref: "#/components/schemas/ComponenProduct" },
+                },
+              },
+            },
+          },
         },
         404: {
-          description: 'Not found',
+          description: "Not found",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
-        }
-      }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
+        },
+      },
     },
     put: {
-      tags: ['Componen Products'],
-      summary: 'Update componen product',
+      tags: ["Componen Products"],
+      summary: "Update componen product",
       description: `Update an existing componen product.
 
 **Upload Images Baru:**
@@ -154,128 +172,137 @@ const componenProductPaths = {
       security: [{ bearerAuth: [] }],
       parameters: [
         {
-          name: 'id',
-          in: 'path',
+          name: "id",
+          in: "path",
           required: true,
-          description: 'Componen Product UUID',
+          description: "Componen Product UUID",
           schema: {
-            type: 'string',
-            format: 'uuid'
-          }
-        }
+            type: "string",
+            format: "uuid",
+          },
+        },
       ],
       requestBody: {
         required: true,
         content: {
-          'multipart/form-data': {
-            schema: { $ref: '#/components/schemas/ComponenProductInput' }
-          }
-        }
+          "multipart/form-data": {
+            schema: { $ref: "#/components/schemas/ComponenProductInput" },
+          },
+        },
       },
       responses: {
         200: {
-          description: 'Updated successfully',
+          description: "Updated successfully",
           content: {
-            'application/json': {
+            "application/json": {
               schema: {
-                type: 'object',
+                type: "object",
                 properties: {
-                  success: { type: 'boolean', example: true },
-                  message: { type: 'string', example: 'Data componen product berhasil diupdate' },
-                  data: { $ref: '#/components/schemas/ComponenProduct' }
-                }
-              }
-            }
-          }
+                  success: { type: "boolean", example: true },
+                  message: {
+                    type: "string",
+                    example: "Data componen product berhasil diupdate",
+                  },
+                  data: { $ref: "#/components/schemas/ComponenProduct" },
+                },
+              },
+            },
+          },
         },
         404: {
-          description: 'Not found'
-        }
-      }
+          description: "Not found",
+        },
+      },
     },
     delete: {
-      tags: ['Componen Products'],
-      summary: 'Delete componen product',
-      description: 'Soft delete a componen product (sets is_delete to true)',
+      tags: ["Componen Products"],
+      summary: "Delete componen product",
+      description: "Soft delete a componen product (sets is_delete to true)",
       security: [{ bearerAuth: [] }],
       parameters: [
         {
-          name: 'id',
-          in: 'path',
+          name: "id",
+          in: "path",
           required: true,
-          description: 'Componen Product UUID',
+          description: "Componen Product UUID",
           schema: {
-            type: 'string',
-            format: 'uuid'
-          }
-        }
+            type: "string",
+            format: "uuid",
+          },
+        },
       ],
       responses: {
         200: {
-          description: 'Deleted successfully',
+          description: "Deleted successfully",
           content: {
-            'application/json': {
+            "application/json": {
               schema: {
-                type: 'object',
+                type: "object",
                 properties: {
-                  success: { type: 'boolean', example: true },
-                  message: { type: 'string', example: 'Data componen product berhasil dihapus' }
-                }
-              }
-            }
-          }
+                  success: { type: "boolean", example: true },
+                  message: {
+                    type: "string",
+                    example: "Data componen product berhasil dihapus",
+                  },
+                },
+              },
+            },
+          },
         },
         404: {
-          description: 'Not found'
-        }
-      }
-    }
+          description: "Not found",
+        },
+      },
+    },
   },
-  '/componen_product': {
+  "/componen_product": {
     post: {
-      tags: ['Componen Products'],
-      summary: 'Create new componen product',
-      description: 'Create a new componen product',
+      tags: ["Componen Products"],
+      summary: "Create new componen product",
+      description: "Create a new componen product",
       security: [{ bearerAuth: [] }],
       requestBody: {
         required: true,
         content: {
-          'multipart/form-data': {
-            schema: { $ref: '#/components/schemas/ComponenProductInput' }
-          }
-        }
+          "multipart/form-data": {
+            schema: { $ref: "#/components/schemas/ComponenProductInput" },
+          },
+        },
       },
       responses: {
         201: {
-          description: 'Created successfully',
+          description: "Created successfully",
           content: {
-            'application/json': {
+            "application/json": {
               schema: {
-                type: 'object',
+                type: "object",
                 properties: {
-                  success: { type: 'boolean', example: true },
-                  message: { type: 'string', example: 'Data componen product berhasil dibuat' },
-                  data: { $ref: '#/components/schemas/ComponenProduct' }
-                }
-              }
-            }
-          }
+                  success: { type: "boolean", example: true },
+                  message: {
+                    type: "string",
+                    example: "Data componen product berhasil dibuat",
+                  },
+                  data: { $ref: "#/components/schemas/ComponenProduct" },
+                },
+              },
+            },
+          },
         },
         400: {
-          description: 'Validation error',
+          description: "Validation error",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
-        }
-      }
-    }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
+        },
+      },
+    },
   },
-  '/componen_product/import-csv': {
+  "/componen_product/import-csv": {
     post: {
-      tags: ['Componen Products'],
-      summary: 'Import componen products from CSV',
+      tags: ["Componen Products"],
+      summary: "Import componen products from CSV",
       description: `Import multiple componen products from CSV file. 
       
 **Format CSV yang diharapkan:**
@@ -286,7 +313,7 @@ Header CSV harus berisi kolom-kolom berikut:
 - \`msi_code\` → \`code_unique\`
 - \`truck_type\` → \`msi_model\`
 - \`segment\` → \`segment\`
-- \`segment_type\` → \`componen_type\` (OFF ROAD REGULAR=1, ON ROAD REGULAR=2, OFF ROAD IRREGULAR=3, OFF ROAD REGULAR EV=4, ON ROAD REGULAR EV=5)
+- \`segment_type\` → \`componen_type\` (OFF ROAD REGULAR=1, ON ROAD REGULAR=2, OFF ROAD IRREGULAR=3, OFF ROAD REGULAR EV=4, ON ROAD REGULAR EV=5, BESS=6)
 - \`msi_model\` → \`msi_product\`
 - \`unit_model\` → \`componen_product_unit_model\`
 - \`engine\` → \`engine\`
@@ -302,50 +329,50 @@ GVW, Unit Model, Horse Power, Cargobox/Vessel, Wheelbase, Engine Brand Model, Ma
       requestBody: {
         required: true,
         content: {
-          'multipart/form-data': {
+          "multipart/form-data": {
             schema: {
-              type: 'object',
-              required: ['file'],
+              type: "object",
+              required: ["file"],
               properties: {
                 file: {
-                  type: 'string',
-                  format: 'binary',
-                  description: 'CSV file dengan format yang sesuai. Maksimal 10MB.'
-                }
-              }
-            }
-          }
-        }
+                  type: "string",
+                  format: "binary",
+                  description:
+                    "CSV file dengan format yang sesuai. Maksimal 10MB.",
+                },
+              },
+            },
+          },
+        },
       },
       responses: {
         201: {
-          description: 'Import berhasil',
+          description: "Import berhasil",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ImportCSVResponse' }
-            }
-          }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ImportCSVResponse" },
+            },
+          },
         },
         400: {
-          description: 'Validation error atau file tidak valid',
+          description: "Validation error atau file tidak valid",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
         },
         500: {
-          description: 'Server error',
+          description: "Server error",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
-        }
-      }
-    }
-  }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
+        },
+      },
+    },
+  },
 };
 
 module.exports = componenProductPaths;
-
