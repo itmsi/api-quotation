@@ -1,10 +1,15 @@
-const db = require('../../config/database');
-const repository = require('./postgre_repository');
-const customerRepository = require('../cutomer/postgre_repository');
-const employeeRepository = require('../sales/postgre_repository');
-const termContentRepository = require('../term_content/postgre_repository');
-const { baseResponse, mappingError, mappingSuccess, Logger } = require('../../utils');
-const { decodeToken } = require('../../utils/auth');
+const db = require("../../config/database");
+const repository = require("./postgre_repository");
+const customerRepository = require("../cutomer/postgre_repository");
+const employeeRepository = require("../sales/postgre_repository");
+const termContentRepository = require("../term_content/postgre_repository");
+const {
+  baseResponse,
+  mappingError,
+  mappingSuccess,
+  Logger,
+} = require("../../utils");
+const { decodeToken } = require("../../utils/auth");
 
 /**
  * Normalize image untuk response API
@@ -19,15 +24,20 @@ const mapImageResponse = (image) => {
   // If already an array, check format and normalize
   if (Array.isArray(image)) {
     // Check if it's new format (array of objects) or old format (array of strings)
-    return image.map(item => {
-      if (typeof item === 'object' && item !== null && item.image_id && item.image_url) {
+    return image.map((item) => {
+      if (
+        typeof item === "object" &&
+        item !== null &&
+        item.image_id &&
+        item.image_url
+      ) {
         // New format: already has image_id and image_url
         return item;
-      } else if (typeof item === 'string') {
+      } else if (typeof item === "string") {
         // Old format: convert string URL to object format
         return {
           image_id: null, // Old format doesn't have image_id
-          image_url: item
+          image_url: item,
         };
       }
       return item;
@@ -35,40 +45,54 @@ const mapImageResponse = (image) => {
   }
 
   // If string, try to parse as JSON
-  if (typeof image === 'string') {
+  if (typeof image === "string") {
     try {
       const parsed = JSON.parse(image);
       if (Array.isArray(parsed)) {
         // Normalize array items
-        return parsed.map(item => {
-          if (typeof item === 'object' && item !== null && item.image_id && item.image_url) {
+        return parsed.map((item) => {
+          if (
+            typeof item === "object" &&
+            item !== null &&
+            item.image_id &&
+            item.image_url
+          ) {
             return item;
-          } else if (typeof item === 'string') {
+          } else if (typeof item === "string") {
             return {
               image_id: null,
-              image_url: item
+              image_url: item,
             };
           }
           return item;
         });
       }
       // If parsed is not array, treat as single URL (old format)
-      if (typeof parsed === 'string') {
-        return [{
-          image_id: null,
-          image_url: parsed
-        }];
+      if (typeof parsed === "string") {
+        return [
+          {
+            image_id: null,
+            image_url: parsed,
+          },
+        ];
       }
       // If parsed is object with image_id and image_url
-      if (typeof parsed === 'object' && parsed !== null && parsed.image_id && parsed.image_url) {
+      if (
+        typeof parsed === "object" &&
+        parsed !== null &&
+        parsed.image_id &&
+        parsed.image_url
+      ) {
         return [parsed];
       }
     } catch (e) {
       // If not JSON, treat as single URL string (old format)
-      return [{
-        image_id: null,
-        image_url: image
-      }];
+      return [
+        {
+          image_id: null,
+          image_url: image,
+        },
+      ];
     }
   }
 
@@ -76,7 +100,7 @@ const mapImageResponse = (image) => {
   return [];
 };
 
-const DBLINK_NAME = 'gate_sso_dblink';
+const DBLINK_NAME = "gate_sso_dblink";
 const DB_LINK_CONNECTION = `dbname=${process.env.DB_GATE_SSO_NAME} user=${process.env.DB_GATE_SSO_USER} password=${process.env.DB_GATE_SSO_PASSWORD} host=${process.env.DB_GATE_SSO_HOST} port=${process.env.DB_GATE_SSO_PORT}`;
 
 /**
@@ -98,16 +122,22 @@ const getIslandsByIds = async (ids = []) => {
     // Escape IDs using PostgreSQL quote_literal
     const escapedIds = [];
     for (const id of uniqueIds) {
-      const escapedIdResult = await db.raw(`SELECT quote_literal(?) as escaped`, [id]);
+      const escapedIdResult = await db.raw(
+        `SELECT quote_literal(?) as escaped`,
+        [id],
+      );
       const escapedId = escapedIdResult.rows[0]?.escaped;
       escapedIds.push(escapedId);
     }
 
-    const idsList = escapedIds.join(', ');
+    const idsList = escapedIds.join(", ");
     const innerQuery = `SELECT island_id, island_name FROM islands WHERE island_id IN (${idsList})`;
 
     // Escape the entire inner query
-    const escapedQueryResult = await db.raw(`SELECT quote_literal(?) as escaped`, [innerQuery]);
+    const escapedQueryResult = await db.raw(
+      `SELECT quote_literal(?) as escaped`,
+      [innerQuery],
+    );
     const escapedInnerQuery = escapedQueryResult.rows[0]?.escaped;
 
     const query = `
@@ -122,9 +152,9 @@ const getIslandsByIds = async (ids = []) => {
     const result = await db.raw(query);
     return result.rows || [];
   } catch (error) {
-    Logger.error('[manage-quotation:getIslandsByIds] gagal memuat islands', {
+    Logger.error("[manage-quotation:getIslandsByIds] gagal memuat islands", {
       island_ids: ids,
-      message: error?.message
+      message: error?.message,
     });
     return [];
   }
@@ -139,7 +169,7 @@ const getAccessoryDetailsMap = async (items) => {
   if (Array.isArray(items)) {
     for (const item of items) {
       if (item && Array.isArray(item.manage_quotation_item_accessories)) {
-        item.manage_quotation_item_accessories.forEach(acc => {
+        item.manage_quotation_item_accessories.forEach((acc) => {
           if (acc.accessory_id) ids.add(acc.accessory_id);
         });
       }
@@ -163,7 +193,7 @@ const getAccessoryDetailsMap = async (items) => {
  * Also removes suffix: COAL, NICKEL, ALL SEGMENT, ON THE ROAD
  */
 const cleanComponenProductName = (productName) => {
-  if (!productName || typeof productName !== 'string') {
+  if (!productName || typeof productName !== "string") {
     return productName;
   }
 
@@ -176,26 +206,24 @@ const cleanComponenProductName = (productName) => {
   const prefixPattern = /^MSI\d+\s*-\s*/i;
 
   if (prefixPattern.test(cleaned)) {
-    cleaned = cleaned.replace(prefixPattern, '');
+    cleaned = cleaned.replace(prefixPattern, "");
     cleaned = cleaned.trim(); // Trim again after removal
   }
 
   // Remove suffix if found at the end (case-insensitive)
   // Suffixes to remove: COAL, NICKEL, ALL SEGMENT, ON THE ROAD
-  const suffixesToRemove = [
-    'COAL',
-    'NICKEL',
-    'ALL SEGMENT',
-    'ON THE ROAD'
-  ];
+  const suffixesToRemove = ["COAL", "NICKEL", "ALL SEGMENT", "ON THE ROAD"];
 
   for (const suffix of suffixesToRemove) {
     // Create pattern that matches suffix at the end, with optional spaces/dashes before it
     // Pattern: optional spaces/dashes, then the suffix, then end of string
-    const suffixPattern = new RegExp(`[\\s-]*${suffix.replace(/\s+/g, '\\s+')}\\s*$`, 'i');
+    const suffixPattern = new RegExp(
+      `[\\s-]*${suffix.replace(/\s+/g, "\\s+")}\\s*$`,
+      "i",
+    );
 
     if (suffixPattern.test(cleaned)) {
-      cleaned = cleaned.replace(suffixPattern, '').trim();
+      cleaned = cleaned.replace(suffixPattern, "").trim();
     }
   }
 
@@ -207,7 +235,7 @@ const normalizeJsonPayload = (payload) => {
     return {};
   }
 
-  if (typeof payload === 'object' && !Array.isArray(payload)) {
+  if (typeof payload === "object" && !Array.isArray(payload)) {
     // Check if it's a plain object (not Date, Buffer, etc.)
     if (payload.constructor === Object) {
       return payload;
@@ -220,7 +248,7 @@ const normalizeJsonPayload = (payload) => {
     return payload;
   }
 
-  if (typeof payload === 'string') {
+  if (typeof payload === "string") {
     const trimmed = payload.trim();
     if (!trimmed) {
       return {};
@@ -230,7 +258,7 @@ const normalizeJsonPayload = (payload) => {
     try {
       const parsed = JSON.parse(trimmed);
       // If parsed result is a primitive, wrap it in an object
-      if (typeof parsed !== 'object' || parsed === null) {
+      if (typeof parsed !== "object" || parsed === null) {
         return { content: parsed };
       }
       return parsed;
@@ -255,12 +283,14 @@ const extractTermContentPayload = (payload) => {
   }
 
   // If payload has content property, extract it
-  if (payload && typeof payload === 'object' && payload.content !== undefined) {
-    return typeof payload.content === 'string' ? payload.content : JSON.stringify(payload.content);
+  if (payload && typeof payload === "object" && payload.content !== undefined) {
+    return typeof payload.content === "string"
+      ? payload.content
+      : JSON.stringify(payload.content);
   }
 
   // If payload is already a string, return it
-  if (typeof payload === 'string') {
+  if (typeof payload === "string") {
     return payload;
   }
 
@@ -273,16 +303,16 @@ const extractTermContentPayload = (payload) => {
  */
 const mapSortBy = (sortBy) => {
   const mapping = {
-    'created_at': 'created_at',
-    'manage_quotation_no': 'manage_quotation_no',
-    'manage_quotation_date': 'manage_quotation_date',
-    'manage_quotation_valid_date': 'manage_quotation_valid_date'
+    created_at: "created_at",
+    manage_quotation_no: "manage_quotation_no",
+    manage_quotation_date: "manage_quotation_date",
+    manage_quotation_valid_date: "manage_quotation_valid_date",
   };
   return mapping[sortBy] || sortBy;
 };
 
 const insertFieldAfterKey = (item, targetKey, fieldName, fieldValue) => {
-  if (!item || typeof item !== 'object') {
+  if (!item || typeof item !== "object") {
     return item;
   }
 
@@ -309,25 +339,31 @@ const insertFieldAfterKey = (item, targetKey, fieldName, fieldValue) => {
  * Map nilai componen_type menjadi product_type
  */
 const mapProductType = (componenType) => {
-  if (componenType === null || componenType === undefined || componenType === '') {
-    return '';
+  if (
+    componenType === null ||
+    componenType === undefined ||
+    componenType === ""
+  ) {
+    return "";
   }
 
   const normalizedType = Number(componenType);
 
   switch (normalizedType) {
     case 1:
-      return 'OFF ROAD REGULAR';
+      return "OFF ROAD REGULAR";
     case 2:
-      return 'ON ROAD REGULAR';
+      return "ON ROAD REGULAR";
     case 3:
-      return 'OFF ROAD IRREGULAR';
+      return "OFF ROAD IRREGULAR";
     case 4:
-      return 'OFF ROAD REGULAR EV';
+      return "OFF ROAD REGULAR EV";
     case 5:
-      return 'ON ROAD REGULAR EV';
+      return "ON ROAD REGULAR EV";
+    case 6:
+      return "BESS";
     default:
-      return '';
+      return "";
   }
 };
 
@@ -336,42 +372,105 @@ const mapProductType = (componenType) => {
  */
 const getAll = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = '', sort_by = 'created_at', sort_order = 'desc', status = '', island_id = '', quotation_for = '', start_date = '', end_date = '', customer_id = '', company_name = '' } = req.body;
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      sort_by = "created_at",
+      sort_order = "desc",
+      status = "",
+      island_id = "",
+      quotation_for = "",
+      quotation_segment = "",
+      start_date = "",
+      end_date = "",
+      customer_id = "",
+      company_name = "",
+    } = req.body;
 
     const offset = (page - 1) * limit;
 
     // Validate and normalize island_id
     let normalizedIslandId = null;
-    if (island_id && island_id !== '' && island_id !== null && island_id !== undefined) {
+    if (
+      island_id &&
+      island_id !== "" &&
+      island_id !== null &&
+      island_id !== undefined
+    ) {
       const islandIdStr = String(island_id).trim();
-      if (islandIdStr !== '' && islandIdStr !== 'NaN' && islandIdStr !== 'null') {
+      if (
+        islandIdStr !== "" &&
+        islandIdStr !== "NaN" &&
+        islandIdStr !== "null"
+      ) {
         normalizedIslandId = islandIdStr;
       }
     }
 
     // Validate and normalize customer_id
     let normalizedCustomerId = null;
-    if (customer_id && customer_id !== '' && customer_id !== null && customer_id !== undefined) {
+    if (
+      customer_id &&
+      customer_id !== "" &&
+      customer_id !== null &&
+      customer_id !== undefined
+    ) {
       const customerIdStr = String(customer_id).trim();
-      if (customerIdStr !== '' && customerIdStr !== 'NaN' && customerIdStr !== 'null') {
+      if (
+        customerIdStr !== "" &&
+        customerIdStr !== "NaN" &&
+        customerIdStr !== "null"
+      ) {
         normalizedCustomerId = customerIdStr;
       }
     }
 
     // Validate and normalize quotation_for
     let normalizedQuotationFor = null;
-    if (quotation_for && quotation_for !== '' && quotation_for !== null && quotation_for !== undefined) {
+    if (
+      quotation_for &&
+      quotation_for !== "" &&
+      quotation_for !== null &&
+      quotation_for !== undefined
+    ) {
       const quotationForStr = String(quotation_for).trim();
-      if (quotationForStr !== '' && quotationForStr !== 'NaN' && quotationForStr !== 'null') {
+      if (
+        quotationForStr !== "" &&
+        quotationForStr !== "NaN" &&
+        quotationForStr !== "null"
+      ) {
         normalizedQuotationFor = quotationForStr;
+      }
+    }
+
+    // Validate and normalize quotation_segment
+    let normalizedQuotationSegment = null;
+    if (
+      quotation_segment &&
+      quotation_segment !== "" &&
+      quotation_segment !== null &&
+      quotation_segment !== undefined
+    ) {
+      const quotationSegmentStr = String(quotation_segment).trim();
+      if (
+        quotationSegmentStr !== "" &&
+        quotationSegmentStr !== "NaN" &&
+        quotationSegmentStr !== "null"
+      ) {
+        normalizedQuotationSegment = quotationSegmentStr;
       }
     }
 
     // Validate and normalize start_date
     let normalizedStartDate = null;
-    if (start_date !== undefined && start_date !== null && start_date !== '') {
+    if (start_date !== undefined && start_date !== null && start_date !== "") {
       const startDateStr = String(start_date).trim();
-      if (startDateStr !== '' && startDateStr !== 'NaN' && startDateStr !== 'null') {
+      if (
+        startDateStr !== "" &&
+        startDateStr !== "NaN" &&
+        startDateStr !== "null"
+      ) {
         // Validate date format (YYYY-MM-DD or ISO format)
         const dateRegex = /^\d{4}-\d{2}-\d{2}/;
         if (dateRegex.test(startDateStr)) {
@@ -385,9 +484,9 @@ const getAll = async (req, res) => {
 
     // Validate and normalize end_date
     let normalizedEndDate = null;
-    if (end_date !== undefined && end_date !== null && end_date !== '') {
+    if (end_date !== undefined && end_date !== null && end_date !== "") {
       const endDateStr = String(end_date).trim();
-      if (endDateStr !== '' && endDateStr !== 'NaN' && endDateStr !== 'null') {
+      if (endDateStr !== "" && endDateStr !== "NaN" && endDateStr !== "null") {
         // Validate date format (YYYY-MM-DD or ISO format)
         const dateRegex = /^\d{4}-\d{2}-\d{2}/;
         if (dateRegex.test(endDateStr)) {
@@ -401,9 +500,17 @@ const getAll = async (req, res) => {
 
     // Validate and normalize company_name
     let normalizedCompanyName = null;
-    if (company_name !== undefined && company_name !== null && company_name !== '') {
+    if (
+      company_name !== undefined &&
+      company_name !== null &&
+      company_name !== ""
+    ) {
       const companyNameStr = String(company_name).trim();
-      if (companyNameStr !== '' && companyNameStr !== 'NaN' && companyNameStr !== 'null') {
+      if (
+        companyNameStr !== "" &&
+        companyNameStr !== "NaN" &&
+        companyNameStr !== "null"
+      ) {
         normalizedCompanyName = companyNameStr;
       }
     }
@@ -415,13 +522,14 @@ const getAll = async (req, res) => {
       search,
       sortBy: mapSortBy(sort_by),
       sortOrder: sort_order,
-      status: status && status.trim() !== '' ? status.trim() : null,
+      status: status && status.trim() !== "" ? status.trim() : null,
       islandId: normalizedIslandId,
       customerId: normalizedCustomerId,
       quotationFor: normalizedQuotationFor,
+      quotationSegment: normalizedQuotationSegment,
       startDate: normalizedStartDate,
       endDate: normalizedEndDate,
-      companyName: normalizedCompanyName
+      companyName: normalizedCompanyName,
     };
 
     let data;
@@ -429,9 +537,9 @@ const getAll = async (req, res) => {
       data = await repository.findAll(params);
     } catch (error) {
       // Log error but don't fail the request
-      Logger.error('[manage-quotation:getAll] Error in findAll', {
+      Logger.error("[manage-quotation:getAll] Error in findAll", {
         error: error.message,
-        stack: error.stack
+        stack: error.stack,
       });
 
       // Return empty result instead of failing
@@ -441,14 +549,20 @@ const getAll = async (req, res) => {
 
     if (Array.isArray(data?.items) && data.items.length > 0) {
       const itemsNeedingCustomer = data.items.filter(
-        (item) => item && item.customer_id && (item.customer_name === undefined || item.customer_name === null)
+        (item) =>
+          item &&
+          item.customer_id &&
+          (item.customer_name === undefined || item.customer_name === null),
       );
       const itemsNeedingEmployee = data.items.filter(
-        (item) => item && item.employee_id && (item.employee_name === undefined || item.employee_name === null)
+        (item) =>
+          item &&
+          item.employee_id &&
+          (item.employee_name === undefined || item.employee_name === null),
       );
       // Always process items with island_id to ensure island_name is populated
       const itemsNeedingIsland = data.items.filter(
-        (item) => item && item.island_id
+        (item) => item && item.island_id,
       );
 
       let customerMap = {};
@@ -458,37 +572,49 @@ const getAll = async (req, res) => {
 
       // Get all unique customer IDs from all items (not just those needing customer)
       const allCustomerIds = [
-        ...new Set(data.items
-          .filter((item) => item && item.customer_id)
-          .map((item) => item.customer_id)
-          .filter(Boolean))
+        ...new Set(
+          data.items
+            .filter((item) => item && item.customer_id)
+            .map((item) => item.customer_id)
+            .filter(Boolean),
+        ),
       ];
 
       // Debug: Log items to see what data we're getting
       if (itemsNeedingIsland.length > 0) {
-        Logger.info('[manage-quotation:getAll] items dengan island_id', {
+        Logger.info("[manage-quotation:getAll] items dengan island_id", {
           count: itemsNeedingIsland.length,
-          sample: itemsNeedingIsland[0] ? {
-            island_id: itemsNeedingIsland[0].island_id,
-            has_island_name: Object.prototype.hasOwnProperty.call(itemsNeedingIsland[0], 'island_name'),
-            island_name: itemsNeedingIsland[0].island_name
-          } : null
+          sample: itemsNeedingIsland[0]
+            ? {
+                island_id: itemsNeedingIsland[0].island_id,
+                has_island_name: Object.prototype.hasOwnProperty.call(
+                  itemsNeedingIsland[0],
+                  "island_name",
+                ),
+                island_name: itemsNeedingIsland[0].island_name,
+              }
+            : null,
         });
       }
 
       if (itemsNeedingCustomer.length > 0) {
         const uniqueCustomerIds = [
-          ...new Set(itemsNeedingCustomer.map((item) => item.customer_id).filter(Boolean))
+          ...new Set(
+            itemsNeedingCustomer
+              .map((item) => item.customer_id)
+              .filter(Boolean),
+          ),
         ];
 
         if (uniqueCustomerIds.length > 0) {
           try {
-            const customers = await customerRepository.findByIds(uniqueCustomerIds);
+            const customers =
+              await customerRepository.findByIds(uniqueCustomerIds);
             if (Array.isArray(customers)) {
               customerMap = customers.reduce((acc, customer) => {
                 if (customer?.customer_id) {
-                  const customerName = customer.customer_name || '';
-                  const contactPerson = customer.contact_person || '';
+                  const customerName = customer.customer_name || "";
+                  const contactPerson = customer.contact_person || "";
                   const combinedName = contactPerson
                     ? `${customerName} - ${contactPerson}`
                     : customerName;
@@ -498,10 +624,13 @@ const getAll = async (req, res) => {
               }, {});
             }
           } catch (error) {
-            Logger.error('[manage-quotation:getAll] gagal memuat customer fallback', {
-              customer_ids: uniqueCustomerIds,
-              message: error?.message
-            });
+            Logger.error(
+              "[manage-quotation:getAll] gagal memuat customer fallback",
+              {
+                customer_ids: uniqueCustomerIds,
+                message: error?.message,
+              },
+            );
           }
         }
       }
@@ -519,21 +648,29 @@ const getAll = async (req, res) => {
             }, {});
           }
         } catch (error) {
-          Logger.error('[manage-quotation:getAll] gagal memuat contact_person', {
-            customer_ids: allCustomerIds,
-            message: error?.message
-          });
+          Logger.error(
+            "[manage-quotation:getAll] gagal memuat contact_person",
+            {
+              customer_ids: allCustomerIds,
+              message: error?.message,
+            },
+          );
         }
       }
 
       if (itemsNeedingEmployee.length > 0) {
         const uniqueEmployeeIds = [
-          ...new Set(itemsNeedingEmployee.map((item) => item.employee_id).filter(Boolean))
+          ...new Set(
+            itemsNeedingEmployee
+              .map((item) => item.employee_id)
+              .filter(Boolean),
+          ),
         ];
 
         if (uniqueEmployeeIds.length > 0) {
           try {
-            const employees = await employeeRepository.findByIds(uniqueEmployeeIds);
+            const employees =
+              await employeeRepository.findByIds(uniqueEmployeeIds);
             if (Array.isArray(employees)) {
               employeeMap = employees.reduce((acc, employee) => {
                 if (employee?.employee_id) {
@@ -543,17 +680,22 @@ const getAll = async (req, res) => {
               }, {});
             }
           } catch (error) {
-            Logger.error('[manage-quotation:getAll] gagal memuat employee fallback', {
-              employee_ids: uniqueEmployeeIds,
-              message: error?.message
-            });
+            Logger.error(
+              "[manage-quotation:getAll] gagal memuat employee fallback",
+              {
+                employee_ids: uniqueEmployeeIds,
+                message: error?.message,
+              },
+            );
           }
         }
       }
 
       if (itemsNeedingIsland.length > 0) {
         const uniqueIslandIds = [
-          ...new Set(itemsNeedingIsland.map((item) => item.island_id).filter(Boolean))
+          ...new Set(
+            itemsNeedingIsland.map((item) => item.island_id).filter(Boolean),
+          ),
         ];
 
         if (uniqueIslandIds.length > 0) {
@@ -568,10 +710,13 @@ const getAll = async (req, res) => {
               }, {});
             }
           } catch (error) {
-            Logger.error('[manage-quotation:getAll] gagal memuat island fallback', {
-              island_ids: uniqueIslandIds,
-              message: error?.message
-            });
+            Logger.error(
+              "[manage-quotation:getAll] gagal memuat island fallback",
+              {
+                island_ids: uniqueIslandIds,
+                message: error?.message,
+              },
+            );
           }
         }
       }
@@ -581,12 +726,21 @@ const getAll = async (req, res) => {
           return item;
         }
 
-        let customerName = Object.prototype.hasOwnProperty.call(item, 'customer_name')
+        let customerName = Object.prototype.hasOwnProperty.call(
+          item,
+          "customer_name",
+        )
           ? item.customer_name
-          : (item.customer_id ? customerMap[item.customer_id] ?? null : null);
+          : item.customer_id
+            ? (customerMap[item.customer_id] ?? null)
+            : null;
 
         // Get contact_person from item or from contactPersonMap
-        const contactPerson = item.contact_person || (item.customer_id ? contactPersonMap[item.customer_id] ?? null : null);
+        const contactPerson =
+          item.contact_person ||
+          (item.customer_id
+            ? (contactPersonMap[item.customer_id] ?? null)
+            : null);
 
         // Combine customer_name with contact_person if contact_person exists
         if (customerName && contactPerson) {
@@ -595,9 +749,14 @@ const getAll = async (req, res) => {
           customerName = contactPerson;
         }
 
-        const employeeName = Object.prototype.hasOwnProperty.call(item, 'employee_name')
+        const employeeName = Object.prototype.hasOwnProperty.call(
+          item,
+          "employee_name",
+        )
           ? item.employee_name
-          : (item.employee_id ? employeeMap[item.employee_id] ?? null : null);
+          : item.employee_id
+            ? (employeeMap[item.employee_id] ?? null)
+            : null;
 
         // Always try to get island_name from item first, then from map
         let islandName = null;
@@ -611,14 +770,29 @@ const getAll = async (req, res) => {
           }
         }
 
-        let result = insertFieldAfterKey(item, 'customer_id', 'customer_name', customerName);
-        result = insertFieldAfterKey(result, 'employee_id', 'employee_name', employeeName);
-        result = insertFieldAfterKey(result, 'island_id', 'island_name', islandName);
+        let result = insertFieldAfterKey(
+          item,
+          "customer_id",
+          "customer_name",
+          customerName,
+        );
+        result = insertFieldAfterKey(
+          result,
+          "employee_id",
+          "employee_name",
+          employeeName,
+        );
+        result = insertFieldAfterKey(
+          result,
+          "island_id",
+          "island_name",
+          islandName,
+        );
         return result;
       });
     }
 
-    const response = mappingSuccess('Data berhasil diambil', data);
+    const response = mappingSuccess("Data berhasil diambil", data);
     return baseResponse(res, response);
   } catch (error) {
     const response = mappingError(error);
@@ -635,7 +809,7 @@ const getById = async (req, res) => {
     const data = await repository.findById(id);
 
     if (!data) {
-      const response = mappingError('Data tidak ditemukan', 404);
+      const response = mappingError("Data tidak ditemukan", 404);
       return baseResponse(res, response);
     }
 
@@ -643,8 +817,10 @@ const getById = async (req, res) => {
       try {
         const customer = await customerRepository.findById(data.customer_id);
         if (customer) {
-          const customerName = data.customer_name || customer?.customer_name || '';
-          const contactPerson = data.contact_person || customer?.contact_person || '';
+          const customerName =
+            data.customer_name || customer?.customer_name || "";
+          const contactPerson =
+            data.contact_person || customer?.contact_person || "";
           data.customer_name = contactPerson
             ? `${customerName} - ${contactPerson}`
             : customerName || null;
@@ -655,9 +831,9 @@ const getById = async (req, res) => {
           data.customer_name = null;
         }
       } catch (error) {
-        Logger.error('[manage-quotation:getById] gagal memuat customer', {
+        Logger.error("[manage-quotation:getById] gagal memuat customer", {
           customer_id: data.customer_id,
-          message: error?.message
+          message: error?.message,
         });
         // If error but customer_name exists, keep it as is
         if (!data.customer_name) {
@@ -666,27 +842,33 @@ const getById = async (req, res) => {
       }
     }
 
-    if (data.employee_id && (data.employee_name === undefined || data.employee_name === null)) {
+    if (
+      data.employee_id &&
+      (data.employee_name === undefined || data.employee_name === null)
+    ) {
       try {
         const employee = await employeeRepository.findById(data.employee_id);
         data.employee_name = employee?.employee_name || null;
       } catch (error) {
-        Logger.error('[manage-quotation:getById] gagal memuat employee', {
+        Logger.error("[manage-quotation:getById] gagal memuat employee", {
           employee_id: data.employee_id,
-          message: error?.message
+          message: error?.message,
         });
         data.employee_name = null;
       }
     }
 
-    if (data.island_id && (data.island_name === undefined || data.island_name === null)) {
+    if (
+      data.island_id &&
+      (data.island_name === undefined || data.island_name === null)
+    ) {
       try {
         const islands = await getIslandsByIds([data.island_id]);
         data.island_name = islands?.[0]?.island_name || null;
       } catch (error) {
-        Logger.error('[manage-quotation:getById] gagal memuat island', {
+        Logger.error("[manage-quotation:getById] gagal memuat island", {
           island_id: data.island_id,
-          message: error?.message
+          message: error?.message,
         });
         data.island_name = null;
       }
@@ -706,7 +888,7 @@ const getById = async (req, res) => {
       // ACCESSORIES STRATEGY: Use accesories_properties from item
       if (item.accesories_properties) {
         let props = item.accesories_properties;
-        if (typeof props === 'string') {
+        if (typeof props === "string") {
           try {
             props = JSON.parse(props);
           } catch (e) {
@@ -715,7 +897,7 @@ const getById = async (req, res) => {
         }
 
         if (Array.isArray(props) && props.length > 0) {
-          itemAccessories = props.map(prop => ({
+          itemAccessories = props.map((prop) => ({
             manage_quotation_item_accessory_id: null, // Identifiers not available in snapshot
             manage_quotation_id: item.manage_quotation_id,
             accessory_id: prop.accessory_id,
@@ -736,7 +918,7 @@ const getById = async (req, res) => {
             accessory_brand: prop.accessory_brand,
             accessory_remark: prop.accessory_remark,
             accessory_region: prop.accessory_region,
-            accessory_description: prop.accessory_description
+            accessory_description: prop.accessory_description,
           }));
         }
       }
@@ -744,7 +926,7 @@ const getById = async (req, res) => {
       // SPECIFICATIONS STRATEGY: Use specification_properties from item
       if (item.specification_properties) {
         let props = item.specification_properties;
-        if (typeof props === 'string') {
+        if (typeof props === "string") {
           try {
             props = JSON.parse(props);
           } catch (e) {
@@ -753,12 +935,14 @@ const getById = async (req, res) => {
         }
 
         if (Array.isArray(props) && props.length > 0) {
-          itemSpecifications = props.map(prop => ({
+          itemSpecifications = props.map((prop) => ({
             manage_quotation_item_specification_id: null,
             manage_quotation_id: item.manage_quotation_id,
             componen_product_id: prop.componen_product_id,
-            manage_quotation_item_specification_label: prop.manage_quotation_item_specification_label,
-            manage_quotation_item_specification_value: prop.manage_quotation_item_specification_value,
+            manage_quotation_item_specification_label:
+              prop.manage_quotation_item_specification_label,
+            manage_quotation_item_specification_value:
+              prop.manage_quotation_item_specification_value,
             created_by: item.created_by,
             updated_by: item.updated_by,
             deleted_by: null,
@@ -779,15 +963,25 @@ const getById = async (req, res) => {
       // Create new object
       const itemWithRelations = {
         ...item,
-        componen_type: mapProductType(item.cp_componen_type) || '', // Get directly from componen_products table
+        componen_type: mapProductType(item.cp_componen_type) || "", // Get directly from componen_products table
         product_type: item.cp_product_type, // Get dir
         manage_quotation_item_accessories: itemAccessories,
-        manage_quotation_item_specifications: itemSpecifications
+        manage_quotation_item_specifications: itemSpecifications,
       };
 
       // Insert images and image_count after cp_image
-      const itemWithImages = insertFieldAfterKey(itemWithRelations, 'cp_image', 'images', itemImages);
-      const itemWithImageCount = insertFieldAfterKey(itemWithImages, 'images', 'image_count', itemImageCount);
+      const itemWithImages = insertFieldAfterKey(
+        itemWithRelations,
+        "cp_image",
+        "images",
+        itemImages,
+      );
+      const itemWithImageCount = insertFieldAfterKey(
+        itemWithImages,
+        "images",
+        "image_count",
+        itemImageCount,
+      );
 
       return itemWithImageCount;
     });
@@ -798,12 +992,14 @@ const getById = async (req, res) => {
     let termContentTitle = null;
     if (data.term_content_id) {
       try {
-        const termContent = await termContentRepository.findById(data.term_content_id);
+        const termContent = await termContentRepository.findById(
+          data.term_content_id,
+        );
         termContentTitle = termContent?.term_content_title || null;
       } catch (error) {
-        Logger.error('[manage-quotation:getById] gagal memuat term_content', {
+        Logger.error("[manage-quotation:getById] gagal memuat term_content", {
           term_content_id: data.term_content_id,
-          message: error?.message
+          message: error?.message,
         });
         termContentTitle = null;
       }
@@ -811,26 +1007,31 @@ const getById = async (req, res) => {
 
     // Insert term_content_title after term_content_id
     if (data.term_content_id !== undefined) {
-      const dataWithTermContentTitle = insertFieldAfterKey(data, 'term_content_id', 'term_content_title', termContentTitle);
+      const dataWithTermContentTitle = insertFieldAfterKey(
+        data,
+        "term_content_id",
+        "term_content_title",
+        termContentTitle,
+      );
       Object.assign(data, dataWithTermContentTitle);
     }
 
     // Format numeric fields: remove trailing zeros if all decimals are zero
     const numericFields = [
-      'manage_quotation_grand_total',
-      'manage_quotation_payment_nominal',
-      'manage_quotation_grand_total_before',
-      'manage_quotation_mutation_nominal'
+      "manage_quotation_grand_total",
+      "manage_quotation_payment_nominal",
+      "manage_quotation_grand_total_before",
+      "manage_quotation_mutation_nominal",
     ];
 
-    numericFields.forEach(field => {
+    numericFields.forEach((field) => {
       if (data[field] !== undefined && data[field] !== null) {
         let strVal = String(data[field]);
-        if (strVal.includes('.')) {
+        if (strVal.includes(".")) {
           // Remove trailing zeros
-          strVal = strVal.replace(/0+$/, '');
+          strVal = strVal.replace(/0+$/, "");
           // Remove trailing decimal point if it exists (e.g. "100." -> "100")
-          if (strVal.endsWith('.')) {
+          if (strVal.endsWith(".")) {
             strVal = strVal.slice(0, -1);
           }
           data[field] = strVal;
@@ -839,7 +1040,7 @@ const getById = async (req, res) => {
     });
 
     // Parse properties JSONB if string
-    if (data.properties && typeof data.properties === 'string') {
+    if (data.properties && typeof data.properties === "string") {
       try {
         data.properties = JSON.parse(data.properties);
       } catch (e) {
@@ -851,10 +1052,14 @@ const getById = async (req, res) => {
 
     // Populate bank account fields from properties if not present or to ensure consistency
     if (data.properties) {
-      if (data.properties.bank_account_id) data.bank_account_id = data.properties.bank_account_id;
-      if (data.properties.bank_account_name) data.bank_account_name = data.properties.bank_account_name;
-      if (data.properties.bank_account_number) data.bank_account_number = data.properties.bank_account_number;
-      if (data.properties.bank_account_bank_name) data.bank_account_bank_name = data.properties.bank_account_bank_name;
+      if (data.properties.bank_account_id)
+        data.bank_account_id = data.properties.bank_account_id;
+      if (data.properties.bank_account_name)
+        data.bank_account_name = data.properties.bank_account_name;
+      if (data.properties.bank_account_number)
+        data.bank_account_number = data.properties.bank_account_number;
+      if (data.properties.bank_account_bank_name)
+        data.bank_account_bank_name = data.properties.bank_account_bank_name;
     }
 
     // Use term_content_payload from database
@@ -883,7 +1088,7 @@ const getById = async (req, res) => {
       delete data.image;
     }
 
-    const response = mappingSuccess('Data berhasil diambil', data);
+    const response = mappingSuccess("Data berhasil diambil", data);
     return baseResponse(res, response);
   } catch (error) {
     const response = mappingError(error);
@@ -900,7 +1105,7 @@ const getPdfById = async (req, res) => {
     const data = await repository.findById(id);
 
     if (!data) {
-      const response = mappingError('Data tidak ditemukan', 404);
+      const response = mappingError("Data tidak ditemukan", 404);
       return baseResponse(res, response);
     }
 
@@ -916,9 +1121,9 @@ const getPdfById = async (req, res) => {
           data.customer_address = customer?.customer_address || null;
         }
       } catch (error) {
-        Logger.error('[manage-quotation:getPdfById] gagal memuat customer', {
+        Logger.error("[manage-quotation:getPdfById] gagal memuat customer", {
           customer_id: data.customer_id,
-          message: error?.message
+          message: error?.message,
         });
         if (data.customer_name === undefined || data.customer_name === null) {
           data.customer_name = null;
@@ -939,9 +1144,9 @@ const getPdfById = async (req, res) => {
           data.employee_phone = employee?.employee_phone || null;
         }
       } catch (error) {
-        Logger.error('[manage-quotation:getPdfById] gagal memuat employee', {
+        Logger.error("[manage-quotation:getPdfById] gagal memuat employee", {
           employee_id: data.employee_id,
-          message: error?.message
+          message: error?.message,
         });
         if (data.employee_name === undefined || data.employee_name === null) {
           data.employee_name = null;
@@ -959,9 +1164,9 @@ const getPdfById = async (req, res) => {
           }
         }
       } catch (error) {
-        Logger.error('[manage-quotation:getPdfById] gagal memuat island', {
+        Logger.error("[manage-quotation:getPdfById] gagal memuat island", {
           island_id: data.island_id,
-          message: error?.message
+          message: error?.message,
         });
         if (data.island_name === undefined || data.island_name === null) {
           data.island_name = null;
@@ -983,7 +1188,7 @@ const getPdfById = async (req, res) => {
       // ACCESSORIES STRATEGY: Use accesories_properties from item
       if (item.accesories_properties) {
         let props = item.accesories_properties;
-        if (typeof props === 'string') {
+        if (typeof props === "string") {
           try {
             props = JSON.parse(props);
           } catch (e) {
@@ -992,7 +1197,7 @@ const getPdfById = async (req, res) => {
         }
 
         if (Array.isArray(props) && props.length > 0) {
-          itemAccessories = props.map(prop => ({
+          itemAccessories = props.map((prop) => ({
             manage_quotation_item_accessory_id: null, // Identifiers not available in snapshot
             manage_quotation_id: item.manage_quotation_id,
             accessory_id: prop.accessory_id,
@@ -1013,7 +1218,7 @@ const getPdfById = async (req, res) => {
             accessory_brand: prop.accessory_brand,
             accessory_remark: prop.accessory_remark,
             accessory_region: prop.accessory_region,
-            accessory_description: prop.accessory_description
+            accessory_description: prop.accessory_description,
           }));
         }
       }
@@ -1021,7 +1226,7 @@ const getPdfById = async (req, res) => {
       // SPECIFICATIONS STRATEGY: Use specification_properties from item
       if (item.specification_properties) {
         let props = item.specification_properties;
-        if (typeof props === 'string') {
+        if (typeof props === "string") {
           try {
             props = JSON.parse(props);
           } catch (e) {
@@ -1030,12 +1235,14 @@ const getPdfById = async (req, res) => {
         }
 
         if (Array.isArray(props) && props.length > 0) {
-          itemSpecifications = props.map(prop => ({
+          itemSpecifications = props.map((prop) => ({
             manage_quotation_item_specification_id: null,
             manage_quotation_id: item.manage_quotation_id,
             componen_product_id: prop.componen_product_id,
-            manage_quotation_item_specification_label: prop.manage_quotation_item_specification_label,
-            manage_quotation_item_specification_value: prop.manage_quotation_item_specification_value,
+            manage_quotation_item_specification_label:
+              prop.manage_quotation_item_specification_label,
+            manage_quotation_item_specification_value:
+              prop.manage_quotation_item_specification_value,
             created_by: item.created_by,
             updated_by: item.updated_by,
             deleted_by: null,
@@ -1052,7 +1259,7 @@ const getPdfById = async (req, res) => {
       let cleanedProductName = item.componen_product_name;
 
       // Clean the product name if it exists
-      if (cleanedProductName && typeof cleanedProductName === 'string') {
+      if (cleanedProductName && typeof cleanedProductName === "string") {
         // Remove "MSI[number] - " prefix and suffix using helper function
         cleanedProductName = cleanComponenProductName(cleanedProductName);
       }
@@ -1066,16 +1273,27 @@ const getPdfById = async (req, res) => {
       const cleanedItem = {
         ...item,
         componen_product_name: cleanedProductName, // Always use cleaned value
-        componen_product_unit_model: item.cp_componen_product_unit_model || null,
-        componen_type: mapProductType(item.cp_componen_type) || '', // Get directly from componen_products table
+        componen_product_unit_model:
+          item.cp_componen_product_unit_model || null,
+        componen_type: mapProductType(item.cp_componen_type) || "", // Get directly from componen_products table
         product_type: item.cp_product_type, // Get directly from componen_products.product_type, fallback to mapping
         manage_quotation_item_accessories: itemAccessories,
-        manage_quotation_item_specifications: itemSpecifications
+        manage_quotation_item_specifications: itemSpecifications,
       };
 
       // Insert images and image_count after cp_image
-      const itemWithImages = insertFieldAfterKey(cleanedItem, 'cp_image', 'images', itemImages);
-      const itemWithImageCount = insertFieldAfterKey(itemWithImages, 'images', 'image_count', itemImageCount);
+      const itemWithImages = insertFieldAfterKey(
+        cleanedItem,
+        "cp_image",
+        "images",
+        itemImages,
+      );
+      const itemWithImageCount = insertFieldAfterKey(
+        itemWithImages,
+        "images",
+        "image_count",
+        itemImageCount,
+      );
 
       return itemWithImageCount;
     });
@@ -1088,16 +1306,19 @@ const getPdfById = async (req, res) => {
       const originalProductName = productName; // Keep original for debugging
 
       // Clean if it's a string and not null/undefined
-      if (productName && typeof productName === 'string') {
+      if (productName && typeof productName === "string") {
         // Use helper function to clean prefix and suffix
         productName = cleanComponenProductName(productName);
 
         // Debug log (can be removed later)
         if (originalProductName !== productName) {
-          Logger.info('[manage-quotation:getPdfById] Cleaned componen_product_name', {
-            original: originalProductName,
-            cleaned: productName
-          });
+          Logger.info(
+            "[manage-quotation:getPdfById] Cleaned componen_product_name",
+            {
+              original: originalProductName,
+              cleaned: productName,
+            },
+          );
         }
       }
 
@@ -1105,7 +1326,7 @@ const getPdfById = async (req, res) => {
       // Preserve images and image_count if they exist
       return {
         ...item,
-        componen_product_name: productName // Explicitly set cleaned value
+        componen_product_name: productName, // Explicitly set cleaned value
         // images and image_count are already in item from previous mapping, they will be preserved by spread operator
       };
     });
@@ -1115,15 +1336,24 @@ const getPdfById = async (req, res) => {
 
     // Final aggressive cleanup: ensure ALL items in manage_quotation_items have cleaned componen_product_name
     // This is the absolute last step before sending response
-    if (data.manage_quotation_items && Array.isArray(data.manage_quotation_items)) {
+    if (
+      data.manage_quotation_items &&
+      Array.isArray(data.manage_quotation_items)
+    ) {
       data.manage_quotation_items = data.manage_quotation_items.map((item) => {
-        if (item && item.componen_product_name && typeof item.componen_product_name === 'string') {
+        if (
+          item &&
+          item.componen_product_name &&
+          typeof item.componen_product_name === "string"
+        ) {
           // Use helper function to clean prefix and suffix
-          const productName = cleanComponenProductName(item.componen_product_name);
+          const productName = cleanComponenProductName(
+            item.componen_product_name,
+          );
 
           return {
             ...item,
-            componen_product_name: productName
+            componen_product_name: productName,
           };
         }
         return item;
@@ -1131,13 +1361,14 @@ const getPdfById = async (req, res) => {
     }
 
     // Debug: Verify finalItems has cleaned names
-    Logger.info('[manage-quotation:getPdfById] Final cleanup completed', {
+    Logger.info("[manage-quotation:getPdfById] Final cleanup completed", {
       itemsCount: data.manage_quotation_items?.length || 0,
-      firstItemProductName: data.manage_quotation_items?.[0]?.componen_product_name || 'N/A'
+      firstItemProductName:
+        data.manage_quotation_items?.[0]?.componen_product_name || "N/A",
     });
 
     // Parse properties JSONB if string
-    if (data.properties && typeof data.properties === 'string') {
+    if (data.properties && typeof data.properties === "string") {
       try {
         data.properties = JSON.parse(data.properties);
       } catch (e) {
@@ -1150,18 +1381,26 @@ const getPdfById = async (req, res) => {
     // Populate data from properties if available
     if (data.properties) {
       // Bank Account details
-      if (data.properties.bank_account_id) data.bank_account_id = data.properties.bank_account_id;
-      if (data.properties.bank_account_name) data.bank_account_name = data.properties.bank_account_name;
-      if (data.properties.bank_account_number) data.bank_account_number = data.properties.bank_account_number;
-      if (data.properties.bank_account_bank_name) data.bank_account_bank_name = data.properties.bank_account_bank_name;
+      if (data.properties.bank_account_id)
+        data.bank_account_id = data.properties.bank_account_id;
+      if (data.properties.bank_account_name)
+        data.bank_account_name = data.properties.bank_account_name;
+      if (data.properties.bank_account_number)
+        data.bank_account_number = data.properties.bank_account_number;
+      if (data.properties.bank_account_bank_name)
+        data.bank_account_bank_name = data.properties.bank_account_bank_name;
 
       // Customer details preference from properties as it is historical snapshot
-      if (data.properties.customer_phone) data.customer_phone = data.properties.customer_phone;
-      if (data.properties.customer_address) data.customer_address = data.properties.customer_address;
-      if (data.properties.contact_person) data.contact_person = data.properties.contact_person;
+      if (data.properties.customer_phone)
+        data.customer_phone = data.properties.customer_phone;
+      if (data.properties.customer_address)
+        data.customer_address = data.properties.customer_address;
+      if (data.properties.contact_person)
+        data.contact_person = data.properties.contact_person;
 
       // Employee details preference from properties
-      if (data.properties.employee_phone) data.employee_phone = data.properties.employee_phone;
+      if (data.properties.employee_phone)
+        data.employee_phone = data.properties.employee_phone;
     }
 
     // Use term_content_directory from properties as term_content_payload if available (it contains HTML content)
@@ -1170,8 +1409,8 @@ const getPdfById = async (req, res) => {
     if (data.term_content_payload) {
       // It should be a string in DB (text column), but postgre driver might return it as is.
       // If it's a JSON string, extractTermContentPayload might need adjustment or usage.
-      // Actually extractTermContentPayload handles parsing if it's already an object? 
-      // No, extractTermContentPayload expects object or string and returns string. 
+      // Actually extractTermContentPayload handles parsing if it's already an object?
+      // No, extractTermContentPayload expects object or string and returns string.
       // We want to return object to frontend usually? Or string?
       // Previous implementation: data.term_content_payload = extractTermContentPayload(payload);
       // payload comes from readJsonFile which does JSON.parse.
@@ -1201,23 +1440,22 @@ const getPdfById = async (req, res) => {
       data.term_content_payload = data.properties.term_content_directory;
     }
 
-
     // Format numeric fields: remove trailing zeros if all decimals are zero
     const numericFields = [
-      'manage_quotation_grand_total',
-      'manage_quotation_payment_nominal',
-      'manage_quotation_grand_total_before',
-      'manage_quotation_mutation_nominal'
+      "manage_quotation_grand_total",
+      "manage_quotation_payment_nominal",
+      "manage_quotation_grand_total_before",
+      "manage_quotation_mutation_nominal",
     ];
 
-    numericFields.forEach(field => {
+    numericFields.forEach((field) => {
       if (data[field] !== undefined && data[field] !== null) {
         let strVal = String(data[field]);
-        if (strVal.includes('.')) {
+        if (strVal.includes(".")) {
           // Remove trailing zeros
-          strVal = strVal.replace(/0+$/, '');
+          strVal = strVal.replace(/0+$/, "");
           // Remove trailing decimal point if it exists (e.g. "100." -> "100")
-          if (strVal.endsWith('.')) {
+          if (strVal.endsWith(".")) {
             strVal = strVal.slice(0, -1);
           }
           data[field] = strVal;
@@ -1236,7 +1474,7 @@ const getPdfById = async (req, res) => {
       delete data.image;
     }
 
-    const response = mappingSuccess('Data berhasil diambil', data);
+    const response = mappingSuccess("Data berhasil diambil", data);
     return baseResponse(res, response);
   } catch (error) {
     const response = mappingError(error);
@@ -1256,29 +1494,31 @@ const create = async (req, res) => {
       stage,
       status,
       timestamp: new Date().toISOString(),
-      details
+      details,
     };
     processLogs.push(entry);
 
     const logPayload = { stage, status, ...details };
-    if (status === 'error') {
-      Logger.error('[manage-quotation:create]', logPayload);
+    if (status === "error") {
+      Logger.error("[manage-quotation:create]", logPayload);
     } else {
-      Logger.info('[manage-quotation:create]', logPayload);
+      Logger.info("[manage-quotation:create]", logPayload);
     }
 
     return entry;
   };
 
   try {
-    logStep('request.received', 'info', {
+    logStep("request.received", "info", {
       bodyKeys: Object.keys(req.body || {}),
       hasItems: Array.isArray(req.body?.manage_quotation_items),
-      itemsCount: Array.isArray(req.body?.manage_quotation_items) ? req.body.manage_quotation_items.length : 0
+      itemsCount: Array.isArray(req.body?.manage_quotation_items)
+        ? req.body.manage_quotation_items.length
+        : 0,
     });
 
-    const tokenData = decodeToken('created', req);
-    logStep('token.decoded', 'success', { created_by: tokenData.created_by });
+    const tokenData = decodeToken("created", req);
+    logStep("token.decoded", "success", { created_by: tokenData.created_by });
 
     const {
       manage_quotation_items,
@@ -1290,7 +1530,10 @@ const create = async (req, res) => {
 
     // For properties generation, we'll keep using term_content_directory variable passed from body
     // But for DB insert we use term_content_payload, and set directory to null
-    if (term_content_directory !== undefined && term_content_directory !== null) {
+    if (
+      term_content_directory !== undefined &&
+      term_content_directory !== null
+    ) {
       const normalized = normalizeJsonPayload(term_content_directory);
       quotationData.term_content_payload = JSON.stringify(normalized);
       quotationData.term_content_directory = null;
@@ -1306,11 +1549,12 @@ const create = async (req, res) => {
     const specificationsForInsert = [];
 
     // Pre-fetch accessories details for properties
-    const accessoryDetailsMap = await getAccessoryDetailsMap(itemsForProcessing);
+    const accessoryDetailsMap =
+      await getAccessoryDetailsMap(itemsForProcessing);
 
     if (hasItemsArray) {
       for (const rawItem of itemsForProcessing) {
-        if (!rawItem || typeof rawItem !== 'object') {
+        if (!rawItem || typeof rawItem !== "object") {
           continue;
         }
 
@@ -1321,14 +1565,19 @@ const create = async (req, res) => {
         } = rawItem;
 
         // Prepare properties snapshots
-        const specificationProperties = (itemSpecifications || []).map(spec => ({
-          manage_quotation_id: null, // Will be injected in repository
-          componen_product_id: spec.componen_product_id || itemFields.componen_product_id,
-          manage_quotation_item_specification_label: spec.manage_quotation_item_specification_label,
-          manage_quotation_item_specification_value: spec.manage_quotation_item_specification_value
-        }));
+        const specificationProperties = (itemSpecifications || []).map(
+          (spec) => ({
+            manage_quotation_id: null, // Will be injected in repository
+            componen_product_id:
+              spec.componen_product_id || itemFields.componen_product_id,
+            manage_quotation_item_specification_label:
+              spec.manage_quotation_item_specification_label,
+            manage_quotation_item_specification_value:
+              spec.manage_quotation_item_specification_value,
+          }),
+        );
 
-        const accesoriesProperties = (itemAccessories || []).map(acc => {
+        const accesoriesProperties = (itemAccessories || []).map((acc) => {
           const detail = accessoryDetailsMap[acc.accessory_id] || {};
           return {
             manage_quotation_id: null, // Will be injected in repository
@@ -1341,21 +1590,25 @@ const create = async (req, res) => {
             accessory_remark: detail.accessory_remark,
             accessory_region: detail.accessory_region,
             accessory_description: detail.accessory_description,
-            componen_product_id: acc.componen_product_id || itemFields.componen_product_id
+            componen_product_id:
+              acc.componen_product_id || itemFields.componen_product_id,
           };
         });
 
         itemsForInsert.push({
           ...itemFields,
           specification_properties: specificationProperties,
-          accesories_properties: accesoriesProperties
+          accesories_properties: accesoriesProperties,
         });
 
         if (Array.isArray(itemAccessories)) {
           for (const accessory of itemAccessories) {
             accessoriesForInsert.push({
               ...accessory,
-              componen_product_id: accessory?.componen_product_id || itemFields.componen_product_id || null
+              componen_product_id:
+                accessory?.componen_product_id ||
+                itemFields.componen_product_id ||
+                null,
             });
           }
         }
@@ -1364,7 +1617,10 @@ const create = async (req, res) => {
           for (const specification of itemSpecifications) {
             specificationsForInsert.push({
               ...specification,
-              componen_product_id: specification?.componen_product_id || itemFields.componen_product_id || null
+              componen_product_id:
+                specification?.componen_product_id ||
+                itemFields.componen_product_id ||
+                null,
             });
           }
         }
@@ -1375,84 +1631,111 @@ const create = async (req, res) => {
       for (const accessory of req.body.manage_quotation_item_accessories) {
         accessoriesForInsert.push({
           ...accessory,
-          componen_product_id: accessory?.componen_product_id || null
+          componen_product_id: accessory?.componen_product_id || null,
         });
       }
     }
 
     if (Array.isArray(req.body.manage_quotation_item_specifications)) {
-      for (const specification of req.body.manage_quotation_item_specifications) {
+      for (const specification of req.body
+        .manage_quotation_item_specifications) {
         specificationsForInsert.push({
           ...specification,
-          componen_product_id: specification?.componen_product_id || null
+          componen_product_id: specification?.componen_product_id || null,
         });
       }
     }
 
-    logStep('payload.normalized', 'success', {
+    logStep("payload.normalized", "success", {
       items: itemsForInsert.length,
       accessories: accessoriesForInsert.length,
-      specifications: specificationsForInsert.length
+      specifications: specificationsForInsert.length,
     });
 
     const hasAccessoriesArray = accessoriesForInsert.length > 0;
     const hasSpecificationsArray = specificationsForInsert.length > 0;
 
     if (itemsForInsert.length > 0) {
-      const validation = await repository.validateComponenProductIds(itemsForInsert);
+      const validation =
+        await repository.validateComponenProductIds(itemsForInsert);
       if (!validation.isValid) {
-        logStep('validation.items', 'error', { invalidIds: validation.invalidIds });
-        const invalidIdsList = validation.invalidIds.join(', ');
+        logStep("validation.items", "error", {
+          invalidIds: validation.invalidIds,
+        });
+        const invalidIdsList = validation.invalidIds.join(", ");
         const response = mappingError(
           `Componen product dengan ID berikut tidak ditemukan: ${invalidIdsList}`,
-          400
+          400,
         );
         response.data.logs = processLogs;
         return baseResponse(res, response);
       }
-      logStep('validation.items', 'success', { validatedCount: itemsForInsert.length });
+      logStep("validation.items", "success", {
+        validatedCount: itemsForInsert.length,
+      });
     } else {
-      logStep('validation.items', 'skipped', { reason: 'no items provided' });
+      logStep("validation.items", "skipped", { reason: "no items provided" });
     }
 
     if (hasAccessoriesArray) {
-      const validation = await repository.validateAccessoryIds(accessoriesForInsert);
+      const validation =
+        await repository.validateAccessoryIds(accessoriesForInsert);
       if (!validation.isValid) {
-        logStep('validation.accessories', 'error', { invalidIds: validation.invalidIds });
-        const invalidIdsList = validation.invalidIds.join(', ');
+        logStep("validation.accessories", "error", {
+          invalidIds: validation.invalidIds,
+        });
+        const invalidIdsList = validation.invalidIds.join(", ");
         const response = mappingError(
           `Accessory dengan ID berikut tidak ditemukan: ${invalidIdsList}`,
-          400
+          400,
         );
         response.data.logs = processLogs;
         return baseResponse(res, response);
       }
-      logStep('validation.accessories', 'success', { validatedCount: accessoriesForInsert.length });
+      logStep("validation.accessories", "success", {
+        validatedCount: accessoriesForInsert.length,
+      });
     } else {
-      logStep('validation.accessories', 'skipped', { reason: 'no accessories provided' });
+      logStep("validation.accessories", "skipped", {
+        reason: "no accessories provided",
+      });
     }
 
     if (hasSpecificationsArray) {
-      const validation = await repository.validateSpecificationComponenProductIds(specificationsForInsert);
+      const validation =
+        await repository.validateSpecificationComponenProductIds(
+          specificationsForInsert,
+        );
       if (!validation.isValid) {
-        logStep('validation.specifications', 'error', { invalidIds: validation.invalidIds });
-        const invalidIdsList = validation.invalidIds.join(', ');
+        logStep("validation.specifications", "error", {
+          invalidIds: validation.invalidIds,
+        });
+        const invalidIdsList = validation.invalidIds.join(", ");
         const response = mappingError(
           `Componen product pada specification dengan ID berikut tidak ditemukan: ${invalidIdsList}`,
-          400
+          400,
         );
         response.data.logs = processLogs;
         return baseResponse(res, response);
       }
-      logStep('validation.specifications', 'success', { validatedCount: specificationsForInsert.length });
+      logStep("validation.specifications", "success", {
+        validatedCount: specificationsForInsert.length,
+      });
     } else {
-      logStep('validation.specifications', 'skipped', { reason: 'no specifications provided' });
+      logStep("validation.specifications", "skipped", {
+        reason: "no specifications provided",
+      });
     }
 
     quotationData.created_by = tokenData.created_by;
     if (term_content_id !== undefined) {
       // Normalize term_content_id: convert empty string, "NaN", or null to null
-      if (term_content_id === null || term_content_id === '' || term_content_id === 'NaN' || (typeof term_content_id === 'string' && term_content_id.trim() === '')) {
+      if (
+        term_content_id === null ||
+        term_content_id === "" ||
+        term_content_id === "NaN" ||
+        (typeof term_content_id === "string" && term_content_id.trim() === "")
+      ) {
         quotationData.term_content_id = null;
       } else {
         quotationData.term_content_id = term_content_id;
@@ -1461,39 +1744,56 @@ const create = async (req, res) => {
 
     await db.transaction(async (trx) => {
       createdQuotation = await repository.create(quotationData, trx);
-      logStep('transaction.createQuotation', 'success', {
+      logStep("transaction.createQuotation", "success", {
         manage_quotation_id: createdQuotation.manage_quotation_id,
-        manage_quotation_no: createdQuotation.manage_quotation_no
+        manage_quotation_no: createdQuotation.manage_quotation_no,
       });
 
       if (quotationData.term_content_payload) {
-        logStep('transaction.termContent.write', 'success', { payloadLength: quotationData.term_content_payload.length });
+        logStep("transaction.termContent.write", "success", {
+          payloadLength: quotationData.term_content_payload.length,
+        });
       } else {
-        logStep('transaction.termContent.write', 'skipped', { reason: 'no term_content_directory provided' });
+        logStep("transaction.termContent.write", "skipped", {
+          reason: "no term_content_directory provided",
+        });
       }
 
       if (itemsForInsert.length > 0) {
-        await repository.createItems(createdQuotation.manage_quotation_id, itemsForInsert, tokenData.created_by, trx);
-        logStep('transaction.items.create', 'success', { count: itemsForInsert.length });
+        await repository.createItems(
+          createdQuotation.manage_quotation_id,
+          itemsForInsert,
+          tokenData.created_by,
+          trx,
+        );
+        logStep("transaction.items.create", "success", {
+          count: itemsForInsert.length,
+        });
       } else {
-        logStep('transaction.items.create', 'skipped', { reason: 'no items to insert' });
+        logStep("transaction.items.create", "skipped", {
+          reason: "no items to insert",
+        });
       }
-
     });
 
     if (createdQuotation?.term_content_payload) {
       try {
         const parsed = JSON.parse(createdQuotation.term_content_payload);
-        createdQuotation.term_content_payload = extractTermContentPayload(parsed);
-      } catch (e) { }
-      logStep('postProcess.termContent.read', 'success', { hasPayload: true });
+        createdQuotation.term_content_payload =
+          extractTermContentPayload(parsed);
+      } catch (e) {}
+      logStep("postProcess.termContent.read", "success", { hasPayload: true });
     }
 
-    const response = mappingSuccess('Data berhasil dibuat', createdQuotation, 201);
+    const response = mappingSuccess(
+      "Data berhasil dibuat",
+      createdQuotation,
+      201,
+    );
     response.data.logs = processLogs;
     return baseResponse(res, response);
   } catch (error) {
-    logStep('process.failed', 'error', { message: error.message });
+    logStep("process.failed", "error", { message: error.message });
 
     const response = mappingError(error);
     response.data.logs = processLogs;
@@ -1511,21 +1811,26 @@ const update = async (req, res) => {
     const { id } = req.params;
 
     // Log request start
-    if (process.env.NODE_ENV === 'development') {
-      Logger.info('[manage-quotation:update] request received', {
+    if (process.env.NODE_ENV === "development") {
+      Logger.info("[manage-quotation:update] request received", {
         id,
         bodyKeys: Object.keys(req.body || {}),
-        hasItems: Array.isArray(req.body?.manage_quotation_items)
+        hasItems: Array.isArray(req.body?.manage_quotation_items),
       });
     }
 
     // Get user info from token
-    const tokenData = decodeToken('updated', req);
+    const tokenData = decodeToken("updated", req);
 
     // Validate token data
-    if (!tokenData.updated_by || tokenData.updated_by === '') {
-      Logger.error('[manage-quotation:update] invalid token data', { tokenData });
-      const response = mappingError('Token tidak valid atau tidak memiliki informasi user', 401);
+    if (!tokenData.updated_by || tokenData.updated_by === "") {
+      Logger.error("[manage-quotation:update] invalid token data", {
+        tokenData,
+      });
+      const response = mappingError(
+        "Token tidak valid atau tidak memiliki informasi user",
+        401,
+      );
       return baseResponse(res, response);
     }
 
@@ -1539,7 +1844,10 @@ const update = async (req, res) => {
       ...quotationData
     } = req.body;
 
-    const itemsProvided = Object.prototype.hasOwnProperty.call(req.body, 'manage_quotation_items');
+    const itemsProvided = Object.prototype.hasOwnProperty.call(
+      req.body,
+      "manage_quotation_items",
+    );
     const hasItemsArray = Array.isArray(manage_quotation_items);
     const itemsForProcessing = hasItemsArray ? manage_quotation_items : [];
     const itemsForInsert = [];
@@ -1547,11 +1855,12 @@ const update = async (req, res) => {
     const specificationsForInsert = [];
 
     // Pre-fetch accessories details for properties
-    const accessoryDetailsMap = await getAccessoryDetailsMap(itemsForProcessing);
+    const accessoryDetailsMap =
+      await getAccessoryDetailsMap(itemsForProcessing);
 
     if (hasItemsArray) {
       for (const rawItem of itemsForProcessing) {
-        if (!rawItem || typeof rawItem !== 'object') {
+        if (!rawItem || typeof rawItem !== "object") {
           continue;
         }
 
@@ -1562,14 +1871,19 @@ const update = async (req, res) => {
         } = rawItem;
 
         // Prepare properties snapshots
-        const specificationProperties = (itemSpecifications || []).map(spec => ({
-          manage_quotation_id: null,
-          componen_product_id: spec.componen_product_id || itemFields.componen_product_id,
-          manage_quotation_item_specification_label: spec.manage_quotation_item_specification_label,
-          manage_quotation_item_specification_value: spec.manage_quotation_item_specification_value
-        }));
+        const specificationProperties = (itemSpecifications || []).map(
+          (spec) => ({
+            manage_quotation_id: null,
+            componen_product_id:
+              spec.componen_product_id || itemFields.componen_product_id,
+            manage_quotation_item_specification_label:
+              spec.manage_quotation_item_specification_label,
+            manage_quotation_item_specification_value:
+              spec.manage_quotation_item_specification_value,
+          }),
+        );
 
-        const accesoriesProperties = (itemAccessories || []).map(acc => {
+        const accesoriesProperties = (itemAccessories || []).map((acc) => {
           const detail = accessoryDetailsMap[acc.accessory_id] || {};
           return {
             manage_quotation_id: null,
@@ -1582,21 +1896,25 @@ const update = async (req, res) => {
             accessory_remark: detail.accessory_remark,
             accessory_region: detail.accessory_region,
             accessory_description: detail.accessory_description,
-            componen_product_id: acc.componen_product_id || itemFields.componen_product_id
+            componen_product_id:
+              acc.componen_product_id || itemFields.componen_product_id,
           };
         });
 
         itemsForInsert.push({
           ...itemFields,
           specification_properties: specificationProperties,
-          accesories_properties: accesoriesProperties
+          accesories_properties: accesoriesProperties,
         });
 
         if (Array.isArray(itemAccessories)) {
           for (const accessory of itemAccessories) {
             accessoriesForInsert.push({
               ...accessory,
-              componen_product_id: accessory?.componen_product_id || itemFields.componen_product_id || null
+              componen_product_id:
+                accessory?.componen_product_id ||
+                itemFields.componen_product_id ||
+                null,
             });
           }
         }
@@ -1605,7 +1923,10 @@ const update = async (req, res) => {
           for (const specification of itemSpecifications) {
             specificationsForInsert.push({
               ...specification,
-              componen_product_id: specification?.componen_product_id || itemFields.componen_product_id || null
+              componen_product_id:
+                specification?.componen_product_id ||
+                itemFields.componen_product_id ||
+                null,
             });
           }
         }
@@ -1616,38 +1937,50 @@ const update = async (req, res) => {
       for (const accessory of req.body.manage_quotation_item_accessories) {
         accessoriesForInsert.push({
           ...accessory,
-          componen_product_id: accessory?.componen_product_id || null
+          componen_product_id: accessory?.componen_product_id || null,
         });
       }
     }
 
     if (Array.isArray(req.body.manage_quotation_item_specifications)) {
-      for (const specification of req.body.manage_quotation_item_specifications) {
+      for (const specification of req.body
+        .manage_quotation_item_specifications) {
         specificationsForInsert.push({
           ...specification,
-          componen_product_id: specification?.componen_product_id || null
+          componen_product_id: specification?.componen_product_id || null,
         });
       }
     }
 
-    const accessoriesProvided = itemsProvided || Object.prototype.hasOwnProperty.call(req.body, 'manage_quotation_item_accessories');
-    const specificationsProvided = itemsProvided || Object.prototype.hasOwnProperty.call(req.body, 'manage_quotation_item_specifications');
+    const accessoriesProvided =
+      itemsProvided ||
+      Object.prototype.hasOwnProperty.call(
+        req.body,
+        "manage_quotation_item_accessories",
+      );
+    const specificationsProvided =
+      itemsProvided ||
+      Object.prototype.hasOwnProperty.call(
+        req.body,
+        "manage_quotation_item_specifications",
+      );
 
     // Get existing quotation data
     existing = await repository.findById(id);
     if (!existing) {
-      const response = mappingError('Data tidak ditemukan', 404);
+      const response = mappingError("Data tidak ditemukan", 404);
       return baseResponse(res, response);
     }
 
     // Validate componen_product_id if items provided
     if (itemsForInsert.length > 0) {
-      const validation = await repository.validateComponenProductIds(itemsForInsert);
+      const validation =
+        await repository.validateComponenProductIds(itemsForInsert);
       if (!validation.isValid) {
-        const invalidIdsList = validation.invalidIds.join(', ');
+        const invalidIdsList = validation.invalidIds.join(", ");
         const response = mappingError(
           `Componen product dengan ID berikut tidak ditemukan: ${invalidIdsList}`,
-          400
+          400,
         );
         return baseResponse(res, response);
       }
@@ -1655,12 +1988,13 @@ const update = async (req, res) => {
 
     // Validate accessory_id if accessories provided
     if (accessoriesForInsert.length > 0) {
-      const validation = await repository.validateAccessoryIds(accessoriesForInsert);
+      const validation =
+        await repository.validateAccessoryIds(accessoriesForInsert);
       if (!validation.isValid) {
-        const invalidIdsList = validation.invalidIds.join(', ');
+        const invalidIdsList = validation.invalidIds.join(", ");
         const response = mappingError(
           `Accessory dengan ID berikut tidak ditemukan: ${invalidIdsList}`,
-          400
+          400,
         );
         return baseResponse(res, response);
       }
@@ -1668,12 +2002,15 @@ const update = async (req, res) => {
 
     // Validate componen_product_id untuk specifications jika ada
     if (specificationsForInsert.length > 0) {
-      const validation = await repository.validateSpecificationComponenProductIds(specificationsForInsert);
+      const validation =
+        await repository.validateSpecificationComponenProductIds(
+          specificationsForInsert,
+        );
       if (!validation.isValid) {
-        const invalidIdsList = validation.invalidIds.join(', ');
+        const invalidIdsList = validation.invalidIds.join(", ");
         const response = mappingError(
           `Componen product pada specification dengan ID berikut tidak ditemukan: ${invalidIdsList}`,
-          400
+          400,
         );
         return baseResponse(res, response);
       }
@@ -1682,7 +2019,12 @@ const update = async (req, res) => {
     // Handle term_content_id
     if (term_content_id !== undefined) {
       // Normalize term_content_id: convert empty string, "NaN", or null to null
-      if (term_content_id === null || term_content_id === '' || term_content_id === 'NaN' || (typeof term_content_id === 'string' && term_content_id.trim() === '')) {
+      if (
+        term_content_id === null ||
+        term_content_id === "" ||
+        term_content_id === "NaN" ||
+        (typeof term_content_id === "string" && term_content_id.trim() === "")
+      ) {
         quotationData.term_content_id = null;
       } else {
         quotationData.term_content_id = term_content_id;
@@ -1694,7 +2036,7 @@ const update = async (req, res) => {
       // Store original content for properties generation (handled in repository if passed)
       quotationData.properties_term_content_directory = term_content_directory;
 
-      if (term_content_directory !== null && term_content_directory !== '') {
+      if (term_content_directory !== null && term_content_directory !== "") {
         const normalized = normalizeJsonPayload(term_content_directory);
         quotationData.term_content_payload = JSON.stringify(normalized);
         quotationData.term_content_directory = null;
@@ -1718,7 +2060,7 @@ const update = async (req, res) => {
     const data = await repository.update(id, quotationData);
 
     if (!data) {
-      const response = mappingError('Data tidak ditemukan', 404);
+      const response = mappingError("Data tidak ditemukan", 404);
       return baseResponse(res, response);
     }
 
@@ -1742,27 +2084,27 @@ const update = async (req, res) => {
       // Since we removed readJsonFile, we can't read it.
       // Assuming we rely on payload from now on or the migration handled it?
       // The user didn't ask to migrate old files, but "di proses CRUD".
-      // If we want to support old files, we'd need to keep readJsonFile. 
+      // If we want to support old files, we'd need to keep readJsonFile.
       // But user implied "dia masih membuat file json", implying we should stop.
       // I will assume for GET/Update response we return what we have in DB.
       data.term_content_payload = null;
     }
 
-    const response = mappingSuccess('Data berhasil diupdate', data);
+    const response = mappingSuccess("Data berhasil diupdate", data);
 
     // Log success
-    if (process.env.NODE_ENV === 'development') {
-      Logger.info('[manage-quotation:update] update successful', { id });
+    if (process.env.NODE_ENV === "development") {
+      Logger.info("[manage-quotation:update] update successful", { id });
     }
 
     return baseResponse(res, response);
   } catch (error) {
     // Log error details
-    Logger.error('[manage-quotation:update] update failed', {
+    Logger.error("[manage-quotation:update] update failed", {
       id: req.params?.id,
       error: error.message,
       stack: error.stack,
-      bodyKeys: Object.keys(req.body || {})
+      bodyKeys: Object.keys(req.body || {}),
     });
 
     const response = mappingError(error);
@@ -1778,21 +2120,21 @@ const remove = async (req, res) => {
     const { id } = req.params;
 
     // Get user info from token
-    const tokenData = decodeToken('deleted', req);
+    const tokenData = decodeToken("deleted", req);
 
     // First update with deleted_by info
     await repository.update(id, {
-      deleted_by: tokenData.deleted_by
+      deleted_by: tokenData.deleted_by,
     });
 
     const result = await repository.remove(id);
 
     if (!result) {
-      const response = mappingError('Data tidak ditemukan', 404);
+      const response = mappingError("Data tidak ditemukan", 404);
       return baseResponse(res, response);
     }
 
-    const response = mappingSuccess('Data berhasil dihapus', result);
+    const response = mappingSuccess("Data berhasil dihapus", result);
     return baseResponse(res, response);
   } catch (error) {
     const response = mappingError(error);
@@ -1809,11 +2151,11 @@ const restore = async (req, res) => {
     const data = await repository.restore(id);
 
     if (!data) {
-      const response = mappingError('Data tidak ditemukan', 404);
+      const response = mappingError("Data tidak ditemukan", 404);
       return baseResponse(res, response);
     }
 
-    const response = mappingSuccess('Data berhasil direstore', data);
+    const response = mappingSuccess("Data berhasil direstore", data);
     return baseResponse(res, response);
   } catch (error) {
     const response = mappingError(error);
@@ -1829,19 +2171,24 @@ const duplikat = async (req, res) => {
     const { manage_quotation_id } = req.params;
 
     // Get user info from token
-    const tokenData = decodeToken('created', req);
+    const tokenData = decodeToken("created", req);
 
     // Validate token data
-    if (!tokenData.created_by || tokenData.created_by === '') {
-      Logger.error('[manage-quotation:duplikat] invalid token data', { tokenData });
-      const response = mappingError('Token tidak valid atau tidak memiliki informasi user', 401);
+    if (!tokenData.created_by || tokenData.created_by === "") {
+      Logger.error("[manage-quotation:duplikat] invalid token data", {
+        tokenData,
+      });
+      const response = mappingError(
+        "Token tidak valid atau tidak memiliki informasi user",
+        401,
+      );
       return baseResponse(res, response);
     }
 
     // Check if source quotation exists
     const sourceQuotation = await repository.findById(manage_quotation_id);
     if (!sourceQuotation) {
-      const response = mappingError('Quotation tidak ditemukan', 404);
+      const response = mappingError("Quotation tidak ditemukan", 404);
       return baseResponse(res, response);
     }
 
@@ -1851,15 +2198,19 @@ const duplikat = async (req, res) => {
       duplicatedQuotation = await repository.duplicateQuotation(
         manage_quotation_id,
         tokenData.created_by,
-        trx
+        trx,
       );
     });
 
     // Get full data with relations
-    const data = await repository.findById(duplicatedQuotation.manage_quotation_id);
+    const data = await repository.findById(
+      duplicatedQuotation.manage_quotation_id,
+    );
 
     // Get detail data
-    const items = await repository.getItemsByQuotationId(duplicatedQuotation.manage_quotation_id);
+    const items = await repository.getItemsByQuotationId(
+      duplicatedQuotation.manage_quotation_id,
+    );
     // DISABLED: Tabel manage_quotation_item_accessories dan manage_quotation_item_specifications sudah dihapus
     // Data sekarang diambil dari kolom accesories_properties dan specification_properties (JSONB) di manage_quotation_items
     // const accessories = await repository.getAccessoriesByQuotationId(duplicatedQuotation.manage_quotation_id);
@@ -1872,7 +2223,7 @@ const duplikat = async (req, res) => {
       // ACCESSORIES STRATEGY: Use accesories_properties from item
       if (item.accesories_properties) {
         let props = item.accesories_properties;
-        if (typeof props === 'string') {
+        if (typeof props === "string") {
           try {
             props = JSON.parse(props);
           } catch (e) {
@@ -1881,7 +2232,7 @@ const duplikat = async (req, res) => {
         }
 
         if (Array.isArray(props) && props.length > 0) {
-          itemAccessories = props.map(prop => ({
+          itemAccessories = props.map((prop) => ({
             manage_quotation_item_accessory_id: null,
             manage_quotation_id: item.manage_quotation_id,
             accessory_id: prop.accessory_id,
@@ -1901,7 +2252,7 @@ const duplikat = async (req, res) => {
             accessory_brand: prop.accessory_brand,
             accessory_remark: prop.accessory_remark,
             accessory_region: prop.accessory_region,
-            accessory_description: prop.accessory_description
+            accessory_description: prop.accessory_description,
           }));
         }
       }
@@ -1909,7 +2260,7 @@ const duplikat = async (req, res) => {
       // SPECIFICATIONS STRATEGY: Use specification_properties from item
       if (item.specification_properties) {
         let props = item.specification_properties;
-        if (typeof props === 'string') {
+        if (typeof props === "string") {
           try {
             props = JSON.parse(props);
           } catch (e) {
@@ -1918,12 +2269,14 @@ const duplikat = async (req, res) => {
         }
 
         if (Array.isArray(props) && props.length > 0) {
-          itemSpecifications = props.map(prop => ({
+          itemSpecifications = props.map((prop) => ({
             manage_quotation_item_specification_id: null,
             manage_quotation_id: item.manage_quotation_id,
             componen_product_id: prop.componen_product_id,
-            manage_quotation_item_specification_label: prop.manage_quotation_item_specification_label,
-            manage_quotation_item_specification_value: prop.manage_quotation_item_specification_value,
+            manage_quotation_item_specification_label:
+              prop.manage_quotation_item_specification_label,
+            manage_quotation_item_specification_value:
+              prop.manage_quotation_item_specification_value,
             created_by: item.created_by,
             updated_by: item.updated_by,
             deleted_by: null,
@@ -1941,7 +2294,7 @@ const duplikat = async (req, res) => {
         ...item,
         product_type: productType,
         manage_quotation_item_accessories: itemAccessories,
-        manage_quotation_item_specifications: itemSpecifications
+        manage_quotation_item_specifications: itemSpecifications,
       };
     });
 
@@ -1952,20 +2305,20 @@ const duplikat = async (req, res) => {
       try {
         const parsed = JSON.parse(data.term_content_payload);
         data.term_content_payload = extractTermContentPayload(parsed);
-      } catch (e) { }
+      } catch (e) {}
     } else if (data.term_content_directory) {
-      // Legacy file support removed, return null or try to read if fs was kept? 
+      // Legacy file support removed, return null or try to read if fs was kept?
       // We removed fs, so we return null.
       data.term_content_payload = null;
     }
 
-    const response = mappingSuccess('Data berhasil diduplikat', data, 201);
+    const response = mappingSuccess("Data berhasil diduplikat", data, 201);
     return baseResponse(res, response);
   } catch (error) {
-    Logger.error('[manage-quotation:duplikat] duplikat failed', {
+    Logger.error("[manage-quotation:duplikat] duplikat failed", {
       manage_quotation_id: req.params?.manage_quotation_id,
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
 
     const response = mappingError(error);
@@ -1981,5 +2334,5 @@ module.exports = {
   update,
   remove,
   restore,
-  duplikat
+  duplikat,
 };

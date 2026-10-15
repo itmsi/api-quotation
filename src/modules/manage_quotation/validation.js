@@ -247,6 +247,13 @@ const createValidation = [
     .isLength({ max: 255 })
     .withMessage("Quotation for maksimal 255 karakter")
     .trim(),
+  body("quotation_segment")
+    .optional({ nullable: true })
+    .isString()
+    .withMessage("Quotation segment harus berupa string")
+    .isLength({ max: 255 })
+    .withMessage("Quotation segment maksimal 255 karakter")
+    .trim(),
   body("star")
     .optional()
     .custom((value) => {
@@ -690,6 +697,13 @@ const updateValidation = [
     .isLength({ max: 255 })
     .withMessage("Quotation for maksimal 255 karakter")
     .trim(),
+  body("quotation_segment")
+    .optional({ nullable: true })
+    .isString()
+    .withMessage("Quotation segment harus berupa string")
+    .isLength({ max: 255 })
+    .withMessage("Quotation segment maksimal 255 karakter")
+    .trim(),
   body("star")
     .optional()
     .custom((value) => {
@@ -1030,6 +1044,30 @@ const listValidation = [
     })
     .withMessage(
       "quotation_for harus berupa string, string kosong, null, atau NaN",
+    ),
+  body("quotation_segment")
+    .optional()
+    .custom((value) => {
+      // Allow empty string, null, undefined, NaN, or any string
+      if (value === null || value === undefined || value === "") {
+        return true;
+      }
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (trimmed === "" || trimmed === "NaN" || trimmed === "null") {
+          return true;
+        }
+        // Allow any non-empty string
+        return true;
+      }
+      // Allow NaN
+      if (typeof value === "number" && isNaN(value)) {
+        return true;
+      }
+      return false;
+    })
+    .withMessage(
+      "quotation_segment harus berupa string, string kosong, null, atau NaN",
     ),
   body("start_date")
     .optional()

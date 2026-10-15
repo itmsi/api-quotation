@@ -1368,6 +1368,8 @@ const mapTruckTypeToComponenType = (truckType) => {
     return 4;
   } else if (normalizedType === "ON ROAD REGULAR EV") {
     return 5;
+  } else if (normalizedType === "BESS") {
+    return 6;
   }
 
   return null;
