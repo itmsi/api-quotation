@@ -11,7 +11,7 @@ services:
       - .env
     restart: unless-stopped
     ports:
-      - "9565:9565"
+      - "127.0.0.1:9565:9565"
     volumes:
       - ./logs:/app/logs
       - ./public:/app/public
