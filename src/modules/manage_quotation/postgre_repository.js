@@ -7,6 +7,26 @@ const componenProductRepository = require("../componen_product/postgre_repositor
 const accessoryRepository = require("../accessory/postgre_repository");
 
 const TABLE_NAME = "manage_quotations";
+const COMPANY_ITI = "ITI";
+const COMPANY_MSO = "MSO";
+
+/**
+ * Apply company filter: payload ITI or MSO shows only data of that company,
+ * any other payload (including empty) shows all data except ITI and MSO
+ */
+const applyCompanyFilter = (query, companyName) => {
+  const company = companyName ? companyName.trim().toUpperCase() : "";
+
+  if (company === COMPANY_ITI || company === COMPANY_MSO) {
+    return query.whereRaw("UPPER(TRIM(mq.company)) = ?", [company]);
+  }
+
+  // COALESCE keeps rows with NULL company, which NOT IN would drop
+  return query.whereRaw("COALESCE(UPPER(TRIM(mq.company)), '') NOT IN (?, ?)", [
+    COMPANY_ITI,
+    COMPANY_MSO,
+  ]);
+};
 
 /**
  * Ensure dblink connection with retry mechanism
@@ -220,9 +240,7 @@ const findAll = async (params) => {
   }
 
   // Add company filter condition
-  if (companyName && companyName.trim() !== "") {
-    query = query.where("mq.company", companyName.trim());
-  }
+  query = applyCompanyFilter(query, companyName);
 
   // Add date range filter condition (based on created_at)
   if (startDate) {
@@ -392,9 +410,7 @@ const findAll = async (params) => {
             query = query.where("mq.quotation_segment", quotationSegment.trim());
           }
 
-          if (companyName && companyName.trim() !== "") {
-            query = query.where("mq.company", companyName.trim());
-          }
+          query = applyCompanyFilter(query, companyName);
 
           // Add date range filter condition (based on created_at)
           if (startDate) {
@@ -457,9 +473,7 @@ const findAll = async (params) => {
             query = query.where("mq.quotation_segment", quotationSegment.trim());
           }
 
-          if (companyName && companyName.trim() !== "") {
-            query = query.where("mq.company", companyName.trim());
-          }
+          query = applyCompanyFilter(query, companyName);
 
           // Add date range filter condition (based on created_at)
           if (startDate) {
@@ -532,9 +546,7 @@ const findAll = async (params) => {
           query = query.where("mq.quotation_segment", quotationSegment.trim());
         }
 
-        if (companyName && companyName.trim() !== "") {
-          query = query.where("mq.company", companyName.trim());
-        }
+        query = applyCompanyFilter(query, companyName);
 
         // Add date range filter condition (based on created_at)
         if (startDate) {
@@ -647,9 +659,7 @@ const findAll = async (params) => {
   }
 
   // Add company filter condition to count query
-  if (companyName && companyName.trim() !== "") {
-    countQuery = countQuery.where("mq.company", companyName.trim());
-  }
+  countQuery = applyCompanyFilter(countQuery, companyName);
 
   // Add date range filter condition to count query (based on created_at)
   if (startDate) {
@@ -720,9 +730,7 @@ const findAll = async (params) => {
         countQuery = countQuery.where("mq.quotation_segment", quotationSegment.trim());
       }
 
-      if (companyName && companyName.trim() !== "") {
-        countQuery = countQuery.where("mq.company", companyName.trim());
-      }
+      countQuery = applyCompanyFilter(countQuery, companyName);
 
       // Add date range filter condition to count query (based on created_at)
       if (startDate) {
