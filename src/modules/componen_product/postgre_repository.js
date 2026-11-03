@@ -2,6 +2,8 @@ const db = require('../../config/database');
 const { v4: uuidv4 } = require('uuid');
 
 const TABLE_NAME = 'componen_products';
+const COMPANY_ITI = 'ITI';
+const COMPANY_MSO = 'MSO';
 
 const DBLINK_NAME = 'gate_sso_dblink';
 const DB_LINK_CONNECTION = `dbname=${process.env.DB_GATE_SSO_NAME} user=${process.env.DB_GATE_SSO_USER} password=${process.env.DB_GATE_SSO_PASSWORD} host=${process.env.DB_GATE_SSO_HOST} port=${process.env.DB_GATE_SSO_PORT}`;
@@ -197,6 +199,24 @@ const buildSearchWhere = (search, includeUpdaterData = false, includeCompanyData
 };
 
 /**
+ * Apply company filter: payload ITI or MSO shows only data of that company,
+ * any other payload (including empty) shows all data except ITI and MSO
+ */
+const applyCompanyFilter = (query, companyName) => {
+  const company = companyName ? companyName.trim().toUpperCase() : '';
+
+  if (company === COMPANY_ITI || company === COMPANY_MSO) {
+    return query.whereRaw(`UPPER(TRIM(${TABLE_NAME}.company_name)) = ?`, [company]);
+  }
+
+  // COALESCE keeps rows with NULL company_name, which NOT IN would drop
+  return query.whereRaw(`COALESCE(UPPER(TRIM(${TABLE_NAME}.company_name)), '') NOT IN (?, ?)`, [
+    COMPANY_ITI,
+    COMPANY_MSO,
+  ]);
+};
+
+/**
  * Find all componen products with pagination, search, and sort
  */
 const findAll = async (params) => {
@@ -227,9 +247,7 @@ const findAll = async (params) => {
     .where(`${TABLE_NAME}.is_delete`, false);
 
   // Apply company_name filter
-  if (companyName !== undefined && companyName !== null && companyName !== '') {
-    query = query.where(`${TABLE_NAME}.company_name`, companyName);
-  }
+  query = applyCompanyFilter(query, companyName);
 
   // Apply product_type filter
   if (productType !== undefined && productType !== null && productType !== '') {
@@ -270,9 +288,7 @@ const findAll = async (params) => {
             .leftJoin(updaterJoin, `${TABLE_NAME}.updated_by`, 'updater_data.employee_id')
             .where(`${TABLE_NAME}.is_delete`, false);
 
-          if (companyName !== undefined && companyName !== null && companyName !== '') {
-            query = query.where(`${TABLE_NAME}.company_name`, companyName);
-          }
+          query = applyCompanyFilter(query, companyName);
 
           if (productType !== undefined && productType !== null && productType !== '') {
             query = query.where(`${TABLE_NAME}.product_type`, productType);
@@ -291,9 +307,7 @@ const findAll = async (params) => {
             .select(`${TABLE_NAME}.*`)
             .where(`${TABLE_NAME}.is_delete`, false);
 
-          if (companyName !== undefined && companyName !== null && companyName !== '') {
-            query = query.where(`${TABLE_NAME}.company_name`, companyName);
-          }
+          query = applyCompanyFilter(query, companyName);
 
           if (productType !== undefined && productType !== null && productType !== '') {
             query = query.where(`${TABLE_NAME}.product_type`, productType);
@@ -314,9 +328,7 @@ const findAll = async (params) => {
           .select(`${TABLE_NAME}.*`)
           .where(`${TABLE_NAME}.is_delete`, false);
 
-        if (companyName !== undefined && companyName !== null && companyName !== '') {
-          query = query.where(`${TABLE_NAME}.company_name`, companyName);
-        }
+        query = applyCompanyFilter(query, companyName);
 
         if (productType !== undefined && productType !== null && productType !== '') {
           query = query.where(`${TABLE_NAME}.product_type`, productType);
@@ -350,9 +362,7 @@ const findAll = async (params) => {
     .leftJoin(updaterJoin, `${TABLE_NAME}.updated_by`, 'updater_data.employee_id')
     .where(`${TABLE_NAME}.is_delete`, false);
 
-  if (companyName !== undefined && companyName !== null && companyName !== '') {
-    countQuery = countQuery.where(`${TABLE_NAME}.company_name`, companyName);
-  }
+  countQuery = applyCompanyFilter(countQuery, companyName);
 
   if (productType !== undefined && productType !== null && productType !== '') {
     countQuery = countQuery.where(`${TABLE_NAME}.product_type`, productType);
@@ -370,9 +380,7 @@ const findAll = async (params) => {
     if (error.message && (error.message.includes('could not establish connection') || error.message.includes('dblink'))) {
       countQuery = db(TABLE_NAME)
         .where(`${TABLE_NAME}.is_delete`, false);
-      if (companyName !== undefined && companyName !== null && companyName !== '') {
-        countQuery = countQuery.where(`${TABLE_NAME}.company_name`, companyName);
-      }
+      countQuery = applyCompanyFilter(countQuery, companyName);
 
       if (productType !== undefined && productType !== null && productType !== '') {
         countQuery = countQuery.where(`${TABLE_NAME}.product_type`, productType);
